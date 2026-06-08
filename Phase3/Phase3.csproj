@@ -1,0 +1,31 @@
+<Project Sdk="Microsoft.NET.Sdk.Worker">
+
+  <PropertyGroup>
+    <TargetFramework>net10.0-windows</TargetFramework>
+    <Nullable>enable</Nullable>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
+    <RootNamespace>RamAI.Phase3</RootNamespace>
+    <AssemblyName>RamAI.Phase3</AssemblyName>
+    <Platforms>x64</Platforms>
+    <RuntimeIdentifier>win-x64</RuntimeIdentifier>
+    <SelfContained>false</SelfContained>
+    <WindowsService>true</WindowsService>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <PackageReference Include="System.Management" Version="9.0.5" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <!--
+      Hosting.WindowsServices  → UseWindowsService(), SCM integration
+      Microsoft.ML             → load ram-ai.zip
+      Microsoft.ML.FastTree    → FastTree predictor (required at inference)
+    -->
+    <PackageReference Include="Microsoft.Extensions.Hosting.WindowsServices" Version="10.0.0" />
+    <PackageReference Include="Microsoft.ML"                                  Version="3.0.1" />
+    <PackageReference Include="Microsoft.ML.FastTree"                         Version="3.0.1" />
+  </ItemGroup>
+
+</Project>

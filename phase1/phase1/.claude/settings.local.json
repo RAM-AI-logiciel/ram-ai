@@ -1,0 +1,39 @@
+{
+  "permissions": {
+    "allow": [
+      "Read(//c/Projects/RAM-AI//**)",
+      "Bash(\"/c/Program Files/dotnet/dotnet.exe\" --list-sdks)",
+      "Read(//c/Projects/RAM-AI/Phase2/model//**)",
+      "Read(//c/projettoto/RAM-AI/**)",
+      "Bash(powershell.exe -Command \"[System.Environment]::OSVersion.Version\")",
+      "Bash(cmd.exe /c \"ver\")",
+      "Bash(\"/c/Program Files/dotnet/dotnet.exe\" restore Phase3.csproj)",
+      "Bash(\"/c/Program Files/dotnet/dotnet.exe\" build Phase3.csproj -c Release)",
+      "Bash(\"/c/Program Files/dotnet/dotnet.exe\" restore Phase4.csproj)",
+      "Bash(\"/c/Program Files/dotnet/dotnet.exe\" build Phase4.csproj -c Release)",
+      "Bash(\"/c/Program Files/dotnet/dotnet.exe\" build Phase4.csproj -c Release -o /tmp/phase4_verify)",
+      "Bash(\"/c/Program Files/dotnet/dotnet.exe\" build Phase4.csproj -c Release -o /tmp/phase4_gm)",
+      "Bash(\"/c/Program Files/dotnet/dotnet.exe\" build Phase4.csproj -c Release -o /tmp/phase4_gm2)",
+      "Bash(\"/c/Program Files/dotnet/dotnet.exe\" build Phase3.csproj -c Release -o /tmp/phase3_fs)",
+      "Bash(\"/c/Program Files/dotnet/dotnet.exe\" build Phase3.csproj -c Release -o /tmp/phase3_excl)",
+      "Bash(\"/c/Program Files/dotnet/dotnet.exe\" build Phase4.csproj -c Release -o /tmp/phase4_autostart)",
+      "Bash(\"/c/Program Files/dotnet/dotnet.exe\" build Phase3.csproj -c Release -o /tmp/p3_fix3)",
+      "Bash(\"/c/Program Files/dotnet/dotnet.exe\" build Phase4.csproj -c Release -o /tmp/p4_lic)",
+      "Bash(mkdir -p /c/projettoto/RAM-AI/Phase4/Assets && echo \"Assets/ créé\")",
+      "Bash(\"/c/Program Files/dotnet/dotnet.exe\" build Phase4.csproj -c Release -o /tmp/p4_ico -p:ApplicationIcon=)",
+      "Bash(cp /c/Windows/System32/shell32.dll /tmp/shell32.dll)",
+      "Bash(powershell.exe -Command ' *)",
+      "Bash(\"/c/Program Files/dotnet/dotnet.exe\" build Phase4.csproj -c Release -o /tmp/p4_ico)",
+      "PowerShell(head -100)",
+      "Bash(dotnet build *)",
+      "Bash(taskkill /F /IM \"RamAI.Phase3.exe\")",
+      "PowerShell(\\(Get-Process -Id 24396\\).Kill\\(\\); Start-Sleep -Seconds 3; Set-Location \"C:\\\\projettoto\\\\RAM-AI\\\\Phase3\"; dotnet build -c Release --nologo 2>&1 | Select-Object -Last 8)",
+      "PowerShell(Get-Process -Name \"RamAI.Phase3\" -ErrorAction SilentlyContinue | ForEach-Object { $_.Kill\\(\\) }; Start-Sleep -Seconds 2; Set-Location \"C:\\\\projettoto\\\\RAM-AI\\\\Phase3\"; dotnet build -c Release --nologo 2>&1 | Select-Object -Last 6)",
+      "Bash(mkdir -p \"C:\\\\projettoto\\\\RAM-AI\\\\Tools\\\\ConfuserEx\" \"C:\\\\projettoto\\\\RAM-AI\\\\Protected\" && echo \"Dossiers créés\")",
+      "Bash(Get-ChildItem -Path \"C:\\\\projettoto\\\\RAM-AI\\\\Phase3\\\\\" -Recurse -Filter \"*.cs\" | Select-Object -ExpandProperty FullName | head -50)",
+      "Bash(taskkill /F /PID 17892)",
+      "Bash(taskkill /F /PID 13360)",
+      "PowerShell(& \"C:\\\\projettoto\\\\RAM-AI\\\\Tools\\\\KeyGenerator.ps1\" -Count 3 -Tier Ultra)"
+    ]
+  }
+}

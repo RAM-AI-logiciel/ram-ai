@@ -1,0 +1,24 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <OutputType>Exe</OutputType>
+    <TargetFramework>net10.0-windows</TargetFramework>
+    <Nullable>enable</Nullable>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <AllowUnsafeBlocks>false</AllowUnsafeBlocks>
+    <RootNamespace>RamAI.Phase2</RootNamespace>
+    <AssemblyName>RamAI.Phase2</AssemblyName>
+    <Platforms>x64</Platforms>
+    <RuntimeIdentifier>win-x64</RuntimeIdentifier>
+  </PropertyGroup>
+
+  <!--
+    Microsoft.ML         — core pipeline, SDCA, normalizers
+    Microsoft.ML.FastTree — FastTree / FastForest trainers
+  -->
+  <ItemGroup>
+    <PackageReference Include="Microsoft.ML"          Version="3.0.1" />
+    <PackageReference Include="Microsoft.ML.FastTree" Version="3.0.1" />
+  </ItemGroup>
+
+</Project>

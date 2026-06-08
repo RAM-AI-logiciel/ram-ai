@@ -1,0 +1,18 @@
+# Build output
+**/bin/
+**/obj/
+
+# Clés générées (ne pas versionner)
+Tools/beta_keys.txt
+Tools/ultra_keys.txt
+Tools/pro_keys.txt
+
+# Installeur compilé
+Phase4/installer/
+
+# Assemblies obfusquées générées
+Protected/
+
+# Divers
+*.user
+.vs/

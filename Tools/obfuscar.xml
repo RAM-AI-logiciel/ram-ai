@@ -1,0 +1,69 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+  RAM-AI - Configuration Obfuscar (template)
+  ============================================================================
+  Obfuscar est compatible .NET 8 / .NET 10.
+  Documentation : https://docs.obfuscar.com/
+
+  Le script build_protected.ps1 genere un fichier XML derive en remplacant :
+    $INPATH    -> chemin absolu du dossier publish source
+    $OUTPATH   -> chemin absolu du dossier Protected cible
+    $FULLDLL   -> chemin absolu complet vers la DLL geree (pas l exe natif)
+                  ex: C:\...\publish\RamAI.Phase4.dll
+  ============================================================================
+-->
+<Obfuscator>
+
+  <!-- Chemins absolus (remplaces par le script) -->
+  <Var name="InPath"  value="$INPATH"  />
+  <Var name="OutPath" value="$OUTPATH" />
+
+  <!-- Options d'obfuscation -->
+  <Var name="KeepPublicApi"    value="false" />
+  <Var name="HideStrings"      value="true"  />
+  <Var name="UseUnicodeNames"  value="true"  />
+  <Var name="RenameFields"     value="true"  />
+  <!-- RenameProperties=false : les bindings WPF utilisent les noms de proprietes -->
+  <Var name="RenameProperties" value="false" />
+  <Var name="RenameEvents"     value="true"  />
+  <!-- XmlMapping : genere un mapping pour debogage post-obfuscation -->
+  <Var name="XmlMapping"       value="true"  />
+
+  <!--
+    IMPORTANT : on cible la DLL geree, pas l exe (apphost natif .NET 5+).
+    En .NET 5+, le .exe est un lanceur natif non-gere. La DLL contient le vrai code.
+    $FULLDLL est remplace par le chemin absolu vers RamAI.PhaseX.dll
+  -->
+  <Module file="$FULLDLL" />
+
+  <!--
+    Exclusions : systeme de licences RAM-AI
+    ========================================
+    Ces types sont exclus du renommage pour garantir :
+      - La validation SHA-256 avec Salt "RAM-AI-2026" reste fonctionnelle
+      - La persistance registre HKCU\Software\RAM-AI\License est maintenue
+      - Les bindings WPF de la fenetre de licence fonctionnent
+      - Les cles de demo (S-DEMO-0001, P-DEMO-0001, U-DEMO-0001) sont reconnues
+  -->
+  <SkipType name="LicenseService"   />
+  <SkipType name="LicenseInfo"      />
+  <SkipType name="LicenseTier"      />
+  <SkipType name="LicenseViewModel" />
+
+  <!--
+    Exclusions : interop Windows (P/Invoke)
+    ========================================
+    Les types avec [DllImport] doivent garder leurs signatures exactes.
+  -->
+  <SkipType name="NativeMemory"  />
+  <SkipType name="SystemMemory"  />
+
+  <!--
+    Exclusions : points d entree service Windows
+    ==============================================
+    Le SCM (Service Control Manager) cherche des methodes par nom.
+  -->
+  <SkipMethod type="RamAiService" name="ExecuteAsync" />
+  <SkipMethod type="RamAiService" name="Dispose"      />
+
+</Obfuscator>

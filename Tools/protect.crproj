@@ -1,0 +1,41 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+  RAM-AI — Configuration d'obfuscation ConfuserEx
+  ──────────────────────────────────────────────────────────────────────────────
+  Ce fichier est un TEMPLATE. Le script build_protected.ps1 remplace :
+    $OUTDIR    → dossier de sortie des assemblies protégées
+    $BASEDIR   → dossier source (publish) de l'assembly
+    $ASSEMBLY  → nom du fichier DLL cible (ex: RamAI.Phase4.dll)
+    $EXCLUSIONS→ règles d'exclusion spécifiques à l'assembly
+
+  Compatibilité : ConfuserEx (mkbel fork) — fonctionne sur .NET Framework
+  et .NET Core 3.1 / .NET 5. Pour .NET 8+, utiliser Obfuscar ou Babel.
+  ──────────────────────────────────────────────────────────────────────────────
+-->
+<project outputDir="$OUTDIR"
+         baseDir="$BASEDIR"
+         xmlns="http://confuser.codeplex.com">
+
+  <module path="$ASSEMBLY">
+
+    <!-- ── Règle globale : protection normale sur tout l'assembly ─────────── -->
+    <rule pattern="true" preset="normal" inherit="false">
+      <!-- Renommage des types, méthodes, champs, propriétés -->
+      <protection id="rename" />
+      <!-- Aplatissement / spaghettification du flux de contrôle -->
+      <protection id="ctrl flow" />
+      <!-- Proxy de référence pour cacher les appels de méthodes -->
+      <protection id="ref proxy" />
+      <!-- Détection des debuggers attachés (anti-reverse) -->
+      <protection id="anti debug" />
+      <!-- Empêche le dump mémoire de l'assembly en cours d'exécution -->
+      <protection id="anti dump" />
+      <!-- Watermark invisible pour traçabilité de la version distribuée -->
+      <protection id="watermark" />
+    </rule>
+
+    $EXCLUSIONS
+
+  </module>
+
+</project>

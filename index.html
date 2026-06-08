@@ -1,0 +1,746 @@
+﻿<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>RAM-AI — Memory Intelligence</title>
+  <meta name="description" content="RAM-AI optimise votre mémoire vive en temps réel. Libérez 100 Go+, boostez vos jeux, votre IA et votre navigation. RAM-AI Pro — 24,99€ achat unique." />
+  <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700;800;900&display=swap" rel="stylesheet" />
+  <style>
+    /* ─── RESET & BASE ─────────────────────────────────────── */
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    :root {
+      --bg:        #0D1B2A;
+      --bg2:       #102236;
+      --bg3:       #0A1520;
+      --blue:      #3A7BD5;
+      --blue-lt:   #7BB3F0;
+      --gold:      #F5A623;
+      --gold-dk:   #d48c10;
+      --text:      #E8F0FE;
+      --muted:     #8BAEC8;
+      --border:    rgba(58,123,213,.25);
+      --card-bg:   rgba(15,35,58,.7);
+      --radius:    14px;
+      --radius-lg: 22px;
+    }
+    html { scroll-behavior: smooth; }
+    body {
+      font-family: 'Outfit', sans-serif;
+      background: var(--bg);
+      color: var(--text);
+      line-height: 1.6;
+      overflow-x: hidden;
+    }
+    a { color: inherit; text-decoration: none; }
+    img { display: block; max-width: 100%; }
+
+    /* ─── UTILITY ──────────────────────────────────────────── */
+    .container { max-width: 1100px; margin: 0 auto; padding: 0 24px; }
+    .section   { padding: 90px 0; }
+    .section-alt { background: var(--bg2); }
+    .text-gold  { color: var(--gold); }
+    .text-blue  { color: var(--blue-lt); }
+    .tag {
+      display: inline-block;
+      font-size: .72rem; font-weight: 700; letter-spacing: .1em;
+      text-transform: uppercase;
+      background: rgba(58,123,213,.15);
+      color: var(--blue-lt);
+      border: 1px solid var(--border);
+      border-radius: 50px;
+      padding: 4px 14px;
+      margin-bottom: 18px;
+    }
+    h2.section-title {
+      font-size: clamp(1.8rem, 3.5vw, 2.6rem);
+      font-weight: 800;
+      line-height: 1.2;
+      margin-bottom: 14px;
+    }
+    p.section-sub {
+      color: var(--muted);
+      font-size: 1.05rem;
+      max-width: 540px;
+      margin: 0 auto 52px;
+    }
+    .center { text-align: center; }
+
+    /* ─── LANGUAGE SWITCHER ─────────────────────────────────── */
+    #lang-bar {
+      position: fixed; top: 0; left: 0; right: 0; z-index: 999;
+      display: flex; align-items: center; justify-content: flex-end;
+      padding: 10px 28px;
+      background: rgba(13,27,42,.85);
+      backdrop-filter: blur(12px);
+      border-bottom: 1px solid var(--border);
+    }
+    .lang-switcher {
+      display: flex; gap: 4px;
+      background: rgba(255,255,255,.06);
+      border: 1px solid var(--border);
+      border-radius: 50px;
+      padding: 3px;
+    }
+    .lang-btn {
+      font-family: 'Outfit', sans-serif;
+      font-size: .82rem; font-weight: 600;
+      background: none; border: none; cursor: pointer;
+      color: var(--muted);
+      padding: 4px 14px;
+      border-radius: 50px;
+      transition: all .2s;
+    }
+    .lang-btn.active {
+      background: var(--blue);
+      color: #fff;
+    }
+
+    /* ─── HERO ──────────────────────────────────────────────── */
+    #hero {
+      min-height: 100vh;
+      display: flex; align-items: center; justify-content: center;
+      text-align: center;
+      padding: 120px 24px 80px;
+      position: relative;
+      overflow: hidden;
+    }
+    #hero::before {
+      content: '';
+      position: absolute; inset: 0;
+      background:
+        radial-gradient(ellipse 70% 55% at 50% 0%, rgba(58,123,213,.22) 0%, transparent 70%),
+        radial-gradient(ellipse 40% 30% at 80% 80%, rgba(245,166,35,.1) 0%, transparent 60%);
+      pointer-events: none;
+    }
+    #hero::after {
+      content: '';
+      position: absolute; inset: 0;
+      background-image:
+        linear-gradient(var(--border) 1px, transparent 1px),
+        linear-gradient(90deg, var(--border) 1px, transparent 1px);
+      background-size: 60px 60px;
+      mask-image: radial-gradient(ellipse 80% 80% at 50% 50%, black 30%, transparent 100%);
+      pointer-events: none;
+      opacity: .4;
+    }
+    .hero-inner { position: relative; z-index: 1; max-width: 760px; margin: 0 auto; }
+    .hero-logo {
+      width: 120px; height: 120px;
+      margin: 0 auto 28px;
+      border-radius: 0;
+      box-shadow: 0 0 48px rgba(58,123,213,.35);
+      object-fit: contain;
+      background: transparent;
+    }
+    .hero-logo-placeholder {
+      width: 96px; height: 96px;
+      margin: 0 auto 28px;
+      border-radius: 22px;
+      background: linear-gradient(135deg, var(--bg2), #1a3a5c);
+      border: 2px solid var(--blue);
+      box-shadow: 0 0 40px rgba(58,123,213,.45);
+      display: flex; align-items: center; justify-content: center;
+      font-size: 2.4rem;
+    }
+    .hero-badge {
+      font-size: .72rem; font-weight: 700; letter-spacing: .12em;
+      text-transform: uppercase;
+      color: var(--gold);
+      border: 1px solid rgba(245,166,35,.35);
+      border-radius: 50px;
+      padding: 5px 16px;
+      display: inline-block;
+      margin-bottom: 24px;
+      background: rgba(245,166,35,.07);
+    }
+    .hero-title {
+      font-size: clamp(2.2rem, 6vw, 4rem);
+      font-weight: 900;
+      line-height: 1.1;
+      letter-spacing: -.02em;
+      margin-bottom: 10px;
+    }
+    .hero-title span { color: var(--blue-lt); }
+    .hero-tagline-fr {
+      font-size: clamp(1.3rem, 3vw, 1.9rem);
+      font-weight: 700;
+      color: var(--gold);
+      margin-bottom: 6px;
+    }
+    .hero-tagline-en {
+      font-size: clamp(1rem, 2.2vw, 1.4rem);
+      font-weight: 400;
+      color: var(--muted);
+      margin-bottom: 44px;
+    }
+    .cta-main {
+      display: inline-flex; align-items: center; gap: 10px;
+      background: linear-gradient(135deg, var(--gold), var(--gold-dk));
+      color: #0D1B2A;
+      font-family: 'Outfit', sans-serif;
+      font-size: 1.05rem; font-weight: 800;
+      padding: 16px 38px;
+      border-radius: 50px;
+      border: none; cursor: pointer;
+      box-shadow: 0 8px 32px rgba(245,166,35,.38);
+      transition: transform .2s, box-shadow .2s;
+      text-decoration: none;
+    }
+    .cta-main:hover {
+      transform: translateY(-3px);
+      box-shadow: 0 14px 40px rgba(245,166,35,.55);
+    }
+    .cta-sub {
+      margin-top: 16px;
+      font-size: .85rem;
+      color: var(--muted);
+    }
+    .cta-sub span { color: var(--gold); font-weight: 600; }
+
+    .scroll-hint {
+      position: absolute; bottom: 32px; left: 50%; transform: translateX(-50%);
+      display: flex; flex-direction: column; align-items: center; gap: 6px;
+      opacity: .5; font-size: .75rem; color: var(--muted);
+      animation: bounce 2s infinite;
+    }
+    @keyframes bounce {
+      0%,100% { transform: translateX(-50%) translateY(0); }
+      50% { transform: translateX(-50%) translateY(7px); }
+    }
+
+    /* ─── STATS ─────────────────────────────────────────────── */
+    #stats { padding: 70px 0; background: var(--bg3); }
+    .stats-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+      gap: 2px;
+    }
+    .stat-card {
+      text-align: center;
+      padding: 40px 24px;
+      position: relative;
+    }
+    .stat-card::after {
+      content: '';
+      position: absolute; right: 0; top: 20%; bottom: 20%;
+      width: 1px;
+      background: var(--border);
+    }
+    .stat-card:last-child::after { display: none; }
+    .stat-num {
+      font-size: clamp(2.6rem, 5vw, 3.8rem);
+      font-weight: 900;
+      line-height: 1;
+      background: linear-gradient(135deg, var(--blue-lt), var(--blue));
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      background-clip: text;
+      margin-bottom: 8px;
+    }
+    .stat-label {
+      font-size: .95rem;
+      color: var(--muted);
+      font-weight: 500;
+    }
+
+    /* ─── MODES ─────────────────────────────────────────────── */
+    .modes-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+      gap: 20px;
+    }
+    .mode-card {
+      background: var(--card-bg);
+      border: 1px solid var(--border);
+      border-radius: var(--radius-lg);
+      padding: 32px 28px;
+      position: relative;
+      overflow: hidden;
+      transition: transform .25s, border-color .25s, box-shadow .25s;
+    }
+    .mode-card:hover {
+      transform: translateY(-6px);
+      border-color: var(--blue);
+      box-shadow: 0 16px 48px rgba(58,123,213,.22);
+    }
+    .mode-card::before {
+      content: '';
+      position: absolute; top: 0; left: 0; right: 0;
+      height: 3px;
+      background: linear-gradient(90deg, var(--blue), var(--blue-lt));
+      opacity: 0;
+      transition: opacity .25s;
+    }
+    .mode-card:hover::before { opacity: 1; }
+    .mode-card.ultra-only { border-color: rgba(245,166,35,.3); }
+    .mode-card.ultra-only::before { background: linear-gradient(90deg, var(--gold-dk), var(--gold)); }
+    .mode-card.ultra-only:hover {
+      border-color: var(--gold);
+      box-shadow: 0 16px 48px rgba(245,166,35,.2);
+    }
+    .mode-emoji { font-size: 2.4rem; margin-bottom: 14px; }
+    .mode-title { font-size: 1.2rem; font-weight: 700; margin-bottom: 8px; }
+    .mode-desc { color: var(--muted); font-size: .95rem; line-height: 1.55; }
+    .mode-badge-ultra {
+      display: inline-block; margin-top: 14px;
+      font-size: .7rem; font-weight: 700; letter-spacing: .08em;
+      text-transform: uppercase;
+      background: rgba(245,166,35,.12);
+      color: var(--gold);
+      border: 1px solid rgba(245,166,35,.3);
+      border-radius: 50px;
+      padding: 3px 12px;
+    }
+
+    /* ─── COMPARATIF ────────────────────────────────────────── */
+    .compare-wrap {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 24px;
+      max-width: 800px;
+      margin: 0 auto;
+    }
+    .compare-card {
+      background: var(--card-bg);
+      border: 1px solid var(--border);
+      border-radius: var(--radius-lg);
+      overflow: hidden;
+    }
+    .compare-card.featured {
+      border-color: var(--blue);
+      box-shadow: 0 0 0 1px var(--blue), 0 16px 48px rgba(58,123,213,.2);
+    }
+    .compare-head {
+      padding: 28px 28px 20px;
+      text-align: center;
+      border-bottom: 1px solid var(--border);
+    }
+    .compare-card.featured .compare-head {
+      background: linear-gradient(180deg, rgba(58,123,213,.15) 0%, transparent 100%);
+    }
+    .compare-plan { font-size: 1.3rem; font-weight: 800; margin-bottom: 6px; }
+    .compare-price { font-size: 2.2rem; font-weight: 900; line-height: 1; margin-bottom: 4px; }
+    .compare-price span { font-size: 1rem; font-weight: 400; color: var(--muted); vertical-align: middle; }
+    .compare-note { font-size: .82rem; color: var(--muted); }
+    .compare-features { padding: 24px 28px; }
+    .feature-row {
+      display: flex; align-items: flex-start; gap: 12px;
+      padding: 10px 0;
+      border-bottom: 1px solid rgba(255,255,255,.04);
+      font-size: .93rem;
+    }
+    .feature-row:last-child { border-bottom: none; }
+    .feat-icon { font-size: 1rem; margin-top: 1px; flex-shrink: 0; }
+    .feat-text { color: var(--text); }
+    .feat-text.muted { color: var(--muted); }
+    .compare-cta { padding: 0 28px 28px; text-align: center; }
+    .btn-buy {
+      display: inline-flex; align-items: center; gap: 8px;
+      width: 100%; justify-content: center;
+      background: linear-gradient(135deg, var(--blue), #2a5fb5);
+      color: #fff;
+      font-family: 'Outfit', sans-serif;
+      font-size: .98rem; font-weight: 700;
+      padding: 14px 24px;
+      border-radius: 50px;
+      border: none; cursor: pointer;
+      box-shadow: 0 6px 24px rgba(58,123,213,.35);
+      transition: transform .2s, box-shadow .2s;
+      text-decoration: none;
+    }
+    .btn-buy:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 12px 32px rgba(58,123,213,.5);
+    }
+    .btn-soon {
+      display: inline-flex; align-items: center; gap: 8px;
+      width: 100%; justify-content: center;
+      background: rgba(255,255,255,.05);
+      color: var(--muted);
+      font-family: 'Outfit', sans-serif;
+      font-size: .98rem; font-weight: 600;
+      padding: 14px 24px;
+      border-radius: 50px;
+      border: 1px solid var(--border);
+      cursor: default;
+    }
+
+    /* ─── CTA SECTION ───────────────────────────────────────── */
+    #cta-section {
+      padding: 100px 0;
+      text-align: center;
+      position: relative;
+      overflow: hidden;
+    }
+    #cta-section::before {
+      content: '';
+      position: absolute; inset: 0;
+      background: radial-gradient(ellipse 70% 70% at 50% 50%, rgba(58,123,213,.14) 0%, transparent 70%);
+      pointer-events: none;
+    }
+    .cta-box {
+      position: relative;
+      max-width: 620px;
+      margin: 0 auto;
+      background: var(--card-bg);
+      border: 1px solid var(--border);
+      border-radius: var(--radius-lg);
+      padding: 60px 40px;
+      box-shadow: 0 24px 80px rgba(0,0,0,.4);
+    }
+    .cta-box h2 { font-size: clamp(1.6rem, 3vw, 2.2rem); font-weight: 800; margin-bottom: 12px; }
+    .cta-box p { color: var(--muted); margin-bottom: 36px; font-size: 1rem; }
+    .price-display {
+      font-size: 3.2rem; font-weight: 900; line-height: 1;
+      background: linear-gradient(135deg, var(--gold), #f9c74f);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      background-clip: text;
+      margin-bottom: 8px;
+    }
+    .price-note { color: var(--muted); font-size: .88rem; margin-bottom: 32px; }
+    .guarantee-badges {
+      display: flex; flex-wrap: wrap; gap: 10px;
+      justify-content: center;
+      margin-top: 24px;
+    }
+    .g-badge {
+      font-size: .78rem; font-weight: 600;
+      color: var(--muted);
+      background: rgba(255,255,255,.04);
+      border: 1px solid var(--border);
+      border-radius: 50px;
+      padding: 5px 14px;
+      display: flex; align-items: center; gap: 6px;
+    }
+
+    /* ─── FOOTER ────────────────────────────────────────────── */
+    footer {
+      background: var(--bg3);
+      border-top: 1px solid var(--border);
+      padding: 48px 0;
+      text-align: center;
+    }
+    .footer-logo { font-size: 1.4rem; font-weight: 800; margin-bottom: 8px; }
+    .footer-logo span { color: var(--blue-lt); }
+    .footer-sub { color: var(--muted); font-size: .9rem; margin-bottom: 24px; }
+    .footer-links {
+      display: flex; flex-wrap: wrap; gap: 20px;
+      justify-content: center;
+      font-size: .88rem; color: var(--muted);
+      margin-bottom: 28px;
+    }
+    .footer-links a:hover { color: var(--blue-lt); }
+    .footer-copy { font-size: .8rem; color: rgba(139,174,200,.45); }
+
+    /* ─── RESPONSIVE ────────────────────────────────────────── */
+    @media (max-width: 640px) {
+      .compare-wrap { grid-template-columns: 1fr; }
+      .stat-card::after { display: none; }
+      .cta-box { padding: 40px 24px; }
+    }
+
+    /* ─── HIDE/SHOW LANGUAGE ────────────────────────────────── */
+    [data-fr] .en, [data-en] .fr { display: none !important; }
+  </style>
+</head>
+<body data-fr>
+
+<!-- LANGUAGE BAR -->
+<div id="lang-bar">
+  <div class="lang-switcher">
+    <button class="lang-btn active" id="btn-fr" onclick="setLang('fr')">🇫🇷 FR</button>
+    <button class="lang-btn" id="btn-en" onclick="setLang('en')">🇬🇧 EN</button>
+  </div>
+</div>
+
+<!-- HERO -->
+<section id="hero">
+  <div class="hero-inner">
+
+    <!-- Logo : chemin local pour preview, sera remplacé en base64 par embed_logo.ps1 -->
+    <img src="Phase4/Assets/logo ramai.png" alt="RAM-AI Logo" class="hero-logo"
+         onerror="this.style.display='none'; document.getElementById('logo-placeholder').style.display='flex';" />
+    <div id="logo-placeholder" class="hero-logo-placeholder" style="display:none;">⚡</div>
+
+    <div class="hero-badge">RAM-AI — Memory Intelligence</div>
+
+    <h1 class="hero-title">
+      <span class="fr">Libérez la puissance<br>de votre <span>mémoire</span>.</span>
+      <span class="en">Unleash the power<br>of your <span>memory</span>.</span>
+    </h1>
+
+    <p class="hero-tagline-fr fr">"Votre PC va enfin respirer."</p>
+    <p class="hero-tagline-en fr">"Your PC can finally breathe."</p>
+
+    <p class="hero-tagline-fr en">"Votre PC va enfin respirer."</p>
+    <p class="hero-tagline-en en" style="color:var(--gold); font-size:clamp(1.3rem,3vw,1.9rem); font-weight:700;">"Your PC can finally breathe."</p>
+
+    <a href="[LIEN_ACHAT]" class="cta-main">
+      <span class="fr">Obtenir RAM-AI Pro — 24,99€</span>
+      <span class="en">Get RAM-AI Pro — €24.99</span>
+      ⚡
+    </a>
+
+    <p class="cta-sub">
+      <span class="fr"><span>Achat unique</span> · Mises à jour incluses · Windows 10 / 11</span>
+      <span class="en"><span>One-time purchase</span> · Updates included · Windows 10 / 11</span>
+    </p>
+  </div>
+
+  <div class="scroll-hint">
+    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+      <path d="M12 5v14M5 12l7 7 7-7"/>
+    </svg>
+  </div>
+</section>
+
+<!-- STATS -->
+<section id="stats">
+  <div class="container">
+    <div class="stats-grid">
+      <div class="stat-card">
+        <div class="stat-num">100 Go+</div>
+        <div class="stat-label fr">libérés en moyenne</div>
+        <div class="stat-label en">freed on average</div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-num">5 000+</div>
+        <div class="stat-label fr">processus optimisés</div>
+        <div class="stat-label en">optimised processes</div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-num">800ms</div>
+        <div class="stat-label fr">cycle d'optimisation</div>
+        <div class="stat-label en">optimisation cycle</div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- MODES -->
+<section id="modes" class="section">
+  <div class="container">
+    <div class="center">
+      <span class="tag fr">Les Modes</span>
+      <span class="tag en">The Modes</span>
+      <h2 class="section-title">
+        <span class="fr">Une intelligence, six modes.</span>
+        <span class="en">One intelligence, six modes.</span>
+      </h2>
+      <p class="section-sub">
+        <span class="fr">RAM-AI s'adapte automatiquement à votre usage — jeu, IA, navigation ou compétition.</span>
+        <span class="en">RAM-AI automatically adapts to your usage — gaming, AI, browsing or competition.</span>
+      </p>
+    </div>
+
+    <div class="modes-grid">
+
+      <div class="mode-card">
+        <div class="mode-emoji">🎮</div>
+        <div class="mode-title fr">Mode Gaming</div>
+        <div class="mode-title en">Gaming Mode</div>
+        <p class="mode-desc fr">Détection automatique du jeu actif. Libération ciblée des ressources. Gain moyen de +19 places sur UserBenchmark.</p>
+        <p class="mode-desc en">Automatic detection of the active game. Targeted resource release. Average gain of +19 places on UserBenchmark.</p>
+      </div>
+
+      <div class="mode-card">
+        <div class="mode-emoji">🤖</div>
+        <div class="mode-title fr">Mode IA</div>
+        <div class="mode-title en">AI Mode</div>
+        <p class="mode-desc fr">Optimisé pour Claude, Ollama, LM Studio et tous vos modèles locaux. Plus de RAM disponible = inférences plus rapides.</p>
+        <p class="mode-desc en">Optimised for Claude, Ollama, LM Studio and all your local models. More available RAM = faster inference.</p>
+      </div>
+
+      <div class="mode-card">
+        <div class="mode-emoji">🌐</div>
+        <div class="mode-title fr">Mode Navigateur</div>
+        <div class="mode-title en">Browser Mode</div>
+        <p class="mode-desc fr">Compatible Chrome, Edge, Firefox, Brave. Priorise les onglets actifs et réduit l'empreinte mémoire globale.</p>
+        <p class="mode-desc en">Compatible with Chrome, Edge, Firefox, Brave. Prioritises active tabs and reduces overall memory footprint.</p>
+      </div>
+
+      <div class="mode-card">
+        <div class="mode-emoji">⚡</div>
+        <div class="mode-title fr">Mode Turbo</div>
+        <div class="mode-title en">Turbo Mode</div>
+        <p class="mode-desc fr">Libération massive en un seul clic. Idéal avant une session intensive ou un redémarrage rapide.</p>
+        <p class="mode-desc en">Massive release in a single click. Ideal before an intensive session or a quick restart.</p>
+      </div>
+
+      <div class="mode-card">
+        <div class="mode-emoji">🌿</div>
+        <div class="mode-title fr">Mode Éco</div>
+        <div class="mode-title en">Eco Mode</div>
+        <p class="mode-desc fr">Batterie détectée automatiquement. Optimisation douce qui préserve l'autonomie et réduit la chaleur.</p>
+        <p class="mode-desc en">Battery automatically detected. Gentle optimisation that preserves battery life and reduces heat.</p>
+      </div>
+
+      <div class="mode-card ultra-only">
+        <div class="mode-emoji">🏆</div>
+        <div class="mode-title fr">Mode Tournoi</div>
+        <div class="mode-title en">Tournament Mode</div>
+        <p class="mode-desc fr">Performances maximales pour la compétition. Gel des processus non essentiels, priorité absolue au jeu.</p>
+        <p class="mode-desc en">Maximum performance for competition. Non-essential processes frozen, absolute game priority.</p>
+        <div class="mode-badge-ultra fr">Ultra uniquement</div>
+        <div class="mode-badge-ultra en">Ultra only</div>
+      </div>
+
+    </div>
+  </div>
+</section>
+
+<!-- COMPARATIF -->
+<section id="compare" class="section section-alt">
+  <div class="container">
+    <div class="center">
+      <span class="tag fr">Nos Offres</span>
+      <span class="tag en">Our Plans</span>
+      <h2 class="section-title">
+        <span class="fr">Choisissez votre niveau.</span>
+        <span class="en">Choose your level.</span>
+      </h2>
+      <p class="section-sub">
+        <span class="fr">Pro pour l'essentiel, Ultra pour la domination.</span>
+        <span class="en">Pro for essentials, Ultra for total domination.</span>
+      </p>
+    </div>
+
+    <div class="compare-wrap">
+
+      <!-- PRO -->
+      <div class="compare-card featured">
+        <div class="compare-head">
+          <div class="compare-plan text-blue">RAM-AI Pro</div>
+          <div class="compare-price">24,99€<span class="fr"> / achat unique</span><span class="en"> / one-time</span></div>
+          <div class="compare-note fr">Mises à jour incluses à vie</div>
+          <div class="compare-note en">Lifetime updates included</div>
+        </div>
+        <div class="compare-features">
+          <div class="feature-row"><span class="feat-icon">✅</span><span class="feat-text fr">Mode Gaming</span><span class="feat-text en">Gaming Mode</span></div>
+          <div class="feature-row"><span class="feat-icon">✅</span><span class="feat-text fr">Mode IA (Claude, Ollama…)</span><span class="feat-text en">AI Mode (Claude, Ollama…)</span></div>
+          <div class="feature-row"><span class="feat-icon">✅</span><span class="feat-text fr">Mode Navigateur</span><span class="feat-text en">Browser Mode</span></div>
+          <div class="feature-row"><span class="feat-icon">✅</span><span class="feat-text fr">Mode Turbo</span><span class="feat-text en">Turbo Mode</span></div>
+          <div class="feature-row"><span class="feat-icon">✅</span><span class="feat-text fr">Mode Éco (batterie)</span><span class="feat-text en">Eco Mode (battery)</span></div>
+          <div class="feature-row"><span class="feat-icon">✅</span><span class="feat-text fr">Cycle 800ms temps réel</span><span class="feat-text en">800ms real-time cycle</span></div>
+          <div class="feature-row"><span class="feat-icon">✅</span><span class="feat-text fr">Tableau de bord RAM</span><span class="feat-text en">RAM dashboard</span></div>
+          <div class="feature-row"><span class="feat-icon">❌</span><span class="feat-text muted fr">Mode Tournoi</span><span class="feat-text muted en">Tournament Mode</span></div>
+          <div class="feature-row"><span class="feat-icon">❌</span><span class="feat-text muted fr">Profils compétition</span><span class="feat-text muted en">Competition profiles</span></div>
+        </div>
+        <div class="compare-cta">
+          <a href="[LIEN_ACHAT]" class="btn-buy">
+            <span class="fr">Obtenir Pro — 24,99€</span>
+            <span class="en">Get Pro — €24.99</span>
+            ⚡
+          </a>
+        </div>
+      </div>
+
+      <!-- ULTRA -->
+      <div class="compare-card">
+        <div class="compare-head">
+          <div class="compare-plan text-gold">RAM-AI Ultra</div>
+          <div class="compare-price" style="color:var(--gold);">
+            <span class="fr">Bientôt</span>
+            <span class="en">Coming<br>soon</span>
+          </div>
+          <div class="compare-note fr">Rejoignez la liste d'attente</div>
+          <div class="compare-note en">Join the waitlist</div>
+        </div>
+        <div class="compare-features">
+          <div class="feature-row"><span class="feat-icon">✅</span><span class="feat-text fr">Tout de Pro inclus</span><span class="feat-text en">Everything in Pro</span></div>
+          <div class="feature-row"><span class="feat-icon">🏆</span><span class="feat-text fr">Mode Tournoi exclusif</span><span class="feat-text en">Exclusive Tournament Mode</span></div>
+          <div class="feature-row"><span class="feat-icon">🏆</span><span class="feat-text fr">Profils compétition</span><span class="feat-text en">Competition profiles</span></div>
+          <div class="feature-row"><span class="feat-icon">🏆</span><span class="feat-text fr">Optimisation eSport avancée</span><span class="feat-text en">Advanced eSport optimisation</span></div>
+          <div class="feature-row"><span class="feat-icon">🏆</span><span class="feat-text fr">Support prioritaire</span><span class="feat-text en">Priority support</span></div>
+          <div class="feature-row"><span class="feat-icon">🏆</span><span class="feat-text fr">Accès bêta anticipé</span><span class="feat-text en">Early beta access</span></div>
+        </div>
+        <div class="compare-cta">
+          <div class="btn-soon">
+            <span class="fr">Bientôt disponible</span>
+            <span class="en">Coming soon</span>
+          </div>
+        </div>
+      </div>
+
+    </div>
+  </div>
+</section>
+
+<!-- CTA FINAL -->
+<section id="cta-section">
+  <div class="container">
+    <div class="cta-box">
+      <div class="tag fr">Offre de lancement</div>
+      <div class="tag en">Launch offer</div>
+
+      <h2>
+        <span class="fr">Prêt à libérer votre PC ?</span>
+        <span class="en">Ready to free your PC?</span>
+      </h2>
+      <p>
+        <span class="fr">Achat unique. Aucun abonnement. Mises à jour incluses.</span>
+        <span class="en">One-time purchase. No subscription. Updates included.</span>
+      </p>
+
+      <div class="price-display">24,99€</div>
+      <div class="price-note fr">Achat unique — valable à vie</div>
+      <div class="price-note en">One-time purchase — yours for life</div>
+
+      <a href="[LIEN_ACHAT]" class="cta-main" style="width:100%; justify-content:center;">
+        <span class="fr">Obtenir RAM-AI Pro maintenant</span>
+        <span class="en">Get RAM-AI Pro now</span>
+        ⚡
+      </a>
+
+      <div class="guarantee-badges">
+        <span class="g-badge">🔒 <span class="fr">Paiement sécurisé</span><span class="en">Secure payment</span></span>
+        <span class="g-badge">♻️ <span class="fr">Achat unique</span><span class="en">One-time purchase</span></span>
+        <span class="g-badge">🔄 <span class="fr">Mises à jour incluses</span><span class="en">Updates included</span></span>
+        <span class="g-badge">💻 Windows 10 / 11</span>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- FOOTER -->
+<footer>
+  <div class="container">
+    <div class="footer-logo">RAM-<span>AI</span></div>
+    <div class="footer-sub fr">Memory Intelligence — Achat unique, mises à jour incluses.</div>
+    <div class="footer-sub en">Memory Intelligence — One-time purchase, updates included.</div>
+    <div class="footer-links">
+      <a href="[LIEN_ACHAT]" class="fr">Acheter</a>
+      <a href="[LIEN_ACHAT]" class="en">Buy</a>
+      <a href="mailto:contact@ram-ai.fr" class="fr">Contact</a>
+      <a href="mailto:contact@ram-ai.fr" class="en">Contact</a>
+      <a href="#" class="fr">Politique de confidentialité</a>
+      <a href="#" class="en">Privacy policy</a>
+      <a href="#" class="fr">CGV</a>
+      <a href="#" class="en">Terms</a>
+    </div>
+    <div class="footer-copy">© 2026 RAM-AI. <span class="fr">Tous droits réservés.</span><span class="en">All rights reserved.</span></div>
+  </div>
+</footer>
+
+<!-- SCRIPT LANGUE -->
+<script>
+  function setLang(lang) {
+    const body = document.body;
+    body.removeAttribute('data-fr');
+    body.removeAttribute('data-en');
+    body.setAttribute('data-' + lang, '');
+    document.documentElement.lang = lang;
+    document.getElementById('btn-fr').classList.toggle('active', lang === 'fr');
+    document.getElementById('btn-en').classList.toggle('active', lang === 'en');
+    localStorage.setItem('ramai-lang', lang);
+  }
+  (function() {
+    const saved = localStorage.getItem('ramai-lang');
+    if (saved && saved !== 'fr') setLang(saved);
+  })();
+</script>
+
+</body>
+</html>

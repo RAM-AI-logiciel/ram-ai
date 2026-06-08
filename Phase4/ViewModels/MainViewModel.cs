@@ -59,6 +59,11 @@ public sealed partial class MainViewModel : ObservableObject
     // ── Baseline RAM ──────────────────────────────────────────────────────────
     private long _baselineRamUsedMb;
 
+    // ── Stats persistées ──────────────────────────────────────────────────────
+    private readonly StatsService _statsService = new();
+    private readonly StatsData    _stats;
+    private readonly DateTime     _sessionStart = DateTime.Now;
+
     // ── Dossier partagé Phase3 ↔ Phase4 ───────────────────────────────────────
     private static readonly string SharedFlagDir =
         Path.Combine(
@@ -106,6 +111,18 @@ public sealed partial class MainViewModel : ObservableObject
         _baselineRamUsedMb = usedMb;
         CurrentRamUsedGb   = usedMb / 1024.0;
 
+        // Charger les stats persistées et réinitialiser les compteurs du jour si besoin
+        _stats = _statsService.Load();
+        var todayKey = DateTime.Today.ToString("yyyy-MM-dd");
+        if (_stats.TodayDate != todayKey)
+        {
+            _stats.TodayDate               = todayKey;
+            _stats.TodayRamFreedGb         = 0.0;
+            _stats.TodayProcessesOptimized = 0;
+        }
+        // Incrémenter le compteur de sessions
+        _stats.TotalSessions++;
+
         var __ = EnsurePhase3RunningAsync();
         var _  = RefreshLoop();
     }
@@ -133,8 +150,16 @@ public sealed partial class MainViewModel : ObservableObject
             {
                 TotalMbSaved   += entry.PhysicalMbFreed;
                 TotalRamFreedGb = TotalMbSaved / 1024.0;
+
+                // Accumuler dans les stats persistées
+                double freedGb = entry.PhysicalMbFreed / 1024.0;
+                _stats.TotalRamFreedGb   += freedGb;
+                _stats.TodayRamFreedGb   += freedGb;
             }
-            ProcessesOptimized += entry.ColdEvicted + entry.AiProcessesOptimized;
+            long procsThisTick = entry.ColdEvicted + entry.AiProcessesOptimized;
+            ProcessesOptimized            += procsThisTick;
+            _stats.TotalProcessesOptimized += procsThisTick;
+            _stats.TodayProcessesOptimized += procsThisTick;
             LastUpdateText      = entry.Timestamp.ToLocalTime().ToString("HH:mm:ss");
 
             IsGamingModeActive = entry.IsGamingMode || ForceGamingMode;
@@ -418,6 +443,68 @@ public sealed partial class MainViewModel : ObservableObject
         }
         catch { }
     }
+
+    // ── Rapport ───────────────────────────────────────────────────────────────
+
+    /// <summary>
+    /// Génère un fichier rapport.txt dans C:\ProgramData\RAM-AI\ et l'ouvre
+    /// dans le Bloc-notes Windows. Aucune fenêtre supplémentaire dans l'app.
+    /// </summary>
+    [RelayCommand]
+    private void GenerateReport()
+    {
+        try
+        {
+            var now      = DateTime.Now;
+            var elapsed  = now - _sessionStart;
+            int hours    = (int)elapsed.TotalHours;
+            int minutes  = elapsed.Minutes;
+
+            double avgRamPerSession = _stats.TotalSessions > 0
+                ? _stats.TotalRamFreedGb / _stats.TotalSessions
+                : 0.0;
+
+            string report =
+                $"================================\r\n" +
+                $"RAM-AI — Rapport\r\n" +
+                $"Généré le : {now:dd/MM/yyyy HH:mm:ss}\r\n" +
+                $"================================\r\n" +
+                $"\r\n" +
+                $"── RAPPORT DU JOUR ──\r\n" +
+                $"RAM récupérée aujourd'hui       : {_stats.TodayRamFreedGb:F2} Go\r\n" +
+                $"Processus optimisés aujourd'hui : {_stats.TodayProcessesOptimized:N0}\r\n" +
+                $"Durée d'utilisation aujourd'hui : {hours}h {minutes:D2}m\r\n" +
+                $"\r\n" +
+                $"── RAPPORT GLOBAL (depuis le 1er lancement) ──\r\n" +
+                $"RAM récupérée au total          : {_stats.TotalRamFreedGb:F2} Go\r\n" +
+                $"Processus optimisés au total    : {_stats.TotalProcessesOptimized:N0}\r\n" +
+                $"Nombre de sessions              : {_stats.TotalSessions}\r\n" +
+                $"Moyenne RAM / session           : {avgRamPerSession:F2} Go\r\n" +
+                $"Date du 1er lancement           : {_stats.FirstLaunch.ToLocalTime():dd/MM/yyyy HH:mm}\r\n" +
+                $"\r\n" +
+                $"================================\r\n" +
+                $"RAM-AI v1.0 — {now:dd/MM/yyyy}\r\n" +
+                $"================================\r\n";
+
+            string dir  = Path.Combine(
+                Environment.GetFolderPath(Environment.SpecialFolder.CommonApplicationData),
+                "RAM-AI");
+            string path = Path.Combine(dir, $"rapport_{now:yyyyMMdd_HHmmss}.txt");
+
+            Directory.CreateDirectory(dir);
+            File.WriteAllText(path, report, System.Text.Encoding.UTF8);
+
+            // Ouvrir dans le Bloc-notes Windows
+            Process.Start(new ProcessStartInfo("notepad.exe", $"\"{path}\"")
+            {
+                UseShellExecute = true,
+            });
+        }
+        catch { }
+    }
+
+    /// <summary>Sauvegarde les stats persistées. Appelé par App.xaml.cs à la fermeture.</summary>
+    public void SaveStats() => _statsService.Save(_stats);
 
     private static void RunSc(string args)
     {

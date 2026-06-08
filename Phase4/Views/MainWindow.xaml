@@ -172,6 +172,11 @@
                             Style="{StaticResource ToolBtn}"
                             Command="{Binding OpenLicenseCommand}"
                             Margin="0,0,6,0"/>
+                    <Button Content="📄 Rapport"
+                            Style="{StaticResource ToolBtn}"
+                            Command="{Binding GenerateReportCommand}"
+                            ToolTip="Générer un rapport .txt et l'ouvrir dans le Bloc-notes"
+                            Margin="0,0,6,0"/>
                     <Button Content="▶"
                             Style="{StaticResource ToolBtn}"
                             Command="{Binding StartServiceCommand}"

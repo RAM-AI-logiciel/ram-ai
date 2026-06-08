@@ -183,6 +183,15 @@ internal static class NativeMemory
             : 0L;
     }
 
+    /// <summary>Retourne la RAM physique totale en Mo. 0 en cas d'erreur.</summary>
+    internal static long GetTotalPhysicalMb()
+    {
+        var ms = new MEMORYSTATUSEX { dwLength = (uint)Marshal.SizeOf<MEMORYSTATUSEX>() };
+        return GlobalMemoryStatusEx(ref ms)
+            ? (long)(ms.ullTotalPhys / (1024UL * 1024UL))
+            : 0L;
+    }
+
     // ── Structs ───────────────────────────────────────────────────────────────
 
     [StructLayout(LayoutKind.Sequential)]

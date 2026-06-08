@@ -35,7 +35,10 @@ internal sealed class MemoryOrchestrator : IDisposable
     private const long  AiWsThresholdMb      =   10L;  // seuil WS minimum pour évincer un processus IA
 
     // ── Mode Tournoi (Ultra — performances gaming absolues) ──────────────────
-    private const int TournamentIntervalMs = 300;  // agressif : 300ms
+    private const int   TournamentIntervalMs      = 500;   // anti-stutter : 500ms (300ms causait des drops FPS)
+    private const float TournamentRamThresholdPct = 0.25f; // n'agir que si RAM dispo < 25% du total
+    private const float TournamentEmergencyPct    = 0.15f; // Turbo d'urgence si dispo < 15%
+    private const float TournamentMaxReleasePct   = 0.10f; // libérer max 10% de la RAM récupérable par cycle
 
     // ── Optimisation prédictive (Ultra) ───────────────────────────────────────
     private const int  PredictiveHistorySize          = 10;
@@ -180,6 +183,25 @@ internal sealed class MemoryOrchestrator : IDisposable
         new(StringComparer.OrdinalIgnoreCase)
         {
             "nvcontainer", "nvdisplay.container",
+        };
+
+    // ── Processus JAMAIS évincés en mode Tournoi ──────────────────────────────
+    // Anti-cheat : leur WS ne doit jamais être touché sous peine de ban/kick.
+    // Overlays   : Discord, Steam, GFE doivent rester réactifs pendant le jeu.
+    private static readonly HashSet<string> TournamentProtectedProcesses =
+        new(StringComparer.OrdinalIgnoreCase)
+        {
+            // Anti-cheat
+            "EasyAntiCheat", "EasyAntiCheat_EOS", "EasyAntiCheat_launcher",
+            "BEService", "BEDaisy", "BattlEye",
+            // Valve / Steam
+            "steam", "steamwebhelper", "gameoverlayui",
+            // Discord (toutes variantes)
+            "Discord", "DiscordPTB", "DiscordCanary",
+            // NVIDIA GeForce Experience / overlay
+            "NVIDIA GeForce Experience", "nvcontainer", "nvdisplay.container",
+            "NvNode", "NvNodeLauncher", "NvTelemetryContainer",
+            "GfeClientsService",
         };
 
     // ── État gaming ───────────────────────────────────────────────────────────
@@ -378,14 +400,18 @@ internal sealed class MemoryOrchestrator : IDisposable
             if (_tournamentModeActive)
             {
                 _intervalMs = TournamentIntervalMs;
-                _log.LogInformation("[TOURNOI] Mode Tournoi ON — intervalle {I}ms, procs illimités, priorité High",
-                    TournamentIntervalMs);
-                Console.WriteLine($"[RAM-AI] 🏆 MODE TOURNOI ON (intervalle={TournamentIntervalMs}ms)");
+                // Abaisser la priorité du service RAM-AI pour que le jeu obtienne
+                // un maximum de temps CPU (le jeu est déjà élevé à High ci-dessus).
+                try { Process.GetCurrentProcess().PriorityClass = ProcessPriorityClass.BelowNormal; } catch { }
+                _log.LogInformation("[TOURNOI] Mode Tournoi ON — intervalle {I}ms, priorité BelowNormal, seuil {T:P0}",
+                    TournamentIntervalMs, TournamentRamThresholdPct);
+                Console.WriteLine($"[RAM-AI] 🏆 MODE TOURNOI ON (intervalle={TournamentIntervalMs}ms, seuil RAM={TournamentRamThresholdPct:P0})");
                 _events.WriteMarker("TOURNAMENT MODE ON");
             }
             else
             {
                 UpdateInterval();
+                try { Process.GetCurrentProcess().PriorityClass = ProcessPriorityClass.BelowNormal; } catch { }
                 _log.LogInformation("[TOURNOI] Mode Tournoi OFF — retour intervalle {I}ms", _intervalMs);
                 Console.WriteLine($"[RAM-AI] 🏆 MODE TOURNOI OFF (intervalle={_intervalMs}ms)");
                 _events.WriteMarker("TOURNAMENT MODE OFF");
@@ -453,7 +479,7 @@ internal sealed class MemoryOrchestrator : IDisposable
             }
 
             // 2. Traiter les autres processus
-            //    Mode Tournoi : illimité + profil par jeu
+            //    Mode Tournoi : illimité + profil par jeu, mais avec seuil RAM et cap
             //    Mode normal  : limité à MaxProcsPerCycle + profil par jeu
             LoadGamingProfilesIfNeeded();
             var profile  = GetGameProfile(_currentGame);
@@ -464,19 +490,81 @@ internal sealed class MemoryOrchestrator : IDisposable
             if (profile is not null && !_tournamentModeActive)
                 _log.LogInformation("[Ultra] Profil jeu '{G}' : maxProcs={M}", _currentGame, maxProcs);
 
-            var limited = (maxProcs == int.MaxValue ? otherProcs : otherProcs.Take(maxProcs)).ToList();
-            if (maxProcs != int.MaxValue)
+            // ── Vérification seuil RAM pour le mode Tournoi ──────────────────
+            bool skipTournamentEviction = false;
+            long tournamentCapMb        = long.MaxValue; // cap de libération par cycle
+
+            if (_tournamentModeActive)
+            {
+                long totalMb   = NativeMemory.GetTotalPhysicalMb();
+                long availMb   = NativeMemory.GetAvailablePhysicalMb();
+                float availPct = totalMb > 0 ? (float)availMb / totalMb : 0f;
+
+                if (availPct < TournamentEmergencyPct)
+                {
+                    // Urgence < 15% : Turbo immédiat sur tous les processus non-protégés
+                    _log.LogWarning("[TOURNOI] 🚨 URGENCE RAM {P:P0} < {E:P0} — Turbo d'urgence", availPct, TournamentEmergencyPct);
+                    Console.WriteLine($"[RAM-AI] 🚨 TOURNOI URGENCE : RAM {availPct:P0} < 15% → Turbo d'urgence !");
+                    _events.WriteMarker($"TOURNAMENT EMERGENCY TURBO — avail={availMb}Mo ({availPct:P0})");
+                    foreach (var ep in otherProcs)
+                    {
+                        try
+                        {
+                            if (!TournamentProtectedProcesses.Contains(ep.ProcessName))
+                            {
+                                long freed = EvictTurbo(ep);
+                                if (freed >= 0) { Interlocked.Increment(ref coldEvicted); Interlocked.Add(ref mbSaved, freed); gamingProcessed++; }
+                            }
+                        }
+                        catch { }
+                        finally { try { ep.Dispose(); } catch { } }
+                    }
+                    otherProcs.Clear();
+                    skipTournamentEviction = true;
+                }
+                else if (availPct >= TournamentRamThresholdPct)
+                {
+                    // RAM suffisante (≥ 25%) : pas besoin d'agir → zéro stutter
+                    _log.LogDebug("[TOURNOI] RAM dispo {P:P0} ≥ {T:P0} — cycle sauté", availPct, TournamentRamThresholdPct);
+                    Console.WriteLine($"[RAM-AI] 🏆 Tournoi: RAM {availPct:P0} OK — cycle sauté (anti-stutter)");
+                    foreach (var dp in otherProcs) try { dp.Dispose(); } catch { }
+                    otherProcs.Clear();
+                    skipTournamentEviction = true;
+                }
+                else
+                {
+                    // Entre 15% et 25% : libérer au maximum 10% de la RAM récupérable
+                    long reclaimableMb = (long)(totalMb * TournamentRamThresholdPct) - availMb;
+                    tournamentCapMb    = Math.Max(0L, (long)(reclaimableMb * TournamentMaxReleasePct));
+                    _log.LogInformation("[TOURNOI] RAM {P:P0} — cap libération = {C}Mo ce cycle", availPct, tournamentCapMb);
+                    Console.WriteLine($"[RAM-AI] 🏆 Tournoi: RAM {availPct:P0}, libération plafonnée à {tournamentCapMb}Mo");
+                }
+            }
+
+            var limited = skipTournamentEviction
+                ? new List<Process>()
+                : (maxProcs == int.MaxValue ? otherProcs : otherProcs.Take(maxProcs)).ToList();
+            if (!skipTournamentEviction && maxProcs != int.MaxValue)
                 foreach (var p in otherProcs.Skip(maxProcs)) try { p.Dispose(); } catch { }
 
             const int batchSize = 5;
+            long tournamentMbThisCycle = 0L;
+
             for (int i = 0; i < limited.Count; i += batchSize)
             {
+                // Mode Tournoi : arrêter si le cap de libération est atteint
+                if (_tournamentModeActive && tournamentMbThisCycle >= tournamentCapMb) break;
+
                 int end = Math.Min(i + batchSize, limited.Count);
                 for (int j = i; j < end; j++)
                 {
                     using var proc = limited[j];
                     try
                     {
+                        // Mode Tournoi : ne jamais toucher les processus protégés
+                        if (_tournamentModeActive && TournamentProtectedProcesses.Contains(proc.ProcessName))
+                            continue;
+
                         proc.Refresh();
                         float prob = Predict(proc);
                         long freed = EvictProcess(proc, prob, storeToColdCache: prob < coldThreshold);
@@ -484,6 +572,7 @@ internal sealed class MemoryOrchestrator : IDisposable
                         {
                             Interlocked.Increment(ref coldEvicted);
                             Interlocked.Add(ref mbSaved, freed);
+                            if (_tournamentModeActive) tournamentMbThisCycle += freed;
                         }
                         gamingProcessed++;
                     }
@@ -763,7 +852,9 @@ internal sealed class MemoryOrchestrator : IDisposable
         // ce bloc est ignoré pour permettre la désactivation du mode gaming.
         // Sans cette condition, un processus lourd quelconque (Chrome, VS Code…) empêcherait
         // la désactivation car il maintiendrait la détection "auto" en vie indéfiniment.
-        if (!_gamingModeActive && flagContent == "auto")
+        // En mode Tournoi, on ne veut pas que la détection auto >1Go
+        // interfère — le mode gaming est déjà actif et contrôlé manuellement.
+        if (!_gamingModeActive && !_tournamentModeActive && flagContent == "auto")
         {
             foreach (var p in procs)
             {

@@ -109,6 +109,7 @@ public partial class App : Application
 
     private void ExitApp()
     {
+        MainVm?.SaveCurrentSession();
         _tray?.Dispose();
         LogWatcher.Dispose();
         Shutdown();

@@ -91,8 +91,9 @@ public sealed partial class MainViewModel : ObservableObject
     private static readonly string TournamentFlagPath = Path.Combine(SharedFlagDir, "tournament_mode.force");
 
     // ── Services ──────────────────────────────────────────────────────────────
-    private readonly LogWatcherService _logWatcher;
-    private readonly LicenseService    _licenseService;
+    private readonly LogWatcherService   _logWatcher;
+    private readonly LicenseService      _licenseService;
+    private readonly SessionHistoryService _sessionHistory = new();
 
     public MainViewModel(LogWatcherService logWatcher, LicenseService licenseService)
     {
@@ -551,6 +552,9 @@ public sealed partial class MainViewModel : ObservableObject
             string path     = Path.Combine(SharedFlagDir, fileName);
             File.WriteAllText(path, content, System.Text.Encoding.UTF8);
 
+            // Sauvegarder la session dans l'historique au moment du rapport
+            SaveCurrentSession();
+
             Console.WriteLine($"[RAM-AI] Rapport généré : {path}");
 
             // Ouvrir le fichier dans le Bloc-notes
@@ -562,6 +566,36 @@ public sealed partial class MainViewModel : ObservableObject
             MessageBox.Show($"Impossible de générer le rapport :\n{ex.Message}",
                 "RAM-AI", MessageBoxButton.OK, MessageBoxImage.Error);
         }
+    }
+
+    /// <summary>Sauvegarde la session courante dans sessions.json.</summary>
+    public void SaveCurrentSession()
+    {
+        if (TotalRamFreedGb <= 0 && ProcessesOptimized <= 0) return; // session vide, ne pas enregistrer
+
+        string mode = IsTournamentModeActive ? "Tournoi"
+                    : IsGamingModeActive     ? "Gaming"
+                    : IsAiModeActive         ? "IA"
+                    : IsBrowserModeActive    ? "Navigateur"
+                    : IsEcoModeActive        ? "Éco"
+                    :                          "Standard";
+
+        _sessionHistory.Append(new Models.SessionRecord
+        {
+            StartTime          = _sessionStart,
+            DurationSeconds    = (long)(DateTime.Now - _sessionStart).TotalSeconds,
+            RamFreedGb         = TotalRamFreedGb,
+            ProcessesOptimized = ProcessesOptimized,
+            ActiveMode         = mode,
+            VramInfo           = VramInfoText,
+        });
+    }
+
+    [RelayCommand]
+    private void ShowAverageReport()
+    {
+        var win = new Views.AverageReportWindow { Owner = Application.Current.MainWindow };
+        win.ShowDialog();
     }
 
     private static void RunSc(string args)

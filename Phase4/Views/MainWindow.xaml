@@ -2,8 +2,8 @@
         xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
         Title="RAM-AI — Memory Intelligence"
-        Width="760" Height="460"
-        MinWidth="620" MinHeight="380"
+        Width="1100" Height="460"
+        MinWidth="1100" MinHeight="380"
         Background="#0D1117"
         Foreground="#E6EDF3"
         FontFamily="Segoe UI">
@@ -17,9 +17,9 @@
             <Setter Property="Foreground"      Value="#E6EDF3"/>
             <Setter Property="BorderBrush"     Value="#30363D"/>
             <Setter Property="BorderThickness" Value="1"/>
-            <Setter Property="Padding"         Value="12,6"/>
+            <Setter Property="Padding"         Value="8,4"/>
             <Setter Property="Cursor"          Value="Hand"/>
-            <Setter Property="FontSize"        Value="12"/>
+            <Setter Property="FontSize"        Value="11"/>
             <Setter Property="Template">
                 <Setter.Value>
                     <ControlTemplate TargetType="Button">
@@ -108,12 +108,12 @@
                                Foreground="#8B949E" VerticalAlignment="Center"/>
                 </StackPanel>
 
-                <!-- Contrôles à droite -->
+                <!-- Contrôles à droite — ordre : Badge Ultra | Rapport | Licence | ▶ | ■ | Turbo | Tournoi | VRAM | Forcer Gaming -->
                 <StackPanel Grid.Column="2" Orientation="Horizontal"
-                            VerticalAlignment="Center" Margin="0,0,8,0">
+                            VerticalAlignment="Center" Margin="0,0,6,0">
 
-                    <!-- Badge licence : violet/doré si Ultra, bleu sinon -->
-                    <Border Margin="0,0,8,0">
+                    <!-- 1. Badge licence : violet/doré si Ultra, bleu sinon -->
+                    <Border Margin="0,0,6,0">
                         <Border.Style>
                             <Style TargetType="Border" BasedOn="{StaticResource LicenseBadge}">
                                 <Style.Triggers>
@@ -168,46 +168,53 @@
                         </StackPanel>
                     </Border>
 
-                    <Button Content="🔑 Licence"
-                            Style="{StaticResource ToolBtn}"
-                            Command="{Binding OpenLicenseCommand}"
-                            Margin="0,0,6,0"/>
+                    <!-- 2. Rapport -->
                     <Button Content="📄 Rapport"
                             Style="{StaticResource ToolBtn}"
                             Command="{Binding GenerateReportCommand}"
-                            ToolTip="Générer un rapport .txt et l'ouvrir dans le Bloc-notes"
-                            Margin="0,0,6,0"/>
+                            ToolTip="Générer un rapport détaillé .txt dans le Bloc-notes"
+                            Margin="0,0,4,0"/>
+
+                    <!-- 3. Licence -->
+                    <Button Content="🔑 Licence"
+                            Style="{StaticResource ToolBtn}"
+                            Command="{Binding OpenLicenseCommand}"
+                            Margin="0,0,4,0"/>
+
+                    <!-- 4. Démarrer service -->
                     <Button Content="▶"
                             Style="{StaticResource ToolBtn}"
                             Command="{Binding StartServiceCommand}"
-                            Foreground="#3FB950" Margin="0,0,4,0"
+                            Foreground="#3FB950" Margin="0,0,3,0"
                             ToolTip="Démarrer le service Phase 3"/>
+
+                    <!-- 5. Arrêter service -->
                     <Button Content="■"
                             Style="{StaticResource ToolBtn}"
                             Command="{Binding StopServiceCommand}"
-                            Foreground="#E94560" Margin="0,0,8,0"
+                            Foreground="#E94560" Margin="0,0,4,0"
                             ToolTip="Arrêter le service Phase 3"/>
 
-                    <!-- Bouton Turbo -->
+                    <!-- 6. Turbo -->
                     <Button Content="⚡ Turbo"
                             Style="{StaticResource ToolBtn}"
                             Command="{Binding TurboCommand}"
                             Foreground="#E94560"
                             ToolTip="Optimisation Turbo : vide le working set de TOUS les processus en une passe"
-                            Margin="0,0,6,0"/>
+                            Margin="0,0,4,0"/>
 
-                    <!-- Bouton Mode Tournoi — Ultra uniquement -->
+                    <!-- 7. Mode Tournoi — Ultra uniquement -->
                     <Button Command="{Binding ToggleTournamentModeCommand}"
-                            Margin="0,0,6,0"
+                            Margin="0,0,4,0"
                             ToolTip="Mode Tournoi Ultra : 500ms, priorité BelowNormal, éviction progressive"
                             Visibility="{Binding IsUltraModeActive, Converter={StaticResource BoolToVis}}">
                         <Button.Style>
                             <Style TargetType="Button" BasedOn="{StaticResource ToolBtn}">
-                                <Setter Property="Content"     Value="🏆 Tournoi"/>
-                                <Setter Property="Foreground"  Value="#C084FC"/>
+                                <Setter Property="Content"    Value="🏆 Tournoi"/>
+                                <Setter Property="Foreground" Value="#C084FC"/>
                                 <Style.Triggers>
                                     <DataTrigger Binding="{Binding IsTournamentModeActive}" Value="True">
-                                        <Setter Property="Content"    Value="🏆 Tournoi ON"/>
+                                        <Setter Property="Content"    Value="🏆 ON"/>
                                         <Setter Property="Foreground" Value="#D4AF37"/>
                                         <Setter Property="Background" Value="#1A0A2E"/>
                                     </DataTrigger>
@@ -216,26 +223,26 @@
                         </Button.Style>
                     </Button>
 
-                    <!-- Indicateur VRAM — Ultra uniquement -->
+                    <!-- 8. Indicateur VRAM — Ultra uniquement -->
                     <TextBlock Text="{Binding VramInfoText}"
-                               FontSize="11" Foreground="#7C3AED"
-                               VerticalAlignment="Center" Margin="0,0,8,0"
+                               FontSize="10" Foreground="#7C3AED"
+                               VerticalAlignment="Center" Margin="0,0,6,0"
                                Visibility="{Binding IsUltraModeActive, Converter={StaticResource BoolToVis}}"/>
 
-                    <!-- Bouton bascule Mode Gaming FORCÉ -->
+                    <!-- 9. Forcer Gaming -->
                     <Button Style="{StaticResource GamingBtn}"
                             Command="{Binding ToggleForceGamingModeCommand}"
-                            ToolTip="Forcer / désactiver le Mode Gaming manuellement (indépendant de la détection auto)">
+                            ToolTip="Forcer / désactiver le Mode Gaming manuellement">
                         <Button.Content>
                             <StackPanel Orientation="Horizontal">
-                                <TextBlock Text="🎮 " FontSize="12"/>
-                                <TextBlock FontSize="12">
+                                <TextBlock Text="🎮 " FontSize="11"/>
+                                <TextBlock FontSize="11">
                                     <TextBlock.Style>
                                         <Style TargetType="TextBlock">
-                                            <Setter Property="Text" Value="Forcer Gaming"/>
+                                            <Setter Property="Text" Value="Gaming"/>
                                             <Style.Triggers>
                                                 <DataTrigger Binding="{Binding ForceGamingMode}" Value="True">
-                                                    <Setter Property="Text" Value="Gaming FORCÉ ✓"/>
+                                                    <Setter Property="Text" Value="Gaming ✓"/>
                                                 </DataTrigger>
                                             </Style.Triggers>
                                         </Style>

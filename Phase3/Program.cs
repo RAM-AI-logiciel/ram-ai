@@ -62,8 +62,8 @@ static void Install()
 
     RunSc($"description \"{ServiceName}\" \"{ServiceDesc}\"");
 
-    // Recovery: restart after 1st and 2nd failure; no action on 3rd+
-    RunSc($"failure \"{ServiceName}\" reset= 86400 actions= restart/5000/restart/10000//");
+    // Recovery: restart after 1st (5s), 2nd (10s), and 3rd+ failures (30s)
+    RunSc($"failure \"{ServiceName}\" reset= 86400 actions= restart/5000/restart/10000/restart/30000");
 
     Console.WriteLine("Starting service …");
     RunSc($"start \"{ServiceName}\"");

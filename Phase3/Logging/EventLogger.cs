@@ -32,7 +32,13 @@ internal sealed class EventLogger : IDisposable
         _writer = new StreamWriter(
             new FileStream(logPath, FileMode.Append, FileAccess.Write,
                            FileShare.ReadWrite, 65536, FileOptions.WriteThrough),
-            Encoding.UTF8);
+            Encoding.UTF8)
+        {
+            // AutoFlush garantit que chaque WriteLine traverse le buffer .NET
+            // et atteint le FileStream (WriteThrough l'écrit ensuite directement sur disque).
+            // Sans AutoFlush, Phase4 LogWatcher manquait des entrées entre les Flush.
+            AutoFlush = true,
+        };
 
         AppendLine(new { marker = "SERVICE_START", timestamp = DateTime.UtcNow });
     }

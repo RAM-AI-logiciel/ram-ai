@@ -30,16 +30,11 @@ public sealed class LogWatcherService : IDisposable
     {
         _logPath = logPath;
 
-        // ── Diagnostics démarrage ─────────────────────────────────────────────
-        Console.WriteLine("[Phase4] Surveillance : " + _logPath);
-        Console.WriteLine("[Phase4] Fichier existe : " + File.Exists(_logPath));
-
         if (File.Exists(logPath))
         {
             long len = new FileInfo(logPath).Length;
-            // Pré-charger les 100 dernières Ko
+            // Démarrer depuis les 100 dernières Ko pour afficher l'historique récent
             _readPosition = Math.Max(0L, len - 100 * 1024L);
-            Console.WriteLine($"[Phase4] Taille initiale : {len} octets | lecture depuis : {_readPosition}");
         }
 
         // dueTime = 0 : premier poll immédiat
@@ -48,16 +43,7 @@ public sealed class LogWatcherService : IDisposable
 
     private void Poll(object? _)
     {
-        // ── 1. Vérifier existence du fichier ─────────────────────────────────
-        if (!File.Exists(_logPath))
-        {
-            Console.WriteLine("[Phase4] ATTENTION : events.log introuvable → " + _logPath);
-            return;
-        }
-
-        // ── 2. Log taille à chaque poll ───────────────────────────────────────
-        long fileSize = new FileInfo(_logPath).Length;
-        Console.WriteLine("[Phase4] Poll events.log - taille: " + fileSize + " | pos: " + _readPosition);
+        if (!File.Exists(_logPath)) return;
 
         try
         {
@@ -67,10 +53,8 @@ public sealed class LogWatcherService : IDisposable
             // Fichier tronqué / recyclé → reprendre depuis le début
             if (fs.Length < _readPosition) _readPosition = 0;
 
-            // Pas de nouvelles données
             if (fs.Length == _readPosition) return;
 
-            // Seek AVANT la création du StreamReader
             fs.Seek(_readPosition, SeekOrigin.Begin);
             using var reader = new StreamReader(fs, leaveOpen: true);
 
@@ -78,42 +62,20 @@ public sealed class LogWatcherService : IDisposable
             while ((line = reader.ReadLine()) != null)
             {
                 if (string.IsNullOrWhiteSpace(line)) continue;
-
-                // Ignorer les marqueurs (SERVICE_START, GAMING MODE ON, etc.)
                 if (line.Contains("\"marker\"", StringComparison.Ordinal)) continue;
-
-                // ── 3. Log de chaque ligne lue ────────────────────────────────
-                Console.WriteLine("[Phase4] Ligne lue : " + line[..Math.Min(200, line.Length)]);
 
                 try
                 {
                     var entry = JsonSerializer.Deserialize<EventEntry>(line, JsonOpts);
                     if (entry is null || entry.Timestamp == default) continue;
-
-                    // ── 4. Log spécifique selon le mode actif ─────────────────
-                    if (entry.IsGamingMode)
-                        Console.WriteLine("[Phase4] EVENT gaming reçu : IsGamingMode=True GameName='" + entry.GameName + "'");
-
-                    if (entry.IsBrowserMode)
-                        Console.WriteLine("[Phase4] Browser mode reçu : " + entry.BrowserName +
-                                          " | tabs=" + entry.BrowserTabsOptimized +
-                                          " | IsBrowserMode=" + entry.IsBrowserMode);
-
                     NewEntry?.Invoke(entry);
                 }
-                catch (JsonException jex)
-                {
-                    Console.WriteLine("[Phase4] ERREUR JSON : " + jex.Message);
-                    Console.WriteLine("[Phase4] Ligne invalide : " + line[..Math.Min(120, line.Length)]);
-                }
+                catch (JsonException) { /* ligne corrompue — ignorer */ }
             }
 
             _readPosition = fs.Position;
         }
-        catch (Exception ex)
-        {
-            Console.WriteLine("[Phase4] ERREUR lecture : " + ex.GetType().Name + " — " + ex.Message);
-        }
+        catch { /* fichier verrouillé ou supprimé entre le test et l'ouverture */ }
     }
 
     public void Dispose() => _timer.Dispose();

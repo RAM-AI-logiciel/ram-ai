@@ -277,7 +277,7 @@
                     <!-- Bouton Mode Tournoi — Ultra uniquement -->
                     <Button Command="{Binding ToggleTournamentModeCommand}"
                             Margin="0,0,6,0"
-                            ToolTip="Mode Tournoi Ultra : 300ms, procs illimités, priorité High"
+                            ToolTip="Mode Tournoi Ultra : 500ms, seuil RAM 25%, cap 10%/cycle, priorité BelowNormal"
                             Visibility="{Binding IsUltraModeActive, Converter={StaticResource BoolToVis}}">
                         <Button.Style>
                             <Style TargetType="Button" BasedOn="{StaticResource ToolBtn}">

@@ -308,17 +308,7 @@ internal sealed class MemoryOrchestrator : IDisposable
             "MemoryOrchestrator running (cold<{C:P0} hot>{H:P0}, intervalle={I}ms)",
             ColdThreshold, HotThreshold, NormalIntervalMs);
 
-        // ── TEST DIAGNOSTIC : liste tous les processus visibles au démarrage ──
-        Console.WriteLine("=== TEST DÉTECTION GAMING ===");
-        var procsAtStart = Process.GetProcesses();
-        Console.WriteLine($"Processus actifs : {procsAtStart.Length}");
-        foreach (var p in procsAtStart)
-        {
-            try   { Console.WriteLine($"  - {p.ProcessName}"); }
-            catch { Console.WriteLine("  - [accès refusé]"); }
-        }
-        Console.WriteLine("=== FIN LISTE PROCESSUS ===");
-        Console.WriteLine($"DetectGaming() appelé dans Tick() toutes les {NormalIntervalMs}ms");
+        _log.LogInformation("MemoryOrchestrator prêt — détection gaming active (intervalle={I}ms)", NormalIntervalMs);
 
         // Le thread du service tourne toujours en BelowNormal pour réduire
         // la pression sur le scheduler Windows et limiter la consommation CPU.
@@ -1314,39 +1304,10 @@ internal sealed class MemoryOrchestrator : IDisposable
     // ── Éviction Turbo (mode Turbo : tous les processus) ─────────────────────
 
     /// <summary>
-    /// Éviction agressive (mode Turbo/IA/Navigateur). Retourne les Mo libérés, -1 si échec.
+    /// Éviction agressive sans stockage cache. Délègue à EvictProcess (prob=0, pas de cache).
     /// </summary>
-    private long EvictTurbo(Process proc)
-    {
-        IntPtr hProc = NativeMemory.OpenProcess(
-            NativeMemory.PROCESS_QUERY_INFORMATION | NativeMemory.PROCESS_SET_QUOTA,
-            false, proc.Id);
-        if (hProc == IntPtr.Zero) return -1L;
-
-        try
-        {
-            uint cbSize = (uint)Marshal.SizeOf<NativeMemory.PROCESS_MEMORY_COUNTERS_EX>();
-
-            if (!NativeMemory.GetProcessMemoryInfo(hProc, out var cntBefore, cbSize))
-                return -1L;
-            long wsBefore = (long)cntBefore.WorkingSetSize;
-
-            NativeMemory.EmptyWorkingSet(hProc);
-            NativeMemory.SetProcessWorkingSetSizeEx(
-                hProc, new IntPtr(-1), new IntPtr(-1), 0);
-
-            if (!NativeMemory.GetProcessMemoryInfo(hProc, out var cntAfter, cbSize))
-                return -1L;
-            long wsAfter = (long)cntAfter.WorkingSetSize;
-            long deltaMb = Math.Max(0L, (wsBefore - wsAfter) / (1024L * 1024L));
-
-            _log.LogInformation("[RAM] Processus {N} : WS avant={B}Mo après={A}Mo delta={D}Mo",
-                proc.ProcessName, wsBefore / (1024 * 1024), wsAfter / (1024 * 1024), deltaMb);
-
-            return deltaMb;
-        }
-        finally { NativeMemory.CloseHandle(hProc); }
-    }
+    private long EvictTurbo(Process proc) =>
+        EvictProcess(proc, 0f, storeToColdCache: false);
 
     // ── Hot path ──────────────────────────────────────────────────────────────
 

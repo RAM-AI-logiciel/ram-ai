@@ -4,8 +4,8 @@
         xmlns:views="clr-namespace:RamAI.Phase4.Views"
         xmlns:conv="clr-namespace:RamAI.Phase4.Converters"
         Title="RAM-AI — Memory Intelligence"
-        Width="760" Height="460"
-        MinWidth="620" MinHeight="380"
+        Width="1100" Height="460"
+        MinWidth="900" MinHeight="380"
         Background="#0D1117"
         Foreground="#E6EDF3"
         FontFamily="Segoe UI">
@@ -181,8 +181,11 @@
                     </Button>
                 </StackPanel>
 
-                <!-- Contrôles à droite -->
-                <StackPanel Grid.Column="2" Orientation="Horizontal"
+                <!-- Contrôles à droite — ScrollViewer horizontal en filet de sécurité -->
+                <ScrollViewer Grid.Column="2" HorizontalScrollBarVisibility="Hidden"
+                              VerticalScrollBarVisibility="Disabled"
+                              VerticalAlignment="Center">
+                <StackPanel Orientation="Horizontal"
                             VerticalAlignment="Center" Margin="0,0,8,0">
 
                     <!-- Badge licence : violet/doré si Ultra, bleu sinon -->
@@ -246,10 +249,10 @@
                             Command="{Binding GenerateReportCommand}"
                             ToolTip="Générer un rapport de session dans C:\ProgramData\RAM-AI\"
                             Margin="0,0,6,0"/>
-                    <Button Content="📊 Rapport Moyen"
+                    <Button Content="📊 Moyennes"
                             Style="{StaticResource ToolBtn}"
                             Command="{Binding ShowAverageReportCommand}"
-                            ToolTip="Afficher les moyennes sur toutes les sessions enregistrées"
+                            ToolTip="Rapport moyen — moyennes sur toutes les sessions enregistrées"
                             Margin="0,0,6,0"/>
                     <Button Content="🔑 Licence"
                             Style="{StaticResource ToolBtn}"
@@ -323,6 +326,7 @@
                         </Button.Content>
                     </Button>
                 </StackPanel>
+                </ScrollViewer>
             </Grid>
         </Border>
 

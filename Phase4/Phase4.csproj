@@ -24,9 +24,10 @@
 
   <ItemGroup>
     <!-- Charts temps réel (résolu automatiquement vers rc4.5) -->
-    <PackageReference Include="LiveChartsCore.SkiaSharpView.WPF" Version="2.0.0-rc4.5" />
+    <PackageReference Include="LiveChartsCore.SkiaSharpView.WPF"                Version="2.0.0-rc4.5" />
     <!-- MVVM source generators -->
-    <PackageReference Include="CommunityToolkit.Mvvm"             Version="8.3.2"       />
+    <PackageReference Include="CommunityToolkit.Mvvm"                            Version="8.3.2"       />
+    <!-- ProtectedData (DPAPI) est inclus nativement dans net10.0-windows -->
   </ItemGroup>
 
 </Project>

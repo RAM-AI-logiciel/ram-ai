@@ -3,6 +3,7 @@ using System.Text;
 using System.Text.RegularExpressions;
 using Microsoft.Win32;
 using RamAI.Phase4.Models;
+using DPScope = System.Security.Cryptography.DataProtectionScope;
 
 namespace RamAI.Phase4.Services;
 
@@ -33,13 +34,7 @@ public sealed class LicenseService
 
     private const int BetaDurationDays = 30;
 
-    // ── Clés de démonstration (bypass validation) ─────────────────────────────
-    private static readonly Dictionary<string, LicenseTier> DemoKeys =
-        new(StringComparer.OrdinalIgnoreCase)
-        {
-            { "P-DEMO-0001",             LicenseTier.Pro   },
-            { "ULT-DEMO-DEMO-DEMO-9999", LicenseTier.Ultra },
-        };
+    // Aucune clé demo — toute validation passe par HMAC/SHA-256.
 
     // ── État courant ──────────────────────────────────────────────────────────
     public event Action<LicenseInfo>? LicenseChanged;
@@ -56,9 +51,6 @@ public sealed class LicenseService
         if (string.IsNullOrWhiteSpace(rawKey)) return LicenseTier.None;
 
         string key = rawKey.Trim().ToUpperInvariant();
-
-        // Demo keys (bypass HMAC)
-        if (DemoKeys.TryGetValue(key, out var demoTier)) return demoTier;
 
         // BETA-
         if (key.StartsWith("BETA-", StringComparison.Ordinal))
@@ -151,22 +143,62 @@ public sealed class LicenseService
         return activation;
     }
 
-    // ── Persistance registre ──────────────────────────────────────────────────
+    // ── Persistance registre (clé chiffrée via Windows DPAPI) ────────────────
+    //
+    // La valeur stockée est Base64(DPAPI.Protect(UTF8(key), CurrentUser)).
+    // Seul le compte Windows qui a chiffré peut déchiffrer — illisible pour
+    // tout autre utilisateur ou toute autre machine.
+    //
+    // Migration silencieuse : si la valeur n'est pas du Base64-DPAPI valide
+    // (ancienne installation), on tente de la valider comme clé brute, puis
+    // on la re-chiffre immédiatement.
+
+    private static string EncryptKey(string plainKey)
+    {
+        byte[] encrypted = ProtectedData.Protect(
+            Encoding.UTF8.GetBytes(plainKey), null, DPScope.CurrentUser);
+        return Convert.ToBase64String(encrypted);
+    }
+
+    private static string? TryDecryptKey(string stored)
+    {
+        try
+        {
+            byte[] cipher = Convert.FromBase64String(stored);
+            byte[] plain  = ProtectedData.Unprotect(cipher, null, DPScope.CurrentUser);
+            return Encoding.UTF8.GetString(plain);
+        }
+        catch { return null; }
+    }
 
     public LicenseInfo LoadSaved()
     {
         try
         {
-            using var key = Registry.CurrentUser.OpenSubKey(RegPath, writable: false);
-            if (key is null) return LicenseInfo.Empty;
+            using var regKey = Registry.CurrentUser.OpenSubKey(RegPath, writable: false);
+            if (regKey is null) return LicenseInfo.Empty;
 
-            string? savedKey = key.GetValue(RegValue) as string;
-            if (string.IsNullOrWhiteSpace(savedKey)) return LicenseInfo.Empty;
+            string? stored = regKey.GetValue(RegValue) as string;
+            if (string.IsNullOrWhiteSpace(stored)) return LicenseInfo.Empty;
 
-            var tier = Validate(savedKey);
+            // Tenter déchiffrement DPAPI
+            string? plainKey = TryDecryptKey(stored);
+
+            if (plainKey is null)
+            {
+                // Migration : valeur non chiffrée (ancienne installation)
+                plainKey = stored.Trim().ToUpperInvariant();
+                var migTier = Validate(plainKey);
+                if (migTier == LicenseTier.None) return LicenseInfo.Empty;
+                // Re-chiffrer silencieusement
+                SaveLicense(plainKey, migTier);
+                return _current;
+            }
+
+            var tier = Validate(plainKey);
             if (tier == LicenseTier.None) return LicenseInfo.Empty;
 
-            _current = new LicenseInfo(tier, savedKey);
+            _current = new LicenseInfo(tier, plainKey);
 
             if (tier == LicenseTier.Beta)
                 IsBetaExpired();
@@ -178,11 +210,12 @@ public sealed class LicenseService
 
     public void SaveLicense(string rawKey, LicenseTier tier)
     {
-        string key = rawKey.Trim().ToUpperInvariant();
-        using var regKey = Registry.CurrentUser.CreateSubKey(RegPath, writable: true);
-        regKey.SetValue(RegValue, key, RegistryValueKind.String);
+        string plain = rawKey.Trim().ToUpperInvariant();
 
-        _current = new LicenseInfo(tier, key);
+        using var regKey = Registry.CurrentUser.CreateSubKey(RegPath, writable: true);
+        regKey.SetValue(RegValue, EncryptKey(plain), RegistryValueKind.String);
+
+        _current = new LicenseInfo(tier, plain);
 
         if (tier == LicenseTier.Beta)
             IsBetaExpired();

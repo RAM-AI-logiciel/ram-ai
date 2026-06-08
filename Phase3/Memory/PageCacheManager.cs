@@ -1,4 +1,5 @@
 using System.IO.Compression;
+using System.Text;
 using System.Text.Json;
 using Microsoft.Extensions.Logging;
 
@@ -22,8 +23,9 @@ namespace RamAI.Phase3.Memory;
 internal sealed class PageCacheManager : IDisposable
 {
     // ── Constants ─────────────────────────────────────────────────────────────
-    private const int    HeaderSize  = 4096;
-    private const string MagicHeader = "RAM-AI-CACHE-V1";
+    private const int    HeaderSize    = 4096;
+    private const string MagicHeader   = "RAM-AI-CACHE-V1";
+    private const long   MaxCacheBytes = 50L * 1024 * 1024; // 50 Mo max
 
     // ── State ─────────────────────────────────────────────────────────────────
     private readonly string                    _cachePath;
@@ -68,11 +70,27 @@ internal sealed class PageCacheManager : IDisposable
             bufferSize: 65536,
             options: FileOptions.WriteThrough);
 
-        if (isNew) WriteHeader();
-        else       RebuildIndex();
+        if (isNew)
+        {
+            WriteHeader();
+        }
+        else
+        {
+            // Compacter si le fichier dépasse 50 Mo
+            if (_stream.Length > MaxCacheBytes)
+            {
+                _stream.Dispose();
+                _stream = null;
+                Compact();
+                _stream = new FileStream(
+                    _cachePath, FileMode.OpenOrCreate, FileAccess.ReadWrite,
+                    FileShare.ReadWrite, 65536, FileOptions.WriteThrough);
+            }
+            RebuildIndex();
+        }
 
-        _log.LogInformation("PageCacheManager opened {P} (entries={N})",
-                            _cachePath, _index.Count);
+        _log.LogInformation("PageCacheManager opened {P} (entries={N}, size={S} Ko)",
+                            _cachePath, _index.Count, (_stream?.Length ?? 0) / 1024);
     }
 
     // ── Public API ────────────────────────────────────────────────────────────
@@ -85,6 +103,9 @@ internal sealed class PageCacheManager : IDisposable
         lock (_lock)
         {
             if (_stream is null) return;
+
+            // Ne pas écrire si le cache atteint déjà la limite (compaction au prochain démarrage)
+            if (_stream.Length >= MaxCacheBytes) return;
 
             _stream.Seek(0, SeekOrigin.End);
             long offset = _stream.Position;
@@ -189,6 +210,81 @@ internal sealed class PageCacheManager : IDisposable
             }
         }
         catch (Exception ex) { _log.LogWarning("Index rebuild: {E}", ex.Message); }
+    }
+
+    // ── Compaction ────────────────────────────────────────────────────────────
+
+    /// <summary>
+    /// Réécrit le cache en ne conservant que la dernière entrée par PID.
+    /// Appelé au démarrage si le fichier dépasse MaxCacheBytes (50 Mo).
+    /// </summary>
+    private void Compact()
+    {
+        _log.LogInformation("PageCacheManager : compaction (taille > {M} Mo)…", MaxCacheBytes / (1024 * 1024));
+
+        // Reconstruire l'index depuis l'ancien fichier
+        var tempIndex   = new Dictionary<int, ColdProcessEntry>();
+        var tempOffsets = new Dictionary<int, long>();
+
+        try
+        {
+            using var old = new FileStream(
+                _cachePath, FileMode.Open, FileAccess.Read, FileShare.ReadWrite, 65536);
+
+            old.Seek(HeaderSize, SeekOrigin.Begin);
+            while (old.Position < old.Length - 4)
+            {
+                byte[] lb = new byte[4];
+                if (old.Read(lb) < 4) break;
+                int len = BitConverter.ToInt32(lb);
+                if (len <= 0 || old.Position + len > old.Length) break;
+
+                byte[] compressed = new byte[len];
+                old.ReadExactly(compressed);
+                try
+                {
+                    var e = JsonSerializer.Deserialize<ColdProcessEntry>(Decompress(compressed));
+                    if (e is not null) tempIndex[e.Pid] = e;
+                }
+                catch { }
+            }
+        }
+        catch (Exception ex) { _log.LogWarning("Compact read: {E}", ex.Message); }
+
+        // Réécrire uniquement la dernière entrée de chaque PID
+        string tmp = _cachePath + ".tmp";
+        try
+        {
+            using var nw = new FileStream(
+                tmp, FileMode.Create, FileAccess.Write, FileShare.None, 65536);
+
+            byte[] hdr = new byte[HeaderSize];
+            Encoding.UTF8.GetBytes(MagicHeader).CopyTo(hdr, 0);
+            nw.Write(hdr);
+
+            foreach (var entry in tempIndex.Values)
+            {
+                byte[] compressed = Compress(JsonSerializer.SerializeToUtf8Bytes(entry));
+                nw.Write(BitConverter.GetBytes(compressed.Length));
+                nw.Write(compressed);
+            }
+            nw.Flush();
+        }
+        catch (Exception ex)
+        {
+            _log.LogWarning("Compact write: {E}", ex.Message);
+            try { File.Delete(tmp); } catch { }
+            return;
+        }
+
+        try
+        {
+            File.Move(tmp, _cachePath, overwrite: true);
+            _index.Clear();
+        }
+        catch (Exception ex) { _log.LogWarning("Compact move: {E}", ex.Message); }
+
+        _log.LogInformation("PageCacheManager : compaction terminée ({N} entrées conservées)", tempIndex.Count);
     }
 
     // ── IDisposable ───────────────────────────────────────────────────────────

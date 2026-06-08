@@ -2,7 +2,10 @@ using System.Diagnostics;
 using System.IO;
 using System.Runtime.InteropServices;
 using System.Windows;
-using Application = System.Windows.Application;
+using Application        = System.Windows.Application;
+using MessageBox         = System.Windows.MessageBox;
+using MessageBoxButton   = System.Windows.MessageBoxButton;
+using MessageBoxImage    = System.Windows.MessageBoxImage;
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
 using RamAI.Phase4.Models;
@@ -67,8 +70,9 @@ public sealed partial class MainViewModel : ObservableObject
     // ── Compteurs IA cumulatifs (non-observables, alimentent AiInfoText) ─────
     private int _totalAiProcessesEvicted;
 
-    // ── Baseline RAM ──────────────────────────────────────────────────────────
-    private long _baselineRamUsedMb;
+    // ── Baseline RAM + horodatage session ────────────────────────────────────
+    private long     _baselineRamUsedMb;
+    private DateTime _sessionStart = DateTime.Now;
 
     // ── Dossier partagé Phase3 ↔ Phase4 ───────────────────────────────────────
     // C:\ProgramData\RAM-AI\ — accessible en lecture/écriture par :
@@ -491,6 +495,72 @@ public sealed partial class MainViewModel : ObservableObject
         catch (Exception ex)
         {
             Console.WriteLine($"[RAM-AI] TURBO ERREUR : {ex.Message}");
+        }
+    }
+
+    /// <summary>
+    /// Génère rapport.txt dans C:\ProgramData\RAM-AI\ avec les métriques de la session courante.
+    /// </summary>
+    [RelayCommand]
+    private void GenerateReport()
+    {
+        try
+        {
+            Directory.CreateDirectory(SharedFlagDir);
+
+            var    now      = DateTime.Now;
+            var    duration = now - _sessionStart;
+            string mode     = IsTournamentModeActive ? "Tournoi"
+                            : IsGamingModeActive     ? "Gaming"
+                            : IsAiModeActive         ? "IA"
+                            : IsBrowserModeActive    ? "Navigateur"
+                            : IsEcoModeActive        ? "Éco"
+                            :                          "Standard";
+
+            var (totalMb, usedMb) = SystemMemory.GetPhysicalMemoryMb();
+            double totalGb = totalMb / 1024.0;
+            double usedGb  = usedMb  / 1024.0;
+
+            string vram = string.IsNullOrEmpty(VramInfoText) ? "N/A" : VramInfoText;
+
+            string content =
+                $"╔══════════════════════════════════════════════════════╗\n" +
+                $"║              RAM-AI — Rapport de session              ║\n" +
+                $"╚══════════════════════════════════════════════════════╝\n" +
+                $"\n" +
+                $"Date et heure          : {now:dd/MM/yyyy HH:mm:ss}\n" +
+                $"Durée de la session    : {(int)duration.TotalHours:D2}h {duration.Minutes:D2}m {duration.Seconds:D2}s\n" +
+                $"\n" +
+                $"── Mémoire ─────────────────────────────────────────────\n" +
+                $"RAM totale             : {totalGb:F1} Go\n" +
+                $"RAM utilisée (actuel)  : {usedGb:F2} Go\n" +
+                $"RAM récupérée (cumul)  : {TotalRamFreedGb:F2} Go\n" +
+                $"\n" +
+                $"── Optimisation ────────────────────────────────────────\n" +
+                $"Processus optimisés    : {ProcessesOptimized:N0}\n" +
+                $"Mode actif             : {mode}\n" +
+                $"Licence                : {LicenseTierLabel}\n" +
+                $"\n" +
+                $"── GPU ─────────────────────────────────────────────────\n" +
+                $"VRAM                   : {vram}\n" +
+                $"\n" +
+                $"────────────────────────────────────────────────────────\n" +
+                $"Généré par RAM-AI v1.0 — {now:yyyy-MM-dd HH:mm:ss}\n";
+
+            string fileName = $"rapport_{now:yyyy-MM-dd_HHmmss}.txt";
+            string path     = Path.Combine(SharedFlagDir, fileName);
+            File.WriteAllText(path, content, System.Text.Encoding.UTF8);
+
+            Console.WriteLine($"[RAM-AI] Rapport généré : {path}");
+
+            // Ouvrir le fichier dans le Bloc-notes
+            try { Process.Start(new ProcessStartInfo("notepad.exe", path) { UseShellExecute = true }); } catch { }
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine($"[RAM-AI] Erreur génération rapport : {ex.Message}");
+            MessageBox.Show($"Impossible de générer le rapport :\n{ex.Message}",
+                "RAM-AI", MessageBoxButton.OK, MessageBoxImage.Error);
         }
     }
 

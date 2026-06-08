@@ -241,6 +241,11 @@
                         </StackPanel>
                     </Border>
 
+                    <Button Content="📄 Rapport"
+                            Style="{StaticResource ToolBtn}"
+                            Command="{Binding GenerateReportCommand}"
+                            ToolTip="Générer un rapport de session dans C:\ProgramData\RAM-AI\"
+                            Margin="0,0,6,0"/>
                     <Button Content="🔑 Licence"
                             Style="{StaticResource ToolBtn}"
                             Command="{Binding OpenLicenseCommand}"

@@ -23,9 +23,7 @@ public partial class App : Application
     private static readonly string SharedDir =
         Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.CommonApplicationData), "RAM-AI");
 
-    private static readonly string LogPath          = Path.Combine(SharedDir, "events.log");
-    private static readonly string BenchmarksPath   = Path.Combine(SharedDir, "benchmarks.json");
-    private static readonly string SessionsPath     = Path.Combine(SharedDir, "sessions.json");
+    private static readonly string LogPath = Path.Combine(SharedDir, "events.log");
 
     // ── Démarrage ─────────────────────────────────────────────────────────────
 
@@ -45,8 +43,6 @@ public partial class App : Application
         // ── Nettoyage préventif des fichiers JSON ─────────────────────────────
         // Si un crash a laissé un fichier JSON corrompu (JSON tronqué/invalide),
         // le supprimer avant d'initialiser les services pour garantir le démarrage.
-        SanitizeJsonFile(BenchmarksPath);
-        SanitizeJsonFile(SessionsPath);
 
         try { InitializeApp(); }
         catch (Exception ex) { ShowFatalError(ex, "initialisation"); }
@@ -183,7 +179,6 @@ public partial class App : Application
 
     private void ExitApp()
     {
-        MainVm?.SaveCurrentSession();
         _tray?.Dispose();
         LogWatcher.Dispose();
         Shutdown();

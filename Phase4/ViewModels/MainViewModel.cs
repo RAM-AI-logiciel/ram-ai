@@ -2,10 +2,7 @@ using System.Diagnostics;
 using System.IO;
 using System.Runtime.InteropServices;
 using System.Windows;
-using Application        = System.Windows.Application;
-using MessageBox         = System.Windows.MessageBox;
-using MessageBoxButton   = System.Windows.MessageBoxButton;
-using MessageBoxImage    = System.Windows.MessageBoxImage;
+using Application = System.Windows.Application;
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
 using RamAI.Phase4.Models;
@@ -18,7 +15,6 @@ public sealed partial class MainViewModel : ObservableObject
 {
     // ── Mode Bêta testeur ─────────────────────────────────────────────────────
     [ObservableProperty] private bool   _isBetaMode;
-    // "🧪 Version testeur — expire le 04/07/2025"
     [ObservableProperty] private string _betaExpiryText = string.Empty;
 
     // ── Métriques principales ──────────────────────────────────────────────────
@@ -57,43 +53,25 @@ public sealed partial class MainViewModel : ObservableObject
     [ObservableProperty] private bool   _isTournamentModeActive;
     [ObservableProperty] private string _vramInfoText       = string.Empty;
 
-    // ── Navigation onglets ────────────────────────────────────────────────────
-    [ObservableProperty]
-    [NotifyPropertyChangedFor(nameof(ShowDashboard))]
-    private bool _showBenchmarks;
-
-    public bool ShowDashboard => !ShowBenchmarks;
-
-    // ── Onglet Benchmarks ─────────────────────────────────────────────────────
-    public BenchmarkViewModel BenchmarkVm { get; }
-
-    // ── Compteurs IA cumulatifs (non-observables, alimentent AiInfoText) ─────
+    // ── Compteurs IA cumulatifs ───────────────────────────────────────────────
     private int _totalAiProcessesEvicted;
 
-    // ── Baseline RAM + horodatage session ────────────────────────────────────
-    private long     _baselineRamUsedMb;
-    private DateTime _sessionStart = DateTime.Now;
+    // ── Baseline RAM ──────────────────────────────────────────────────────────
+    private long _baselineRamUsedMb;
 
     // ── Dossier partagé Phase3 ↔ Phase4 ───────────────────────────────────────
-    // C:\ProgramData\RAM-AI\ — accessible en lecture/écriture par :
-    //   • Phase3 (service Windows, compte LocalSystem)
-    //   • Phase4 (application utilisateur)
-    //   • En dev ET après dotnet publish, sans résolution de chemin fragile.
     private static readonly string SharedFlagDir =
         Path.Combine(
             Environment.GetFolderPath(Environment.SpecialFolder.CommonApplicationData),
             "RAM-AI");
 
-    // gaming_mode.force : Phase4 écrit "manual" pour forcer, Phase3 écrit "auto" pour détection auto.
-    // turbo_mode.force  : Phase4 écrit "turbo", Phase3 exécute la passe et supprime le fichier.
-    private static readonly string ForceFlagPath = Path.Combine(SharedFlagDir, "gaming_mode.force");
+    private static readonly string ForceFlagPath      = Path.Combine(SharedFlagDir, "gaming_mode.force");
     private static readonly string TurboFlagPath      = Path.Combine(SharedFlagDir, "turbo_mode.force");
     private static readonly string TournamentFlagPath = Path.Combine(SharedFlagDir, "tournament_mode.force");
 
     // ── Services ──────────────────────────────────────────────────────────────
-    private readonly LogWatcherService   _logWatcher;
-    private readonly LicenseService      _licenseService;
-    private readonly SessionHistoryService _sessionHistory = new();
+    private readonly LogWatcherService _logWatcher;
+    private readonly LicenseService    _licenseService;
 
     public MainViewModel(LogWatcherService logWatcher, LicenseService licenseService)
     {
@@ -106,8 +84,6 @@ public sealed partial class MainViewModel : ObservableObject
         IsUltraModeActive = _licenseService.Current.IsUltra;
 
         // Synchroniser ForceGamingMode depuis le fichier flag au démarrage.
-        // On ne lit que "manual" — le flag "auto" écrit par Phase3 n'est pas
-        // un mode forcé utilisateur ; l'état gaming vient des entrées de log.
         if (ReadFlagContent() == "manual")
         {
             ForceGamingMode    = true;
@@ -116,36 +92,25 @@ public sealed partial class MainViewModel : ObservableObject
             DetectedGameLabel  = "Mode Gaming FORCÉ";
         }
 
-        // Créer le dossier partagé si nécessaire (même dossier que Phase3 surveille)
+        // Créer le dossier partagé si nécessaire
         try { Directory.CreateDirectory(SharedFlagDir); } catch { }
-        Console.WriteLine($"[RAM-AI Phase4] SharedFlagDir  : {SharedFlagDir}");
-        Console.WriteLine($"[RAM-AI Phase4] ForceFlagPath  : {ForceFlagPath}");
-        Console.WriteLine($"[RAM-AI Phase4] TurboFlagPath  : {TurboFlagPath}");
 
         // Bandeau bêta
         if (licenseService.Current.Tier == Models.LicenseTier.Beta && licenseService.BetaExpiryDate.HasValue)
         {
-            IsBetaMode      = true;
-            BetaExpiryText  = $"🧪 Version testeur — expire le {licenseService.BetaExpiryDate.Value.ToLocalTime():dd/MM/yyyy}";
+            IsBetaMode     = true;
+            BetaExpiryText = $"🧪 Version testeur — expire le {licenseService.BetaExpiryDate.Value.ToLocalTime():dd/MM/yyyy}";
         }
 
         var (_, usedMb) = SystemMemory.GetPhysicalMemoryMb();
         _baselineRamUsedMb = usedMb;
         CurrentRamUsedGb   = usedMb / 1024.0;
 
-        BenchmarkVm = new BenchmarkViewModel(new BenchmarkService(), logWatcher);
-
         var __ = EnsurePhase3RunningAsync();
         var _  = RefreshLoop();
     }
 
-    [RelayCommand]
-    private void NavigateToDashboard()  => ShowBenchmarks = false;
-
-    [RelayCommand]
-    private void NavigateToBenchmarks() => ShowBenchmarks = true;
-
-    // ── Lecture du contenu du flag (distingue "manual" / "auto" / vide) ────────
+    // ── Lecture du contenu du flag ────────────────────────────────────────────
 
     private static string ReadFlagContent()
     {
@@ -159,18 +124,11 @@ public sealed partial class MainViewModel : ObservableObject
     }
 
     // ── Réception des entrées log Phase 3 ─────────────────────────────────────
-    // C'est la SOURCE DE VÉRITÉ pour l'état gaming auto-détecté.
 
     private void OnNewEntry(EventEntry entry)
     {
-        Console.WriteLine($"[Phase4] OnNewEntry : IsGamingMode={entry.IsGamingMode} | IsBrowserMode={entry.IsBrowserMode} | IsAiMode={entry.IsAiMode} | AiName='{entry.AiName}' | AiProcessesOptimized={entry.AiProcessesOptimized} | MbSaved={entry.MbSaved} | PhysicalMbFreed={entry.PhysicalMbFreed}");
-        if (entry.IsAiMode)
-            Console.WriteLine($"[Phase4] IA processus reçus : {entry.AiProcessesOptimized}");
-
         Application.Current.Dispatcher.Invoke(() =>
         {
-            // Utiliser la RAM physique réellement libérée (mesurée avant/après par Phase3).
-            // Ne pas accumuler si le gain est inférieur à 10 Mo (bruit de mesure).
             if (entry.PhysicalMbFreed >= 1)
             {
                 TotalMbSaved   += entry.PhysicalMbFreed;
@@ -179,7 +137,6 @@ public sealed partial class MainViewModel : ObservableObject
             ProcessesOptimized += entry.ColdEvicted + entry.AiProcessesOptimized;
             LastUpdateText      = entry.Timestamp.ToLocalTime().ToString("HH:mm:ss");
 
-            // Actif si Phase3 signale gaming OU si l'utilisateur a forcé manuellement
             IsGamingModeActive = entry.IsGamingMode || ForceGamingMode;
 
             if (entry.IsGamingMode && !string.IsNullOrEmpty(entry.GameName))
@@ -198,12 +155,11 @@ public sealed partial class MainViewModel : ObservableObject
                 DetectedGameLabel = "Mode Gaming FORCÉ";
             }
 
-            // ── Mode Navigateur (affiché seulement si gaming ET IA inactifs) ──
+            // ── Mode Navigateur ──
             if (entry.IsBrowserMode && !IsGamingModeActive && !entry.IsAiMode)
             {
                 IsBrowserModeActive = true;
                 BrowserInfoText     = $"{entry.BrowserName} — {entry.BrowserTabsOptimized} onglet(s) optimisé(s)";
-                Console.WriteLine($"[Phase4] BROWSER MODE ACTIVÉ → BrowserInfoText='{BrowserInfoText}'");
             }
             else if (!entry.IsBrowserMode)
             {
@@ -211,13 +167,12 @@ public sealed partial class MainViewModel : ObservableObject
                 BrowserInfoText     = string.Empty;
             }
 
-            // ── Mode IA (priorité sur navigateur, seulement si gaming inactif) ──
+            // ── Mode IA ──
             if (entry.IsAiMode && !IsGamingModeActive)
             {
                 _totalAiProcessesEvicted += entry.AiProcessesOptimized;
                 IsAiModeActive = true;
                 AiInfoText     = $"{entry.AiName} — {_totalAiProcessesEvicted} processus optimisé(s)";
-                Console.WriteLine($"[Phase4] AI MODE ACTIVÉ → total évincés={_totalAiProcessesEvicted} (ce tick={entry.AiProcessesOptimized})");
             }
             else if (!entry.IsAiMode)
             {
@@ -225,7 +180,7 @@ public sealed partial class MainViewModel : ObservableObject
                 AiInfoText     = string.Empty;
             }
 
-            // ── Mode Éco (batterie) ───────────────────────────────────────────
+            // ── Mode Éco ──
             if (entry.IsEcoMode)
             {
                 IsEcoModeActive = true;
@@ -237,7 +192,7 @@ public sealed partial class MainViewModel : ObservableObject
                 EcoModeText     = string.Empty;
             }
 
-            // ── Ultra ─────────────────────────────────────────────────────────
+            // ── Ultra ──
             IsTournamentModeActive = entry.IsTournamentMode;
             VramInfoText = entry.VramMb > 0
                 ? $"VRAM : {entry.VramMb} Mo"
@@ -265,12 +220,10 @@ public sealed partial class MainViewModel : ObservableObject
             {
                 Directory.CreateDirectory(SharedFlagDir);
                 File.WriteAllText(TournamentFlagPath, "tournament");
-                Console.WriteLine("[RAM-AI] 🏆 TOURNOI ACTIVÉ");
             }
             else
             {
                 if (File.Exists(TournamentFlagPath)) File.Delete(TournamentFlagPath);
-                Console.WriteLine("[RAM-AI] 🏆 TOURNOI DÉSACTIVÉ");
             }
         }
         catch { }
@@ -282,12 +235,8 @@ public sealed partial class MainViewModel : ObservableObject
     {
         while (true)
         {
-            var   status      = GetServiceStatus();
-            var   (_, usedMb) = SystemMemory.GetPhysicalMemoryMb();
-            // Lire le CONTENU du flag, pas juste son existence.
-            // "manual" = forcé par l'utilisateur via dashboard
-            // "auto"   = écrit par Phase3 lors d'une détection automatique → NE PAS toucher ForceGamingMode
-            // ""       = pas de flag
+            var    status      = GetServiceStatus();
+            var    (_, usedMb) = SystemMemory.GetPhysicalMemoryMb();
             string flagContent = ReadFlagContent();
 
             Application.Current?.Dispatcher.Invoke(() =>
@@ -296,9 +245,6 @@ public sealed partial class MainViewModel : ObservableObject
                 CurrentRamUsedGb = usedMb / 1024.0;
                 UpdateImprovement(usedMb);
 
-                // Synchronisation du flag "manual" seulement :
-                // • si le fichier passe à "manual" sans que l'UI le sache → activer ForceGamingMode
-                // • si le fichier n'est plus "manual" (supprimé ou "auto") → désactiver ForceGamingMode
                 if (flagContent == "manual" && !ForceGamingMode)
                 {
                     ForceGamingMode    = true;
@@ -308,14 +254,11 @@ public sealed partial class MainViewModel : ObservableObject
                 }
                 else if (flagContent != "manual" && ForceGamingMode)
                 {
-                    // Le flag "manual" a disparu (supprimé par l'utilisateur ou Phase3)
-                    // → désactiver le mode forcé ET masquer la bannière immédiatement.
                     ForceGamingMode    = false;
                     IsGamingModeActive = false;
                     DetectedGameName   = string.Empty;
                     DetectedGameLabel  = string.Empty;
                 }
-                // "auto" : on ne touche pas ForceGamingMode, IsGamingModeActive est géré par OnNewEntry
             });
 
             await Task.Delay(2000);
@@ -435,10 +378,6 @@ public sealed partial class MainViewModel : ObservableObject
         win.ShowDialog();
     }
 
-    /// <summary>
-    /// Bascule le mode Gaming FORCÉ. Écrit ou supprime gaming_mode.force avec "manual".
-    /// Indépendant de la détection automatique de Phase3.
-    /// </summary>
     [RelayCommand]
     private void ToggleForceGamingMode()
     {
@@ -447,31 +386,20 @@ public sealed partial class MainViewModel : ObservableObject
         {
             if (ForceGamingMode)
             {
-                // Forcer le mode gaming : écrire "manual" dans le flag
                 Directory.CreateDirectory(SharedFlagDir);
                 File.WriteAllText(ForceFlagPath, "manual");
-                Console.WriteLine($"[RAM-AI] GAMING FORCÉ ACTIVÉ — flag : {ForceFlagPath}");
                 IsGamingModeActive = true;
                 DetectedGameName   = "Mode Gaming FORCÉ";
                 DetectedGameLabel  = "Mode Gaming FORCÉ";
             }
             else
             {
-                // Désactiver le mode forcé : supprimer le flag
-                // Phase3 reviendra en mode normal dès le prochain tick (800 ms)
                 if (File.Exists(ForceFlagPath))
                 {
                     string content = ReadFlagContent();
-                    // Ne supprimer que si c'est notre flag "manual", pas un flag "auto" de Phase3
                     if (content == "manual")
-                    {
                         File.Delete(ForceFlagPath);
-                        Console.WriteLine($"[RAM-AI] GAMING FORCÉ DÉSACTIVÉ — flag supprimé : {ForceFlagPath}");
-                    }
                 }
-                // Masquer la bannière immédiatement.
-                // Si Phase3 détecte encore un jeu de manière autonome,
-                // le prochain OnNewEntry remettra IsGamingModeActive = true avec le bon nom.
                 IsGamingModeActive = false;
                 DetectedGameName   = string.Empty;
                 DetectedGameLabel  = string.Empty;
@@ -480,10 +408,6 @@ public sealed partial class MainViewModel : ObservableObject
         catch { }
     }
 
-    /// <summary>
-    /// Déclenche une passe Turbo one-shot via turbo_mode.force.
-    /// Phase3 vide le working set de tous les processus au prochain tick puis supprime le flag.
-    /// </summary>
     [RelayCommand]
     private void Turbo()
     {
@@ -491,111 +415,8 @@ public sealed partial class MainViewModel : ObservableObject
         {
             Directory.CreateDirectory(SharedFlagDir);
             File.WriteAllText(TurboFlagPath, "turbo");
-            Console.WriteLine($"[RAM-AI] TURBO LANCÉ — flag : {TurboFlagPath}");
         }
-        catch (Exception ex)
-        {
-            Console.WriteLine($"[RAM-AI] TURBO ERREUR : {ex.Message}");
-        }
-    }
-
-    /// <summary>
-    /// Génère rapport.txt dans C:\ProgramData\RAM-AI\ avec les métriques de la session courante.
-    /// </summary>
-    [RelayCommand]
-    private void GenerateReport()
-    {
-        try
-        {
-            Directory.CreateDirectory(SharedFlagDir);
-
-            var    now      = DateTime.Now;
-            var    duration = now - _sessionStart;
-            string mode     = IsTournamentModeActive ? "Tournoi"
-                            : IsGamingModeActive     ? "Gaming"
-                            : IsAiModeActive         ? "IA"
-                            : IsBrowserModeActive    ? "Navigateur"
-                            : IsEcoModeActive        ? "Éco"
-                            :                          "Standard";
-
-            var (totalMb, usedMb) = SystemMemory.GetPhysicalMemoryMb();
-            double totalGb = totalMb / 1024.0;
-            double usedGb  = usedMb  / 1024.0;
-
-            string vram = string.IsNullOrEmpty(VramInfoText) ? "N/A" : VramInfoText;
-
-            string content =
-                $"╔══════════════════════════════════════════════════════╗\n" +
-                $"║              RAM-AI — Rapport de session              ║\n" +
-                $"╚══════════════════════════════════════════════════════╝\n" +
-                $"\n" +
-                $"Date et heure          : {now:dd/MM/yyyy HH:mm:ss}\n" +
-                $"Durée de la session    : {(int)duration.TotalHours:D2}h {duration.Minutes:D2}m {duration.Seconds:D2}s\n" +
-                $"\n" +
-                $"── Mémoire ─────────────────────────────────────────────\n" +
-                $"RAM totale             : {totalGb:F1} Go\n" +
-                $"RAM utilisée (actuel)  : {usedGb:F2} Go\n" +
-                $"RAM récupérée (cumul)  : {TotalRamFreedGb:F2} Go\n" +
-                $"\n" +
-                $"── Optimisation ────────────────────────────────────────\n" +
-                $"Processus optimisés    : {ProcessesOptimized:N0}\n" +
-                $"Mode actif             : {mode}\n" +
-                $"Licence                : {LicenseTierLabel}\n" +
-                $"\n" +
-                $"── GPU ─────────────────────────────────────────────────\n" +
-                $"VRAM                   : {vram}\n" +
-                $"\n" +
-                $"────────────────────────────────────────────────────────\n" +
-                $"Généré par RAM-AI v1.0 — {now:yyyy-MM-dd HH:mm:ss}\n";
-
-            string fileName = $"rapport_{now:yyyy-MM-dd_HHmmss}.txt";
-            string path     = Path.Combine(SharedFlagDir, fileName);
-            File.WriteAllText(path, content, System.Text.Encoding.UTF8);
-
-            // Sauvegarder la session dans l'historique au moment du rapport
-            SaveCurrentSession();
-
-            Console.WriteLine($"[RAM-AI] Rapport généré : {path}");
-
-            // Ouvrir le fichier dans le Bloc-notes
-            try { Process.Start(new ProcessStartInfo("notepad.exe", path) { UseShellExecute = true }); } catch { }
-        }
-        catch (Exception ex)
-        {
-            Console.WriteLine($"[RAM-AI] Erreur génération rapport : {ex.Message}");
-            MessageBox.Show($"Impossible de générer le rapport :\n{ex.Message}",
-                "RAM-AI", MessageBoxButton.OK, MessageBoxImage.Error);
-        }
-    }
-
-    /// <summary>Sauvegarde la session courante dans sessions.json.</summary>
-    public void SaveCurrentSession()
-    {
-        if (TotalRamFreedGb <= 0 && ProcessesOptimized <= 0) return; // session vide, ne pas enregistrer
-
-        string mode = IsTournamentModeActive ? "Tournoi"
-                    : IsGamingModeActive     ? "Gaming"
-                    : IsAiModeActive         ? "IA"
-                    : IsBrowserModeActive    ? "Navigateur"
-                    : IsEcoModeActive        ? "Éco"
-                    :                          "Standard";
-
-        _sessionHistory.Append(new Models.SessionRecord
-        {
-            StartTime          = _sessionStart,
-            DurationSeconds    = (long)(DateTime.Now - _sessionStart).TotalSeconds,
-            RamFreedGb         = TotalRamFreedGb,
-            ProcessesOptimized = ProcessesOptimized,
-            ActiveMode         = mode,
-            VramInfo           = VramInfoText,
-        });
-    }
-
-    [RelayCommand]
-    private void ShowAverageReport()
-    {
-        var win = new Views.AverageReportWindow { Owner = Application.Current.MainWindow };
-        win.ShowDialog();
+        catch { }
     }
 
     private static void RunSc(string args)

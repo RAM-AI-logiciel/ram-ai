@@ -1,18 +1,15 @@
 <Window x:Class="RamAI.Phase4.Views.MainWindow"
         xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
-        xmlns:views="clr-namespace:RamAI.Phase4.Views"
-        xmlns:conv="clr-namespace:RamAI.Phase4.Converters"
         Title="RAM-AI — Memory Intelligence"
-        Width="1100" Height="460"
-        MinWidth="900" MinHeight="380"
+        Width="760" Height="460"
+        MinWidth="620" MinHeight="380"
         Background="#0D1117"
         Foreground="#E6EDF3"
         FontFamily="Segoe UI">
 
     <Window.Resources>
         <BooleanToVisibilityConverter x:Key="BoolToVis"/>
-        <conv:InverseBoolToVisibilityConverter x:Key="InvBoolToVis"/>
 
         <!-- Bouton toolbar standard -->
         <Style x:Key="ToolBtn" TargetType="Button">
@@ -111,81 +108,8 @@
                                Foreground="#8B949E" VerticalAlignment="Center"/>
                 </StackPanel>
 
-                <!-- Onglets de navigation (centre) -->
-                <StackPanel Grid.Column="1" Orientation="Horizontal"
-                            HorizontalAlignment="Center" VerticalAlignment="Bottom">
-                    <Button Command="{Binding NavigateToDashboardCommand}"
-                            Margin="0,0,2,0" Padding="16,6" FontSize="12" Cursor="Hand">
-                        <Button.Style>
-                            <Style TargetType="Button">
-                                <Setter Property="Content"         Value="📊  Dashboard"/>
-                                <Setter Property="Background"      Value="Transparent"/>
-                                <Setter Property="Foreground"      Value="#8B949E"/>
-                                <Setter Property="BorderThickness" Value="0,0,0,2"/>
-                                <Setter Property="BorderBrush"     Value="Transparent"/>
-                                <Setter Property="Template">
-                                    <Setter.Value>
-                                        <ControlTemplate TargetType="Button">
-                                            <Border Background="{TemplateBinding Background}"
-                                                    BorderBrush="{TemplateBinding BorderBrush}"
-                                                    BorderThickness="{TemplateBinding BorderThickness}"
-                                                    Padding="{TemplateBinding Padding}">
-                                                <ContentPresenter HorizontalAlignment="Center"
-                                                                  VerticalAlignment="Center"/>
-                                            </Border>
-                                        </ControlTemplate>
-                                    </Setter.Value>
-                                </Setter>
-                                <Style.Triggers>
-                                    <!-- Onglet actif = dashboard -->
-                                    <DataTrigger Binding="{Binding ShowBenchmarks}" Value="False">
-                                        <Setter Property="Foreground"  Value="#E6EDF3"/>
-                                        <Setter Property="BorderBrush" Value="#388BFD"/>
-                                    </DataTrigger>
-                                </Style.Triggers>
-                            </Style>
-                        </Button.Style>
-                    </Button>
-
-                    <Button Command="{Binding NavigateToBenchmarksCommand}"
-                            Margin="2,0,0,0" Padding="16,6" FontSize="12" Cursor="Hand">
-                        <Button.Style>
-                            <Style TargetType="Button">
-                                <Setter Property="Content"         Value="🏅  Benchmarks"/>
-                                <Setter Property="Background"      Value="Transparent"/>
-                                <Setter Property="Foreground"      Value="#8B949E"/>
-                                <Setter Property="BorderThickness" Value="0,0,0,2"/>
-                                <Setter Property="BorderBrush"     Value="Transparent"/>
-                                <Setter Property="Template">
-                                    <Setter.Value>
-                                        <ControlTemplate TargetType="Button">
-                                            <Border Background="{TemplateBinding Background}"
-                                                    BorderBrush="{TemplateBinding BorderBrush}"
-                                                    BorderThickness="{TemplateBinding BorderThickness}"
-                                                    Padding="{TemplateBinding Padding}">
-                                                <ContentPresenter HorizontalAlignment="Center"
-                                                                  VerticalAlignment="Center"/>
-                                            </Border>
-                                        </ControlTemplate>
-                                    </Setter.Value>
-                                </Setter>
-                                <Style.Triggers>
-                                    <!-- Onglet actif = benchmarks -->
-                                    <DataTrigger Binding="{Binding ShowBenchmarks}" Value="True">
-                                        <Setter Property="Foreground"  Value="#E6EDF3"/>
-                                        <Setter Property="BorderBrush" Value="#388BFD"/>
-                                    </DataTrigger>
-                                </Style.Triggers>
-                            </Style>
-                        </Button.Style>
-                    </Button>
-                </StackPanel>
-
-                <!-- Contrôles à droite — ScrollViewer horizontal en filet de sécurité -->
-                <ScrollViewer Grid.Column="2" HorizontalScrollBarVisibility="Hidden"
-                              VerticalScrollBarVisibility="Disabled"
-                              VerticalAlignment="Center">
-                <StackPanel Orientation="Horizontal"
+                <!-- Contrôles à droite -->
+                <StackPanel Grid.Column="2" Orientation="Horizontal"
                             VerticalAlignment="Center" Margin="0,0,8,0">
 
                     <!-- Badge licence : violet/doré si Ultra, bleu sinon -->
@@ -244,16 +168,6 @@
                         </StackPanel>
                     </Border>
 
-                    <Button Content="📄 Rapport"
-                            Style="{StaticResource ToolBtn}"
-                            Command="{Binding GenerateReportCommand}"
-                            ToolTip="Générer un rapport de session dans C:\ProgramData\RAM-AI\"
-                            Margin="0,0,6,0"/>
-                    <Button Content="📊 Moyennes"
-                            Style="{StaticResource ToolBtn}"
-                            Command="{Binding ShowAverageReportCommand}"
-                            ToolTip="Rapport moyen — moyennes sur toutes les sessions enregistrées"
-                            Margin="0,0,6,0"/>
                     <Button Content="🔑 Licence"
                             Style="{StaticResource ToolBtn}"
                             Command="{Binding OpenLicenseCommand}"
@@ -280,7 +194,7 @@
                     <!-- Bouton Mode Tournoi — Ultra uniquement -->
                     <Button Command="{Binding ToggleTournamentModeCommand}"
                             Margin="0,0,6,0"
-                            ToolTip="Mode Tournoi Ultra : 500ms, seuil RAM 25%, cap 10%/cycle, priorité BelowNormal"
+                            ToolTip="Mode Tournoi Ultra : 500ms, priorité BelowNormal, éviction progressive"
                             Visibility="{Binding IsUltraModeActive, Converter={StaticResource BoolToVis}}">
                         <Button.Style>
                             <Style TargetType="Button" BasedOn="{StaticResource ToolBtn}">
@@ -326,12 +240,10 @@
                         </Button.Content>
                     </Button>
                 </StackPanel>
-                </ScrollViewer>
             </Grid>
         </Border>
 
         <!-- ── Row 1 : Bannière Mode Gaming ──────────────────────────────── -->
-        <!-- Couleur différente selon mode forcé (orange uniforme) ou auto-détecté (dégradé) -->
         <Border Grid.Row="1"
                 Visibility="{Binding IsGamingModeActive, Converter={StaticResource BoolToVis}}"
                 Padding="0,10">
@@ -339,7 +251,6 @@
                 <Style TargetType="Border">
                     <Setter Property="Background">
                         <Setter.Value>
-                            <!-- Dégradé par défaut : mode auto-détecté -->
                             <LinearGradientBrush StartPoint="0,0" EndPoint="1,0">
                                 <GradientStop Color="#C0392B" Offset="0.0"/>
                                 <GradientStop Color="#E67E22" Offset="0.5"/>
@@ -348,7 +259,6 @@
                         </Setter.Value>
                     </Setter>
                     <Style.Triggers>
-                        <!-- Mode forcé : orange uniforme pour le distinguer clairement -->
                         <DataTrigger Binding="{Binding ForceGamingMode}" Value="True">
                             <Setter Property="Background" Value="#D29922"/>
                         </DataTrigger>
@@ -357,7 +267,6 @@
             </Border.Style>
 
             <StackPanel Orientation="Horizontal" HorizontalAlignment="Center">
-                <!-- Pastille pulsante -->
                 <Ellipse Width="10" Height="10" Fill="White"
                          VerticalAlignment="Center" Margin="0,0,10,0">
                     <Ellipse.Triggers>
@@ -372,7 +281,6 @@
                     </Ellipse.Triggers>
                 </Ellipse>
 
-                <!-- Titre adapté selon mode forcé ou auto -->
                 <TextBlock FontSize="14" FontWeight="Bold"
                            Foreground="White" VerticalAlignment="Center">
                     <TextBlock.Style>
@@ -387,7 +295,6 @@
                     </TextBlock.Style>
                 </TextBlock>
 
-                <!-- Nom du jeu (masqué si mode forcé sans détection auto) -->
                 <TextBlock Text=" — " FontSize="14" Foreground="#FFE0A0"
                            VerticalAlignment="Center">
                     <TextBlock.Style>
@@ -423,7 +330,6 @@
         </Border>
 
         <!-- ── Row 2 : Bannière Mode Navigateur ─────────────────────────── -->
-        <!-- Bleue, visible uniquement quand IsBrowserModeActive=True ET gaming inactif -->
         <Border Grid.Row="2" Background="#0D2137" Padding="0,8"
                 Visibility="{Binding IsBrowserModeActive, Converter={StaticResource BoolToVis}}">
             <StackPanel Orientation="Horizontal" HorizontalAlignment="Center">
@@ -442,7 +348,6 @@
         </Border>
 
         <!-- ── Row 3 : Bannière Mode IA ──────────────────────────────────── -->
-        <!-- Violette, visible si IsAiModeActive=True ET gaming inactif -->
         <Border Grid.Row="3" Background="#1A0A2E" Padding="0,8"
                 Visibility="{Binding IsAiModeActive, Converter={StaticResource BoolToVis}}">
             <StackPanel Orientation="Horizontal" HorizontalAlignment="Center">
@@ -461,7 +366,6 @@
         </Border>
 
         <!-- ── Row 4 : Bannière Mode Éco ───────────────────────────────────── -->
-        <!-- Verte/ambre, visible si IsEcoModeActive=True -->
         <Border Grid.Row="4" Background="#0A1A0A" Padding="0,6"
                 Visibility="{Binding IsEcoModeActive, Converter={StaticResource BoolToVis}}">
             <StackPanel Orientation="Horizontal" HorizontalAlignment="Center">
@@ -478,12 +382,10 @@
         <Grid Grid.Row="5">
             <StackPanel VerticalAlignment="Center" HorizontalAlignment="Center">
 
-                <!-- Titre section -->
                 <TextBlock Text="RAM PHYSIQUE UTILISÉE"
                            FontSize="12" FontWeight="SemiBold" Foreground="#8B949E"
                            HorizontalAlignment="Center" Margin="0,0,0,22"/>
 
-                <!-- Deux métriques principales côte à côte -->
                 <StackPanel Orientation="Horizontal" HorizontalAlignment="Center">
 
                     <!-- RAM utilisée actuellement -->
@@ -521,7 +423,6 @@
                 <StackPanel Orientation="Horizontal" HorizontalAlignment="Center"
                             Margin="0,28,0,0">
 
-                    <!-- RAM libérée totale -->
                     <StackPanel Margin="0,0,60,0">
                         <TextBlock Text="{Binding TotalRamFreedGb, StringFormat={}{0:F1} Go}"
                                    FontSize="24" FontWeight="SemiBold"
@@ -531,10 +432,8 @@
                                    HorizontalAlignment="Center" Margin="0,5,0,0"/>
                     </StackPanel>
 
-                    <!-- Séparateur vertical -->
                     <Rectangle Width="1" Fill="#30363D" Margin="0,4,60,4"/>
 
-                    <!-- Processus optimisés -->
                     <StackPanel>
                         <TextBlock Text="{Binding ProcessesOptimized, StringFormat={}{0:N0}}"
                                    FontSize="24" FontWeight="SemiBold"
@@ -545,23 +444,19 @@
                     </StackPanel>
                 </StackPanel>
 
-                <!-- Badge état gaming : "Jeu détecté : X" (auto) ou "Mode Gaming FORCÉ" (manuel) -->
-                <!-- Masqué si DetectedGameLabel est vide (aucun mode gaming actif) -->
+                <!-- Badge état gaming -->
                 <Border HorizontalAlignment="Center" Margin="0,18,0,0"
                         CornerRadius="6" Padding="14,6">
                     <Border.Style>
                         <Style TargetType="Border">
-                            <Setter Property="Visibility"   Value="Visible"/>
-                            <!-- Auto-détection : fond vert -->
-                            <Setter Property="Background"   Value="#1C2A1C"/>
-                            <Setter Property="BorderBrush"  Value="#3FB950"/>
+                            <Setter Property="Visibility"      Value="Visible"/>
+                            <Setter Property="Background"      Value="#1C2A1C"/>
+                            <Setter Property="BorderBrush"     Value="#3FB950"/>
                             <Setter Property="BorderThickness" Value="1"/>
                             <Style.Triggers>
-                                <!-- Masqué si pas de label -->
                                 <DataTrigger Binding="{Binding DetectedGameLabel}" Value="">
                                     <Setter Property="Visibility" Value="Collapsed"/>
                                 </DataTrigger>
-                                <!-- Mode forcé : fond orange -->
                                 <DataTrigger Binding="{Binding ForceGamingMode}" Value="True">
                                     <Setter Property="Background"  Value="#2A1F0A"/>
                                     <Setter Property="BorderBrush" Value="#D29922"/>
@@ -587,7 +482,7 @@
             </StackPanel>
         </Grid>
 
-        <!-- ── Row 5 : Status bar ─────────────────────────────────────────── -->
+        <!-- ── Row 6 : Status bar ─────────────────────────────────────────── -->
         <Border Grid.Row="6" Background="#161B22"
                 BorderBrush="#30363D" BorderThickness="0,1,0,0">
             <Grid Margin="12,0">
@@ -646,8 +541,7 @@
             </Grid>
         </Border>
 
-        <!-- ── Row 6 : Bandeau bêta testeur ──────────────────────────────── -->
-        <!-- Visible uniquement quand IsBetaMode = True -->
+        <!-- ── Row 7 : Bandeau bêta testeur ──────────────────────────────── -->
         <Border Grid.Row="7" Background="#1A1500" Padding="8,5"
                 Visibility="{Binding IsBetaMode, Converter={StaticResource BoolToVis}}">
             <TextBlock Text="{Binding BetaExpiryText}"
@@ -655,14 +549,6 @@
                        Foreground="#D29922"
                        HorizontalAlignment="Center"/>
         </Border>
-
-        <!-- ── Onglet Benchmarks (overlay rows 1-5 sur fond opaque) ──────────── -->
-        <!-- Couvre les bannières gaming/browser/AI/eco et le contenu principal.   -->
-        <!-- Invisible quand ShowBenchmarks = False.                               -->
-        <views:BenchmarkView Grid.Row="1" Grid.RowSpan="5"
-                             DataContext="{Binding BenchmarkVm}"
-                             Background="#0D1117" Panel.ZIndex="10"
-                             Visibility="{Binding ShowBenchmarks, Converter={StaticResource BoolToVis}}"/>
 
     </Grid>
 </Window>

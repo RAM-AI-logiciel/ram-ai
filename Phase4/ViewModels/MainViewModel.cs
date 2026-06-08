@@ -1,12 +1,14 @@
 using System.Diagnostics;
 using System.IO;
 using System.Runtime.InteropServices;
+using System.Text;
 using System.Windows;
 using Application = System.Windows.Application;
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
 using RamAI.Phase4.Models;
 using RamAI.Phase4.Services;
+using Microsoft.Win32;
 
 namespace RamAI.Phase4.ViewModels;
 
@@ -25,7 +27,7 @@ public sealed partial class MainViewModel : ObservableObject
 
     // ── Métriques secondaires ──────────────────────────────────────────────────
     [ObservableProperty] private long   _totalMbSaved;
-    [ObservableProperty] private string _serviceStatus    = "Inconnu";
+    [ObservableProperty] private string _serviceStatus     = "Inconnu";
     [ObservableProperty] private string _licenseTierLabel  = "Aucune";
     [ObservableProperty] private string _licenseCacheLabel = "—";
     [ObservableProperty] private string _lastUpdateText    = "—";
@@ -56,13 +58,33 @@ public sealed partial class MainViewModel : ObservableObject
     // ── Compteurs IA cumulatifs ───────────────────────────────────────────────
     private int _totalAiProcessesEvicted;
 
-    // ── Baseline RAM ──────────────────────────────────────────────────────────
+    // ── RAM au démarrage ─────────────────────────────────────────────────────
     private long _baselineRamUsedMb;
+    private long _totalRamMb;
 
     // ── Stats persistées ──────────────────────────────────────────────────────
     private readonly StatsService _statsService = new();
     private readonly StatsData    _stats;
     private readonly DateTime     _sessionStart = DateTime.Now;
+
+    // ── Tracking des transitions de mode (pour compter les activations) ────────
+    // Chaque champ passe true→false→true à chaque fois que le mode s'active.
+    private bool _prevGaming;
+    private bool _prevAi;
+    private bool _prevBrowser;
+    private bool _prevEco;
+
+    // ── Compteurs de ticks par mode aujourd'hui (pour "mode le plus utilisé") ──
+    private int _todayGamingTicks;
+    private int _todayAiTicks;
+    private int _todayBrowserTicks;
+    private int _todayEcoTicks;
+
+    // ── Pic de RAM libérée en un seul tick (cette session) ────────────────────
+    private long _peakTickFreedMb;
+
+    // ── RAM libérée cette session (pour "meilleure session") ─────────────────
+    private long _sessionFreedMb;
 
     // ── Dossier partagé Phase3 ↔ Phase4 ───────────────────────────────────────
     private static readonly string SharedFlagDir =
@@ -107,11 +129,12 @@ public sealed partial class MainViewModel : ObservableObject
             BetaExpiryText = $"🧪 Version testeur — expire le {licenseService.BetaExpiryDate.Value.ToLocalTime():dd/MM/yyyy}";
         }
 
-        var (_, usedMb) = SystemMemory.GetPhysicalMemoryMb();
+        var (totalMb, usedMb) = SystemMemory.GetPhysicalMemoryMb();
         _baselineRamUsedMb = usedMb;
+        _totalRamMb        = totalMb;
         CurrentRamUsedGb   = usedMb / 1024.0;
 
-        // Charger les stats persistées et réinitialiser les compteurs du jour si besoin
+        // Charger les stats et réinitialiser les compteurs du jour si nécessaire
         _stats = _statsService.Load();
         var todayKey = DateTime.Today.ToString("yyyy-MM-dd");
         if (_stats.TodayDate != todayKey)
@@ -120,7 +143,6 @@ public sealed partial class MainViewModel : ObservableObject
             _stats.TodayRamFreedGb         = 0.0;
             _stats.TodayProcessesOptimized = 0;
         }
-        // Incrémenter le compteur de sessions
         _stats.TotalSessions++;
 
         var __ = EnsurePhase3RunningAsync();
@@ -146,23 +168,41 @@ public sealed partial class MainViewModel : ObservableObject
     {
         Application.Current.Dispatcher.Invoke(() =>
         {
+            // ── RAM libérée ──
             if (entry.PhysicalMbFreed >= 1)
             {
-                TotalMbSaved   += entry.PhysicalMbFreed;
-                TotalRamFreedGb = TotalMbSaved / 1024.0;
+                TotalMbSaved     += entry.PhysicalMbFreed;
+                TotalRamFreedGb   = TotalMbSaved / 1024.0;
+                _sessionFreedMb  += entry.PhysicalMbFreed;
 
-                // Accumuler dans les stats persistées
+                if (entry.PhysicalMbFreed > _peakTickFreedMb)
+                    _peakTickFreedMb = entry.PhysicalMbFreed;
+
                 double freedGb = entry.PhysicalMbFreed / 1024.0;
-                _stats.TotalRamFreedGb   += freedGb;
-                _stats.TodayRamFreedGb   += freedGb;
+                _stats.TotalRamFreedGb += freedGb;
+                _stats.TodayRamFreedGb += freedGb;
+
+                // Attribuer à un mode (priorité : Gaming > IA > Navigateur > Éco)
+                if      (entry.IsGamingMode || ForceGamingMode) _stats.GamingRamFreedGb  += freedGb;
+                else if (entry.IsAiMode)                        _stats.AiRamFreedGb      += freedGb;
+                else if (entry.IsBrowserMode)                   _stats.BrowserRamFreedGb += freedGb;
+                else if (entry.IsEcoMode)                       _stats.EcoRamFreedGb     += freedGb;
             }
+
+            // ── Processus ──
             long procsThisTick = entry.ColdEvicted + entry.AiProcessesOptimized;
             ProcessesOptimized            += procsThisTick;
             _stats.TotalProcessesOptimized += procsThisTick;
             _stats.TodayProcessesOptimized += procsThisTick;
-            LastUpdateText      = entry.Timestamp.ToLocalTime().ToString("HH:mm:ss");
+            LastUpdateText = entry.Timestamp.ToLocalTime().ToString("HH:mm:ss");
 
-            IsGamingModeActive = entry.IsGamingMode || ForceGamingMode;
+            // ── Mode Gaming ──
+            bool gamingNow = entry.IsGamingMode || ForceGamingMode;
+            IsGamingModeActive = gamingNow;
+
+            if (!_prevGaming && gamingNow) _stats.GamingActivations++;
+            _prevGaming = gamingNow;
+            if (gamingNow) _todayGamingTicks++;
 
             if (entry.IsGamingMode && !string.IsNullOrEmpty(entry.GameName))
             {
@@ -181,7 +221,8 @@ public sealed partial class MainViewModel : ObservableObject
             }
 
             // ── Mode Navigateur ──
-            if (entry.IsBrowserMode && !IsGamingModeActive && !entry.IsAiMode)
+            bool browserNow = entry.IsBrowserMode && !gamingNow && !entry.IsAiMode;
+            if (browserNow)
             {
                 IsBrowserModeActive = true;
                 BrowserInfoText     = $"{entry.BrowserName} — {entry.BrowserTabsOptimized} onglet(s) optimisé(s)";
@@ -191,9 +232,13 @@ public sealed partial class MainViewModel : ObservableObject
                 IsBrowserModeActive = false;
                 BrowserInfoText     = string.Empty;
             }
+            if (!_prevBrowser && browserNow) _stats.BrowserActivations++;
+            _prevBrowser = browserNow;
+            if (browserNow) _todayBrowserTicks++;
 
             // ── Mode IA ──
-            if (entry.IsAiMode && !IsGamingModeActive)
+            bool aiNow = entry.IsAiMode && !gamingNow;
+            if (aiNow)
             {
                 _totalAiProcessesEvicted += entry.AiProcessesOptimized;
                 IsAiModeActive = true;
@@ -204,9 +249,13 @@ public sealed partial class MainViewModel : ObservableObject
                 IsAiModeActive = false;
                 AiInfoText     = string.Empty;
             }
+            if (!_prevAi && aiNow) _stats.AiActivations++;
+            _prevAi = aiNow;
+            if (aiNow) _todayAiTicks++;
 
             // ── Mode Éco ──
-            if (entry.IsEcoMode)
+            bool ecoNow = entry.IsEcoMode;
+            if (ecoNow)
             {
                 IsEcoModeActive = true;
                 EcoModeText     = "🔋 Mode Éco actif";
@@ -216,6 +265,9 @@ public sealed partial class MainViewModel : ObservableObject
                 IsEcoModeActive = false;
                 EcoModeText     = string.Empty;
             }
+            if (!_prevEco && ecoNow) _stats.EcoActivations++;
+            _prevEco = ecoNow;
+            if (ecoNow) _todayEcoTicks++;
 
             // ── Ultra ──
             IsTournamentModeActive = entry.IsTournamentMode;
@@ -245,6 +297,7 @@ public sealed partial class MainViewModel : ObservableObject
             {
                 Directory.CreateDirectory(SharedFlagDir);
                 File.WriteAllText(TournamentFlagPath, "tournament");
+                _stats.TournamentUseCount++;
             }
             else
             {
@@ -440,61 +493,130 @@ public sealed partial class MainViewModel : ObservableObject
         {
             Directory.CreateDirectory(SharedFlagDir);
             File.WriteAllText(TurboFlagPath, "turbo");
+            _stats.TurboUseCount++;
         }
         catch { }
     }
 
-    // ── Rapport ───────────────────────────────────────────────────────────────
+    // ── Rapport détaillé ──────────────────────────────────────────────────────
 
-    /// <summary>
-    /// Génère un fichier rapport.txt dans C:\ProgramData\RAM-AI\ et l'ouvre
-    /// dans le Bloc-notes Windows. Aucune fenêtre supplémentaire dans l'app.
-    /// </summary>
     [RelayCommand]
     private void GenerateReport()
     {
         try
         {
-            var now      = DateTime.Now;
-            var elapsed  = now - _sessionStart;
-            int hours    = (int)elapsed.TotalHours;
-            int minutes  = elapsed.Minutes;
+            var    now     = DateTime.Now;
+            var    elapsed = now - _sessionStart;
+            int    hours   = (int)elapsed.TotalHours;
+            int    minutes = elapsed.Minutes;
 
-            double avgRamPerSession = _stats.TotalSessions > 0
-                ? _stats.TotalRamFreedGb / _stats.TotalSessions
+            // ── Infos système ──
+            string pcName  = GetPcName();
+            string os      = GetOsVersion();
+            string cpu     = GetCpuName();
+            double totalGb = _totalRamMb > 0 ? _totalRamMb / 1024.0 : 0.0;
+
+            // ── RAM actuelle ──
+            var (_, usedNowMb) = SystemMemory.GetPhysicalMemoryMb();
+            double ramUsedNowGb  = usedNowMb / 1024.0;
+            double ramStartGb    = _baselineRamUsedMb / 1024.0;
+            double gainPct       = _baselineRamUsedMb > 0
+                ? (_baselineRamUsedMb - usedNowMb) * 100.0 / _baselineRamUsedMb
                 : 0.0;
 
-            string report =
-                $"================================\r\n" +
-                $"RAM-AI — Rapport\r\n" +
-                $"Généré le : {now:dd/MM/yyyy HH:mm:ss}\r\n" +
-                $"================================\r\n" +
-                $"\r\n" +
-                $"── RAPPORT DU JOUR ──\r\n" +
-                $"RAM récupérée aujourd'hui       : {_stats.TodayRamFreedGb:F2} Go\r\n" +
-                $"Processus optimisés aujourd'hui : {_stats.TodayProcessesOptimized:N0}\r\n" +
-                $"Durée d'utilisation aujourd'hui : {hours}h {minutes:D2}m\r\n" +
-                $"\r\n" +
-                $"── RAPPORT GLOBAL (depuis le 1er lancement) ──\r\n" +
-                $"RAM récupérée au total          : {_stats.TotalRamFreedGb:F2} Go\r\n" +
-                $"Processus optimisés au total    : {_stats.TotalProcessesOptimized:N0}\r\n" +
-                $"Nombre de sessions              : {_stats.TotalSessions}\r\n" +
-                $"Moyenne RAM / session           : {avgRamPerSession:F2} Go\r\n" +
-                $"Date du 1er lancement           : {_stats.FirstLaunch.ToLocalTime():dd/MM/yyyy HH:mm}\r\n" +
-                $"\r\n" +
-                $"================================\r\n" +
-                $"RAM-AI v1.0 — {now:dd/MM/yyyy}\r\n" +
-                $"================================\r\n";
+            // ── Mode le plus utilisé aujourd'hui ──
+            string topMode = "Aucun";
+            int    topTick = 0;
+            if (_todayGamingTicks  > topTick) { topTick = _todayGamingTicks;  topMode = "Gaming";     }
+            if (_todayAiTicks      > topTick) { topTick = _todayAiTicks;      topMode = "IA";         }
+            if (_todayBrowserTicks > topTick) { topTick = _todayBrowserTicks; topMode = "Navigateur"; }
+            if (_todayEcoTicks     > topTick) {                               topMode = "Éco";        }
+
+            // ── Pic session ──
+            double peakGb = _peakTickFreedMb / 1024.0;
+
+            // ── Stats globales ──
+            double avgRamPerSession  = _stats.TotalSessions > 0
+                ? _stats.TotalRamFreedGb / _stats.TotalSessions : 0.0;
+            double avgProcsPerSession = _stats.TotalSessions > 0
+                ? (double)_stats.TotalProcessesOptimized / _stats.TotalSessions : 0.0;
+
+            // Durée totale (cumulée + session en cours)
+            long   totalMinutes   = _stats.TotalUsageMinutes + (long)elapsed.TotalMinutes;
+            int    totalDays      = (int)(totalMinutes / 1440);
+            int    totalHours     = (int)((totalMinutes % 1440) / 60);
+            int    totalMins      = (int)(totalMinutes % 60);
+
+            // Meilleure session (hors session courante déjà persistée)
+            string bestSession = _stats.BestSessionRamFreedGb > 0
+                ? $"{_stats.BestSessionRamFreedGb:F2} Go récupérés le {_stats.BestSessionDate.ToLocalTime():dd/MM/yyyy}"
+                : "—";
+
+            // ── Conclusion ──
+            double efficiencyPct = totalGb > 0
+                ? avgRamPerSession / totalGb * 100.0 : 0.0;
+            string verdict =
+                _stats.TotalRamFreedGb > 10.0 ? "Performance excellente sur ce système." :
+                _stats.TotalRamFreedGb > 5.0  ? "Bonne performance sur ce système."      :
+                                                 "Performance correcte sur ce système.";
+
+            var sb = new StringBuilder();
+            sb.AppendLine("================================");
+            sb.AppendLine("RAM-AI — Rapport détaillé");
+            sb.AppendLine($"Généré le : {now:dd/MM/yyyy HH:mm:ss}");
+            sb.AppendLine("================================");
+            sb.AppendLine();
+            sb.AppendLine("── SYSTÈME ──");
+            sb.AppendLine($"PC                              : {pcName}");
+            sb.AppendLine($"RAM totale                      : {totalGb:F1} Go");
+            sb.AppendLine($"OS                              : {os}");
+            sb.AppendLine($"Processeur                      : {cpu}");
+            sb.AppendLine();
+            sb.AppendLine("── RAPPORT DU JOUR ──");
+            sb.AppendLine($"Date                            : {now:dd/MM/yyyy}");
+            sb.AppendLine($"Durée d'utilisation             : {hours}h {minutes:D2}m");
+            sb.AppendLine($"RAM utilisée au démarrage       : {ramStartGb:F2} Go");
+            sb.AppendLine($"RAM utilisée actuellement       : {ramUsedNowGb:F2} Go");
+            sb.AppendLine($"RAM récupérée aujourd'hui       : {_stats.TodayRamFreedGb:F2} Go");
+            sb.AppendLine($"Gain en %                       : {gainPct:F1}%");
+            sb.AppendLine($"Processus optimisés aujourd'hui : {_stats.TodayProcessesOptimized:N0}");
+            sb.AppendLine($"Mode le plus utilisé aujourd'hui: {topMode}");
+            sb.AppendLine($"Pic de RAM récupérée (session)  : {peakGb:F2} Go");
+            sb.AppendLine();
+            sb.AppendLine("── RAPPORT GLOBAL ──");
+            sb.AppendLine($"Date du 1er lancement           : {_stats.FirstLaunch.ToLocalTime():dd/MM/yyyy HH:mm}");
+            sb.AppendLine($"Nombre total de sessions        : {_stats.TotalSessions}");
+            sb.AppendLine($"Durée totale d'utilisation      : {totalDays}j {totalHours}h {totalMins:D2}m");
+            sb.AppendLine($"RAM récupérée au total          : {_stats.TotalRamFreedGb:F2} Go");
+            sb.AppendLine($"Processus optimisés au total    : {_stats.TotalProcessesOptimized:N0}");
+            sb.AppendLine($"Moyenne RAM / session           : {avgRamPerSession:F2} Go");
+            sb.AppendLine($"Moyenne processus / session     : {avgProcsPerSession:F0}");
+            sb.AppendLine($"Meilleure session               : {bestSession}");
+            sb.AppendLine();
+            sb.AppendLine("── MODES UTILISÉS ──");
+            sb.AppendLine($"Mode Gaming     : {_stats.GamingActivations,3} sessions — {_stats.GamingRamFreedGb:F2} Go récupérés");
+            sb.AppendLine($"Mode IA         : {_stats.AiActivations,3} sessions — {_stats.AiRamFreedGb:F2} Go récupérés");
+            sb.AppendLine($"Mode Navigateur : {_stats.BrowserActivations,3} sessions — {_stats.BrowserRamFreedGb:F2} Go récupérés");
+            sb.AppendLine($"Mode Eco        : {_stats.EcoActivations,3} sessions — {_stats.EcoRamFreedGb:F2} Go récupérés");
+            sb.AppendLine($"Mode Turbo      : {_stats.TurboUseCount,3} utilisation(s)");
+            sb.AppendLine($"Mode Tournoi    : {_stats.TournamentUseCount,3} utilisation(s)");
+            sb.AppendLine();
+            sb.AppendLine("── CONCLUSION ──");
+            sb.AppendLine($"RAM-AI a récupéré {_stats.TotalRamFreedGb:F2} Go depuis le {_stats.FirstLaunch.ToLocalTime():dd/MM/yyyy}.");
+            sb.AppendLine($"Soit l'équivalent de {efficiencyPct:F1}% de votre RAM totale libérée en moyenne.");
+            sb.AppendLine(verdict);
+            sb.AppendLine();
+            sb.AppendLine("================================");
+            sb.AppendLine($"RAM-AI v1.0 — {now:dd/MM/yyyy}");
+            sb.AppendLine("================================");
 
             string dir  = Path.Combine(
                 Environment.GetFolderPath(Environment.SpecialFolder.CommonApplicationData),
                 "RAM-AI");
             string path = Path.Combine(dir, $"rapport_{now:yyyyMMdd_HHmmss}.txt");
-
             Directory.CreateDirectory(dir);
-            File.WriteAllText(path, report, System.Text.Encoding.UTF8);
+            File.WriteAllText(path, sb.ToString(), Encoding.UTF8);
 
-            // Ouvrir dans le Bloc-notes Windows
             Process.Start(new ProcessStartInfo("notepad.exe", $"\"{path}\"")
             {
                 UseShellExecute = true,
@@ -503,8 +625,61 @@ public sealed partial class MainViewModel : ObservableObject
         catch { }
     }
 
-    /// <summary>Sauvegarde les stats persistées. Appelé par App.xaml.cs à la fermeture.</summary>
-    public void SaveStats() => _statsService.Save(_stats);
+    // ── Informations système ──────────────────────────────────────────────────
+
+    private static string GetPcName()
+    {
+        try { return Environment.MachineName; }
+        catch { return "Inconnu"; }
+    }
+
+    private static string GetOsVersion()
+    {
+        try
+        {
+            var v    = Environment.OSVersion.Version;
+            string name = v.Build >= 22000 ? "Windows 11" : "Windows 10";
+            return $"{name} (Build {v.Build})";
+        }
+        catch { return "Windows"; }
+    }
+
+    private static string GetCpuName()
+    {
+        try
+        {
+            using var key = Registry.LocalMachine.OpenSubKey(
+                @"HARDWARE\DESCRIPTION\System\CentralProcessor\0");
+            return key?.GetValue("ProcessorNameString")?.ToString()?.Trim() ?? "Inconnu";
+        }
+        catch { return "Inconnu"; }
+    }
+
+    // ── Sauvegarde des stats à la fermeture ───────────────────────────────────
+
+    /// <summary>
+    /// Finalise les stats de la session (durée, meilleure session) et persiste.
+    /// Appelé par App.xaml.cs dans ExitApp().
+    /// </summary>
+    public void SaveStats()
+    {
+        try
+        {
+            // Ajouter la durée de cette session
+            _stats.TotalUsageMinutes += (long)(DateTime.Now - _sessionStart).TotalMinutes;
+
+            // Mettre à jour la meilleure session si besoin
+            double sessionGb = _sessionFreedMb / 1024.0;
+            if (sessionGb > _stats.BestSessionRamFreedGb)
+            {
+                _stats.BestSessionRamFreedGb = sessionGb;
+                _stats.BestSessionDate       = DateTime.UtcNow;
+            }
+        }
+        catch { }
+
+        _statsService.Save(_stats);
+    }
 
     private static void RunSc(string args)
     {

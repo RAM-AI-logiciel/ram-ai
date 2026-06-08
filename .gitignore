@@ -2,6 +2,12 @@
 **/bin/
 **/obj/
 
+# Cache runtime Phase3 (binaire généré à l'exécution)
+Phase3/cache/
+
+# Installeurs compilés (racine et Phase4)
+installer/
+
 # Clés générées (ne pas versionner)
 Tools/beta_keys.txt
 Tools/ultra_keys.txt

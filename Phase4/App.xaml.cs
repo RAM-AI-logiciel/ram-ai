@@ -1,3 +1,4 @@
+using System.Diagnostics;
 using System.IO;
 using System.Windows;
 using System.Windows.Threading;
@@ -19,13 +20,12 @@ public partial class App : Application
     private NotifyIconService? _tray;
     private MainWindow?        _mainWindow;
 
-    // events.log dans C:\ProgramData\RAM-AI\ — même dossier que les fichiers flag.
-    // Phase3 écrit ici (RamAiService.cs), Phase4 lit ici.
-    // Fonctionne en dev ET en production sans chemin hardcodé.
-    private static readonly string LogPath =
-        Path.Combine(
-            Environment.GetFolderPath(Environment.SpecialFolder.CommonApplicationData),
-            "RAM-AI", "events.log");
+    private static readonly string SharedDir =
+        Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.CommonApplicationData), "RAM-AI");
+
+    private static readonly string LogPath          = Path.Combine(SharedDir, "events.log");
+    private static readonly string BenchmarksPath   = Path.Combine(SharedDir, "benchmarks.json");
+    private static readonly string SessionsPath     = Path.Combine(SharedDir, "sessions.json");
 
     // ── Démarrage ─────────────────────────────────────────────────────────────
 
@@ -33,9 +33,27 @@ public partial class App : Application
     {
         base.OnStartup(e);
 
+        // ── Gestionnaire global d'exceptions non gérées ───────────────────────
+        // Capture les exceptions WPF (thread UI) et thread-pool qui auraient
+        // sinon fermé le process silencieusement.
+        DispatcherUnhandledException += OnDispatcherException;
+        AppDomain.CurrentDomain.UnhandledException += OnDomainException;
+
         // L'application vit dans la barre système même si la fenêtre est fermée
         ShutdownMode = ShutdownMode.OnExplicitShutdown;
 
+        // ── Nettoyage préventif des fichiers JSON ─────────────────────────────
+        // Si un crash a laissé un fichier JSON corrompu (JSON tronqué/invalide),
+        // le supprimer avant d'initialiser les services pour garantir le démarrage.
+        SanitizeJsonFile(BenchmarksPath);
+        SanitizeJsonFile(SessionsPath);
+
+        try { InitializeApp(); }
+        catch (Exception ex) { ShowFatalError(ex, "initialisation"); }
+    }
+
+    private void InitializeApp()
+    {
         // ── Vérification licence EN PREMIER — aucun service ni tray avant ça ──
         var license = LicenseService.LoadSaved();
 
@@ -79,6 +97,62 @@ public partial class App : Application
         // Différer l'ouverture de MainWindow à ApplicationIdle pour laisser WPF
         // terminer proprement la fermeture de LicenseWindow avant de créer MainWindow.
         Dispatcher.BeginInvoke(DispatcherPriority.ApplicationIdle, new Action(ShowDashboard));
+    } // end InitializeApp
+
+    // ── Gestionnaires d'exceptions globaux ───────────────────────────────────
+
+    private void OnDispatcherException(object sender, DispatcherUnhandledExceptionEventArgs args)
+    {
+        args.Handled = true;
+        ShowFatalError(args.Exception, "interface");
+    }
+
+    private void OnDomainException(object sender, UnhandledExceptionEventArgs args)
+    {
+        if (args.ExceptionObject is Exception ex)
+            ShowFatalError(ex, "thread");
+    }
+
+    private void ShowFatalError(Exception ex, string context)
+    {
+        System.Windows.MessageBox.Show(
+            $"Erreur RAM-AI ({context}) :\n\n{ex.GetType().Name}: {ex.Message}\n\n" +
+            $"L'application va redémarrer.",
+            "RAM-AI — Erreur critique",
+            MessageBoxButton.OK,
+            MessageBoxImage.Error);
+
+        try { Process.Start(new ProcessStartInfo(Environment.ProcessPath!)
+            { UseShellExecute = true }); }
+        catch { }
+        Shutdown(1);
+    }
+
+    // ── Nettoyage préventif JSON ──────────────────────────────────────────────
+
+    /// <summary>
+    /// Vérifie si le fichier JSON est valide. S'il existe et est corrompu
+    /// (JSON invalide, tronqué…), il est supprimé pour garantir le démarrage.
+    /// </summary>
+    private static void SanitizeJsonFile(string path)
+    {
+        if (!File.Exists(path)) return;
+        try
+        {
+            var text = File.ReadAllText(path);
+            if (string.IsNullOrWhiteSpace(text))
+            {
+                File.Delete(path);
+                return;
+            }
+            // Vérification JSON rapide : tenter un parse sans déserialiser
+            using var doc = System.Text.Json.JsonDocument.Parse(text);
+        }
+        catch
+        {
+            // Fichier non parseable → le supprimer
+            try { File.Delete(path); } catch { }
+        }
     }
 
     // ── Afficher / réafficher le dashboard ────────────────────────────────────

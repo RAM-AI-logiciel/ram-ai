@@ -15,13 +15,25 @@ public sealed class BenchmarkService
 
     public List<BenchmarkSession> LoadHistory()
     {
+        if (!File.Exists(DataFile)) return new();
         try
         {
-            if (!File.Exists(DataFile)) return new();
-            return JsonSerializer.Deserialize<List<BenchmarkSession>>(
-                       File.ReadAllText(DataFile), Opts) ?? new();
+            var result = JsonSerializer.Deserialize<List<BenchmarkSession>>(
+                             File.ReadAllText(DataFile), Opts);
+            return result ?? new();
         }
-        catch { return new(); }
+        catch
+        {
+            // Fichier corrompu (crash en cours d'écriture) → le supprimer pour
+            // ne pas bloquer tous les démarrages suivants.
+            TryDeleteCorrupt(DataFile);
+            return new();
+        }
+    }
+
+    private static void TryDeleteCorrupt(string path)
+    {
+        try { File.Delete(path); } catch { }
     }
 
     public void SaveSession(BenchmarkSession session)

@@ -15,13 +15,18 @@ public sealed class SessionHistoryService
 
     public List<SessionRecord> Load()
     {
+        if (!File.Exists(SessionsPath)) return new();
         try
         {
-            if (!File.Exists(SessionsPath)) return new();
             var json = File.ReadAllText(SessionsPath);
             return JsonSerializer.Deserialize<List<SessionRecord>>(json, Opts) ?? new();
         }
-        catch { return new(); }
+        catch
+        {
+            // Fichier corrompu → le supprimer pour ne pas bloquer les démarrages suivants.
+            try { File.Delete(SessionsPath); } catch { }
+            return new();
+        }
     }
 
     public void Append(SessionRecord record)

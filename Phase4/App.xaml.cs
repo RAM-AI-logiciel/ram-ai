@@ -23,8 +23,9 @@ public partial class App : Application
     private static readonly string SharedDir =
         Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.CommonApplicationData), "RAM-AI");
 
-    private static readonly string LogPath   = Path.Combine(SharedDir, "events.log");
-    private static readonly string StatsPath = Path.Combine(SharedDir, "stats.json");
+    private static readonly string LogPath      = Path.Combine(SharedDir, "events.log");
+    private static readonly string StatsPath    = Path.Combine(SharedDir, "stats.json");
+    private static readonly string MeasuresPath = Path.Combine(SharedDir, "measures.json");
 
     // ── Démarrage ─────────────────────────────────────────────────────────────
 
@@ -46,6 +47,7 @@ public partial class App : Application
         // le supprimer avant d'initialiser les services pour garantir le démarrage.
 
         SanitizeJsonFile(StatsPath);
+        SanitizeJsonFile(MeasuresPath);
 
         try { InitializeApp(); }
         catch (Exception ex) { ShowFatalError(ex, "initialisation"); }

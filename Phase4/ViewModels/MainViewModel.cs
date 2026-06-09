@@ -63,12 +63,16 @@ public sealed partial class MainViewModel : ObservableObject
     private long _totalRamMb;
 
     // ── Stats persistées ──────────────────────────────────────────────────────
-    private readonly StatsService _statsService = new();
-    private readonly StatsData    _stats;
-    private readonly DateTime     _sessionStart = DateTime.Now;
+    private readonly StatsService   _statsService   = new();
+    private readonly MeasureService _measureService = new();
+    private readonly StatsData      _stats;
+    private readonly DateTime       _sessionStart   = DateTime.Now;
+
+    // ── Mode courant (mis à jour dans OnNewEntry, lu depuis MeasureLoop) ──────
+    // Volatile car lu depuis un thread pool, écrit depuis le dispatcher.
+    private volatile string _currentActiveMode = "Standard";
 
     // ── Tracking des transitions de mode (pour compter les activations) ────────
-    // Chaque champ passe true→false→true à chaque fois que le mode s'active.
     private bool _prevGaming;
     private bool _prevAi;
     private bool _prevBrowser;
@@ -85,6 +89,14 @@ public sealed partial class MainViewModel : ObservableObject
 
     // ── RAM libérée cette session (pour "meilleure session") ─────────────────
     private long _sessionFreedMb;
+
+    // ── Détection de relances de processus ────────────────────────────────────
+    // On surveille uniquement les processus en instance unique pour éviter le
+    // bruit de svchost / RuntimeBroker qui ont de nombreuses instances.
+    private HashSet<string> _prevSingleInstanceProcs = new(StringComparer.OrdinalIgnoreCase);
+    private HashSet<string> _goneLastTick             = new(StringComparer.OrdinalIgnoreCase);
+    // Processus qui se sont relancés pendant la session : name → nombre de relances
+    private readonly Dictionary<string, int> _restartCounts = new(StringComparer.OrdinalIgnoreCase);
 
     // ── Dossier partagé Phase3 ↔ Phase4 ───────────────────────────────────────
     private static readonly string SharedFlagDir =
@@ -146,7 +158,8 @@ public sealed partial class MainViewModel : ObservableObject
         _stats.TotalSessions++;
 
         var __ = EnsurePhase3RunningAsync();
-        var _  = RefreshLoop();
+        var _1 = RefreshLoop();
+        var _2 = MeasureLoop();    // Point 1 : mesures toutes les 10s
     }
 
     // ── Lecture du contenu du flag ────────────────────────────────────────────
@@ -182,7 +195,7 @@ public sealed partial class MainViewModel : ObservableObject
                 _stats.TotalRamFreedGb += freedGb;
                 _stats.TodayRamFreedGb += freedGb;
 
-                // Attribuer à un mode (priorité : Gaming > IA > Navigateur > Éco)
+                // Attribuer la RAM libérée au mode actif (priorité : Gaming > IA > Navigateur > Éco)
                 if      (entry.IsGamingMode || ForceGamingMode) _stats.GamingRamFreedGb  += freedGb;
                 else if (entry.IsAiMode)                        _stats.AiRamFreedGb      += freedGb;
                 else if (entry.IsBrowserMode)                   _stats.BrowserRamFreedGb += freedGb;
@@ -199,7 +212,6 @@ public sealed partial class MainViewModel : ObservableObject
             // ── Mode Gaming ──
             bool gamingNow = entry.IsGamingMode || ForceGamingMode;
             IsGamingModeActive = gamingNow;
-
             if (!_prevGaming && gamingNow) _stats.GamingActivations++;
             _prevGaming = gamingNow;
             if (gamingNow) _todayGamingTicks++;
@@ -274,6 +286,15 @@ public sealed partial class MainViewModel : ObservableObject
             VramInfoText = entry.VramMb > 0
                 ? $"VRAM : {entry.VramMb} Mo"
                 : string.Empty;
+
+            // ── Mettre à jour le mode courant (lu par MeasureLoop) ──
+            _currentActiveMode =
+                entry.IsTournamentMode            ? "Tournoi"    :
+                (entry.IsGamingMode || ForceGamingMode) ? "Gaming" :
+                (entry.IsAiMode && !gamingNow)    ? "IA"         :
+                browserNow                        ? "Navigateur" :
+                ecoNow                            ? "Éco"        :
+                                                    "Standard";
         });
     }
 
@@ -307,7 +328,7 @@ public sealed partial class MainViewModel : ObservableObject
         catch { }
     }
 
-    // ── Boucle de rafraîchissement toutes les 2 s ─────────────────────────────
+    // ── Boucle de rafraîchissement UI toutes les 2 s ──────────────────────────
 
     private async Task RefreshLoop()
     {
@@ -340,6 +361,73 @@ public sealed partial class MainViewModel : ObservableObject
             });
 
             await Task.Delay(2000);
+        }
+        // ReSharper disable once FunctionNeverReturns
+    }
+
+    // ── Point 1 : Mesures toutes les 10 secondes ─────────────────────────────
+
+    private async Task MeasureLoop()
+    {
+        // Attendre que l'app soit prête avant la première mesure
+        await Task.Delay(2000);
+
+        while (true)
+        {
+            try
+            {
+                var (totalMb, usedMb) = SystemMemory.GetPhysicalMemoryMb();
+                double availGb = totalMb > 0 ? (totalMb - usedMb) / 1024.0 : 0.0;
+                double usedGb  = usedMb / 1024.0;
+
+                // Compter les processus et détecter les relances (Point 3)
+                int    procCount = 0;
+                var    restartDetected = new List<string>();
+
+                try
+                {
+                    var allProcs = Process.GetProcesses();
+                    procCount = allProcs.Length;
+
+                    // Construire la vue des processus à instance unique
+                    var currentSingle = allProcs
+                        .GroupBy(p => p.ProcessName, StringComparer.OrdinalIgnoreCase)
+                        .Where(g => g.Count() == 1)
+                        .Select(g => g.Key)
+                        .ToHashSet(StringComparer.OrdinalIgnoreCase);
+
+                    // Détecter les relances : était absent au tick précédent, réapparu maintenant
+                    foreach (var name in _goneLastTick)
+                    {
+                        if (currentSingle.Contains(name))
+                        {
+                            _restartCounts[name] = _restartCounts.GetValueOrDefault(name, 0) + 1;
+                            restartDetected.Add(name);
+                        }
+                    }
+
+                    // Mettre à jour les sets pour le prochain tick
+                    _goneLastTick             = new HashSet<string>(_prevSingleInstanceProcs.Except(currentSingle), StringComparer.OrdinalIgnoreCase);
+                    _prevSingleInstanceProcs  = currentSingle;
+
+                    // Disposer les objets Process pour éviter les fuites
+                    foreach (var p in allProcs)
+                        try { p.Dispose(); } catch { }
+                }
+                catch { /* Process.GetProcesses() peut échouer si accès refusé */ }
+
+                _measureService.Add(new MeasurePoint
+                {
+                    Timestamp      = DateTime.UtcNow,
+                    RamAvailableGb = availGb,
+                    RamUsedGb      = usedGb,
+                    ProcessCount   = procCount,
+                    ActiveMode     = _currentActiveMode,
+                });
+            }
+            catch { /* Jamais de crash */ }
+
+            await Task.Delay(10_000);
         }
         // ReSharper disable once FunctionNeverReturns
     }
@@ -518,11 +606,10 @@ public sealed partial class MainViewModel : ObservableObject
 
             // ── RAM actuelle ──
             var (_, usedNowMb) = SystemMemory.GetPhysicalMemoryMb();
-            double ramUsedNowGb  = usedNowMb / 1024.0;
-            double ramStartGb    = _baselineRamUsedMb / 1024.0;
-            double gainPct       = _baselineRamUsedMb > 0
-                ? (_baselineRamUsedMb - usedNowMb) * 100.0 / _baselineRamUsedMb
-                : 0.0;
+            double ramUsedNowGb = usedNowMb / 1024.0;
+            double ramStartGb   = _baselineRamUsedMb / 1024.0;
+            double gainPct      = _baselineRamUsedMb > 0
+                ? (_baselineRamUsedMb - usedNowMb) * 100.0 / _baselineRamUsedMb : 0.0;
 
             // ── Mode le plus utilisé aujourd'hui ──
             string topMode = "Aucun";
@@ -532,46 +619,56 @@ public sealed partial class MainViewModel : ObservableObject
             if (_todayBrowserTicks > topTick) { topTick = _todayBrowserTicks; topMode = "Navigateur"; }
             if (_todayEcoTicks     > topTick) {                               topMode = "Éco";        }
 
-            // ── Pic session ──
-            double peakGb = _peakTickFreedMb / 1024.0;
-
-            // ── Stats globales ──
-            double avgRamPerSession  = _stats.TotalSessions > 0
+            // ── Pics et stats globales ──
+            double peakGb           = _peakTickFreedMb / 1024.0;
+            double avgRamPerSession = _stats.TotalSessions > 0
                 ? _stats.TotalRamFreedGb / _stats.TotalSessions : 0.0;
             double avgProcsPerSession = _stats.TotalSessions > 0
                 ? (double)_stats.TotalProcessesOptimized / _stats.TotalSessions : 0.0;
 
             // Durée totale (cumulée + session en cours)
-            long   totalMinutes   = _stats.TotalUsageMinutes + (long)elapsed.TotalMinutes;
-            int    totalDays      = (int)(totalMinutes / 1440);
-            int    totalHours     = (int)((totalMinutes % 1440) / 60);
-            int    totalMins      = (int)(totalMinutes % 60);
+            long totalMinutes = _stats.TotalUsageMinutes + (long)elapsed.TotalMinutes;
+            int  totalDays    = (int)(totalMinutes / 1440);
+            int  totalHours   = (int)((totalMinutes % 1440) / 60);
+            int  totalMins    = (int)(totalMinutes % 60);
 
-            // Meilleure session (hors session courante déjà persistée)
             string bestSession = _stats.BestSessionRamFreedGb > 0
                 ? $"{_stats.BestSessionRamFreedGb:F2} Go récupérés le {_stats.BestSessionDate.ToLocalTime():dd/MM/yyyy}"
                 : "—";
 
             // ── Conclusion ──
-            double efficiencyPct = totalGb > 0
-                ? avgRamPerSession / totalGb * 100.0 : 0.0;
+            double efficiencyPct = totalGb > 0 ? avgRamPerSession / totalGb * 100.0 : 0.0;
             string verdict =
                 _stats.TotalRamFreedGb > 10.0 ? "Performance excellente sur ce système." :
                 _stats.TotalRamFreedGb > 5.0  ? "Bonne performance sur ce système."      :
                                                  "Performance correcte sur ce système.";
 
+            // ── Mesures (Point 1) ──
+            var measures = _measureService.GetSnapshot();
+
+            // ── Relances détectées (Point 3) ──
+            var restarts = _restartCounts
+                .Where(kv => kv.Value > 0)
+                .OrderByDescending(kv => kv.Value)
+                .ToList();
+
+            // ── Construction du rapport ────────────────────────────────────────
             var sb = new StringBuilder();
             sb.AppendLine("================================");
             sb.AppendLine("RAM-AI — Rapport détaillé");
             sb.AppendLine($"Généré le : {now:dd/MM/yyyy HH:mm:ss}");
             sb.AppendLine("================================");
             sb.AppendLine();
+
+            // SYSTÈME
             sb.AppendLine("── SYSTÈME ──");
             sb.AppendLine($"PC                              : {pcName}");
             sb.AppendLine($"RAM totale                      : {totalGb:F1} Go");
             sb.AppendLine($"OS                              : {os}");
             sb.AppendLine($"Processeur                      : {cpu}");
             sb.AppendLine();
+
+            // RAPPORT DU JOUR
             sb.AppendLine("── RAPPORT DU JOUR ──");
             sb.AppendLine($"Date                            : {now:dd/MM/yyyy}");
             sb.AppendLine($"Durée d'utilisation             : {hours}h {minutes:D2}m");
@@ -583,6 +680,8 @@ public sealed partial class MainViewModel : ObservableObject
             sb.AppendLine($"Mode le plus utilisé aujourd'hui: {topMode}");
             sb.AppendLine($"Pic de RAM récupérée (session)  : {peakGb:F2} Go");
             sb.AppendLine();
+
+            // RAPPORT GLOBAL
             sb.AppendLine("── RAPPORT GLOBAL ──");
             sb.AppendLine($"Date du 1er lancement           : {_stats.FirstLaunch.ToLocalTime():dd/MM/yyyy HH:mm}");
             sb.AppendLine($"Nombre total de sessions        : {_stats.TotalSessions}");
@@ -593,6 +692,8 @@ public sealed partial class MainViewModel : ObservableObject
             sb.AppendLine($"Moyenne processus / session     : {avgProcsPerSession:F0}");
             sb.AppendLine($"Meilleure session               : {bestSession}");
             sb.AppendLine();
+
+            // MODES UTILISÉS
             sb.AppendLine("── MODES UTILISÉS ──");
             sb.AppendLine($"Mode Gaming     : {_stats.GamingActivations,3} sessions — {_stats.GamingRamFreedGb:F2} Go récupérés");
             sb.AppendLine($"Mode IA         : {_stats.AiActivations,3} sessions — {_stats.AiRamFreedGb:F2} Go récupérés");
@@ -601,23 +702,110 @@ public sealed partial class MainViewModel : ObservableObject
             sb.AppendLine($"Mode Turbo      : {_stats.TurboUseCount,3} utilisation(s)");
             sb.AppendLine($"Mode Tournoi    : {_stats.TournamentUseCount,3} utilisation(s)");
             sb.AppendLine();
+
+            // Point 3 : PROCESSUS RELANCÉS
+            if (restarts.Count > 0)
+            {
+                sb.AppendLine("── ATTENTION : PROCESSUS RELANCÉS PENDANT LA SESSION ──");
+                foreach (var (name, count) in restarts)
+                    sb.AppendLine($"  {name,-40} s'est relancé {count} fois");
+                sb.AppendLine("  Note : les relances ne sont PAS comptées comme des optimisations.");
+                sb.AppendLine();
+            }
+
+            // Point 1 : TABLEAU DE MESURES (toutes les 10 s)
+            sb.AppendLine("── MESURES TOUTES LES 10 SECONDES ──");
+            if (measures.Count == 0)
+            {
+                sb.AppendLine("  Aucune mesure disponible (session trop courte).");
+            }
+            else
+            {
+                // Si plus de 60 entrées, afficher les 60 dernières
+                const int MaxDisplay = 60;
+                List<MeasurePoint> displayed;
+                if (measures.Count > MaxDisplay)
+                {
+                    sb.AppendLine($"  (Affichage des {MaxDisplay} dernières mesures sur {measures.Count} — voir le CSV pour la liste complète)");
+                    displayed = measures.Skip(measures.Count - MaxDisplay).ToList();
+                }
+                else
+                {
+                    displayed = measures;
+                }
+
+                sb.AppendLine($"  {"Heure",-10} {"RAM dispo",-12} {"RAM util.",-12} {"Processus",-12} Mode");
+                sb.AppendLine($"  {new string('-', 9),-10} {new string('-', 10),-12} {new string('-', 10),-12} {new string('-', 9),-12} {new string('-', 12)}");
+                foreach (var m in displayed)
+                {
+                    double avail = m.RamAvailableGb;
+                    string availStr = $"{avail:F2} Go";
+                    string usedStr  = $"{m.RamUsedGb:F2} Go";
+                    sb.AppendLine($"  {m.Timestamp.ToLocalTime():HH:mm:ss,-10} {availStr,-12} {usedStr,-12} {m.ProcessCount,-12} {m.ActiveMode}");
+                }
+            }
+            sb.AppendLine();
+
+            // Point 2 : MÉTHODE D'OPTIMISATION
+            sb.AppendLine("── MÉTHODE D'OPTIMISATION ──");
+            sb.AppendLine("  RAM-AI utilise l'API Windows SetProcessWorkingSetSize() pour");
+            sb.AppendLine("  demander à Windows de compresser la mémoire des processus inactifs");
+            sb.AppendLine("  vers le fichier de pagination (pagefile.sys).");
+            sb.AppendLine("  Les processus ne sont PAS tués — ils restent actifs mais leur");
+            sb.AppendLine("  mémoire inactive est libérée pour les processus prioritaires.");
+            sb.AppendLine("  La RAM récupérée = mémoire inactive compressée rendue disponible.");
+            sb.AppendLine("  Dès qu'un processus en a besoin, Windows recharge sa mémoire depuis");
+            sb.AppendLine("  le fichier de pagination (temps de réponse ~ms).");
+            sb.AppendLine();
+
+            // Point 4 : MODE COMPARAISON
+            sb.AppendLine("── MODE COMPARAISON (tester l'efficacité) ──");
+            sb.AppendLine("  Pour comparer les performances avec et sans RAM-AI :");
+            sb.AppendLine();
+            sb.AppendLine("  SANS RAM-AI (référence) :");
+            sb.AppendLine("  1. Redémarrez votre PC");
+            sb.AppendLine("  2. Lancez votre activité habituelle pendant 10 minutes SANS RAM-AI");
+            sb.AppendLine("  3. Ouvrez le Gestionnaire des tâches → Performances → Ouvrir le");
+            sb.AppendLine("     Moniteur de ressources → Mémoire → Exporter");
+            sb.AppendLine("     (ou utilisez le CSV généré par RAM-AI comme référence zéro)");
+            sb.AppendLine();
+            sb.AppendLine("  AVEC RAM-AI :");
+            sb.AppendLine("  4. Redémarrez, relancez RAM-AI");
+            sb.AppendLine("  5. Effectuez la même activité pendant 10 minutes AVEC RAM-AI actif");
+            sb.AppendLine("  6. Cliquez sur 📄 Rapport pour générer le CSV RAM-AI");
+            sb.AppendLine();
+            sb.AppendLine("  COMPARAISON :");
+            sb.AppendLine("  7. Ouvrez les deux CSV dans Excel");
+            sb.AppendLine("  8. Comparez la colonne 'RAM disponible' : plus elle est haute AVEC");
+            sb.AppendLine("     RAM-AI, plus l'optimisation est efficace sur votre configuration.");
+            sb.AppendLine("  9. Comparez aussi le nombre de processus actifs entre les deux CSV.");
+            sb.AppendLine();
+
+            // CONCLUSION
             sb.AppendLine("── CONCLUSION ──");
-            sb.AppendLine($"RAM-AI a récupéré {_stats.TotalRamFreedGb:F2} Go depuis le {_stats.FirstLaunch.ToLocalTime():dd/MM/yyyy}.");
-            sb.AppendLine($"Soit l'équivalent de {efficiencyPct:F1}% de votre RAM totale libérée en moyenne.");
-            sb.AppendLine(verdict);
+            sb.AppendLine($"  RAM-AI a récupéré {_stats.TotalRamFreedGb:F2} Go depuis le {_stats.FirstLaunch.ToLocalTime():dd/MM/yyyy}.");
+            sb.AppendLine($"  Soit l'équivalent de {efficiencyPct:F1}% de votre RAM totale libérée en moyenne.");
+            sb.AppendLine($"  {verdict}");
             sb.AppendLine();
             sb.AppendLine("================================");
             sb.AppendLine($"RAM-AI v1.0 — {now:dd/MM/yyyy}");
             sb.AppendLine("================================");
 
-            string dir  = Path.Combine(
+            // ── Écrire le TXT + CSV + ouvrir notepad ──────────────────────────
+            string dir     = Path.Combine(
                 Environment.GetFolderPath(Environment.SpecialFolder.CommonApplicationData),
                 "RAM-AI");
-            string path = Path.Combine(dir, $"rapport_{now:yyyyMMdd_HHmmss}.txt");
-            Directory.CreateDirectory(dir);
-            File.WriteAllText(path, sb.ToString(), Encoding.UTF8);
+            string stamp   = now.ToString("yyyyMMdd_HHmmss");
+            string txtPath = Path.Combine(dir, $"rapport_{stamp}.txt");
+            string csvPath = Path.Combine(dir, $"mesures_{stamp}.csv");
 
-            Process.Start(new ProcessStartInfo("notepad.exe", $"\"{path}\"")
+            Directory.CreateDirectory(dir);
+            File.WriteAllText(txtPath, sb.ToString(), Encoding.UTF8);
+
+            // Exporter aussi le CSV (Point 1)
+            _measureService.ExportCsv(csvPath);
+
+            Process.Start(new ProcessStartInfo("notepad.exe", $"\"{txtPath}\"")
             {
                 UseShellExecute = true,
             });
@@ -655,20 +843,18 @@ public sealed partial class MainViewModel : ObservableObject
         catch { return "Inconnu"; }
     }
 
-    // ── Sauvegarde des stats à la fermeture ───────────────────────────────────
+    // ── Sauvegarde à la fermeture ─────────────────────────────────────────────
 
     /// <summary>
-    /// Finalise les stats de la session (durée, meilleure session) et persiste.
+    /// Finalise les stats (durée, meilleure session), persiste stats.json et measures.json.
     /// Appelé par App.xaml.cs dans ExitApp().
     /// </summary>
     public void SaveStats()
     {
         try
         {
-            // Ajouter la durée de cette session
             _stats.TotalUsageMinutes += (long)(DateTime.Now - _sessionStart).TotalMinutes;
 
-            // Mettre à jour la meilleure session si besoin
             double sessionGb = _sessionFreedMb / 1024.0;
             if (sessionGb > _stats.BestSessionRamFreedGb)
             {
@@ -679,6 +865,7 @@ public sealed partial class MainViewModel : ObservableObject
         catch { }
 
         _statsService.Save(_stats);
+        _measureService.SaveToJson();   // Persiste les mesures (Point 1)
     }
 
     private static void RunSc(string args)

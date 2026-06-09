@@ -121,8 +121,6 @@ internal sealed class MemoryOrchestrator : IDisposable
             "uplay",            "ubisoftconnect",
             "battlenet",        "gogalaxy",
             "riotclientservices","riotclient",
-            // ── TEST UNIQUEMENT — à retirer avant release commerciale ──────────
-            "notepad",   // Bloc-notes Windows : ouvrir pour simuler un jeu détecté
         };
 
     // ── Applications IA locales et services IA cloud ─────────────────────────
@@ -874,7 +872,7 @@ internal sealed class MemoryOrchestrator : IDisposable
         // Aucun jeu connu par son nom.
         //
         // Fallback >1 Go : seulement pour DÉCLENCHER le mode gaming (pas pour le maintenir).
-        // CRITIQUE : si _gamingModeActive est déjà vrai (ex : notepad vient d'être fermé),
+        // CRITIQUE : si _gamingModeActive est déjà vrai (ex : un jeu vient d'être fermé),
         // ce bloc est ignoré pour permettre la désactivation du mode gaming.
         // Sans cette condition, un processus lourd quelconque (Chrome, VS Code…) empêcherait
         // la désactivation car il maintiendrait la détection "auto" en vie indéfiniment.

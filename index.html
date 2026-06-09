@@ -446,6 +446,35 @@
     [data-en] .fr,  [data-en] .es,  [data-en] .de,
     [data-es] .fr,  [data-es] .en,  [data-es] .de,
     [data-de] .fr,  [data-de] .en,  [data-de] .es { display: none !important; }
+
+    /* ─── DOWNLOAD BUTTON ───────────────────────────────────── */
+    .cta-download {
+      display: inline-flex; align-items: center; gap: 10px;
+      background: transparent;
+      color: var(--blue-lt);
+      font-family: 'Outfit', sans-serif;
+      font-size: 1rem; font-weight: 700;
+      padding: 14px 36px;
+      border-radius: 50px;
+      border: 2px solid var(--blue);
+      cursor: pointer;
+      box-shadow: 0 0 20px rgba(58,123,213,.2);
+      transition: transform .2s, box-shadow .2s, border-color .2s;
+      text-decoration: none;
+      margin-top: 14px;
+    }
+    .cta-download:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 8px 28px rgba(58,123,213,.38);
+      border-color: var(--blue-lt);
+      color: #fff;
+    }
+    .dl-note {
+      margin-top: 10px;
+      font-size: .78rem;
+      color: var(--muted);
+      font-style: italic;
+    }
   </style>
 </head>
 <body data-fr>
@@ -499,6 +528,18 @@
       <span class="en"><span>One-time purchase</span> · Updates included · Windows 10 / 11</span>
       <span class="es"><span>Compra única</span> · Actualizaciones incluidas · Windows 10 / 11</span>
       <span class="de"><span>Einmaliger Kauf</span> · Updates inklusive · Windows 10 / 11</span>
+    </p>
+    <a href="RAM-AI-Setup-1.0.0.exe" class="cta-download" download>
+      ⬇ <span class="fr">Télécharger RAM-AI (gratuit)</span>
+         <span class="en">Download RAM-AI (free)</span>
+         <span class="es">Descargar RAM-AI (gratis)</span>
+         <span class="de">RAM-AI herunterladen (kostenlos)</span>
+    </a>
+    <p class="dl-note">
+      <span class="fr">Licence Pro requise pour toutes les fonctionnalités</span>
+      <span class="en">Pro licence required for all features</span>
+      <span class="es">Licencia Pro requerida para todas las funciones</span>
+      <span class="de">Pro-Lizenz für alle Funktionen erforderlich</span>
     </p>
   </div>
 

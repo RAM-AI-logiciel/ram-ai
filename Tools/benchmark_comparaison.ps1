@@ -1,21 +1,21 @@
 # =============================================================================
-# RAM-AI — Benchmark comparatif RAM disponible
+# RAM-AI - Benchmark comparatif RAM disponible
 # Compare 5 minutes SANS vs 5 minutes AVEC RAM-AI
-# Génère un graphique HTML interactif via Chart.js
-# Compatibilité : PowerShell 5.1+
+# Genere un graphique HTML interactif via Chart.js
+# Compatibilite : PowerShell 5.1+
 # =============================================================================
 
 Set-StrictMode -Version 2
 
-# ── Configuration ─────────────────────────────────────────────────────────────
+# -- Configuration -------------------------------------------------------------
 
-$OutputDir     = "C:\ProgramData\RAM-AI"
-$OutputFile    = Join-Path $OutputDir "benchmark_result.html"
-$DurationSec   = 300   # 5 minutes
-$IntervalSec   = 10    # mesure toutes les 10 s
-$TotalPoints   = $DurationSec / $IntervalSec   # 30 points
+$OutputDir   = "C:\ProgramData\RAM-AI"
+$OutputFile  = Join-Path $OutputDir "benchmark_result.html"
+$DurationSec = 300   # 5 minutes
+$IntervalSec = 10    # mesure toutes les 10 s
+$TotalPoints = $DurationSec / $IntervalSec   # 30 points
 
-# ── Fonctions utilitaires ──────────────────────────────────────────────────────
+# -- Fonctions utilitaires -----------------------------------------------------
 
 function Get-RamAvailableGb {
     $cs = Get-CimInstance -ClassName Win32_OperatingSystem
@@ -26,20 +26,20 @@ function Get-RamAvailableGb {
 function Write-Header {
     Clear-Host
     Write-Host ""
-    Write-Host "  ████████████████████████████████████████████████████" -ForegroundColor Cyan
-    Write-Host "  █                                                  █" -ForegroundColor Cyan
-    Write-Host "  █          RAM-AI  --  Benchmark comparatif        █" -ForegroundColor Cyan
-    Write-Host "  █                                                  █" -ForegroundColor Cyan
-    Write-Host "  ████████████████████████████████████████████████████" -ForegroundColor Cyan
+    Write-Host "  ####################################################" -ForegroundColor Cyan
+    Write-Host "  #                                                  #" -ForegroundColor Cyan
+    Write-Host "  #          RAM-AI  --  Benchmark comparatif        #" -ForegroundColor Cyan
+    Write-Host "  #                                                  #" -ForegroundColor Cyan
+    Write-Host "  ####################################################" -ForegroundColor Cyan
     Write-Host ""
 }
 
 function Write-Phase {
     param([string]$Title, [string]$Color)
     Write-Host ""
-    Write-Host "  ─────────────────────────────────────────────" -ForegroundColor DarkGray
+    Write-Host "  ---------------------------------------------" -ForegroundColor DarkGray
     Write-Host "  $Title" -ForegroundColor $Color
-    Write-Host "  ─────────────────────────────────────────────" -ForegroundColor DarkGray
+    Write-Host "  ---------------------------------------------" -ForegroundColor DarkGray
     Write-Host ""
 }
 
@@ -47,20 +47,18 @@ function Measure-Phase {
     param([string]$PhaseName, [string]$BarColor)
 
     $samples = @()
-    $elapsed = 0
 
     for ($i = 0; $i -lt $TotalPoints; $i++) {
-        $elapsed    = $i * $IntervalSec
-        $remaining  = $DurationSec - $elapsed
-        $ram        = Get-RamAvailableGb
-        $samples   += $ram
+        $elapsed   = $i * $IntervalSec
+        $remaining = $DurationSec - $elapsed
+        $ram       = Get-RamAvailableGb
+        $samples  += $ram
 
-        # Barre de progression
-        $done       = $i + 1
-        $pct        = [math]::Round(($done / $TotalPoints) * 100)
-        $barFilled  = [math]::Round($pct / 4)
-        $barEmpty   = 25 - $barFilled
-        $bar        = ("[" + ("=" * $barFilled) + (" " * $barEmpty) + "]")
+        $done      = $i + 1
+        $pct       = [math]::Round(($done / $TotalPoints) * 100)
+        $barFilled = [math]::Round($pct / 4)
+        $barEmpty  = 25 - $barFilled
+        $bar       = "[" + ("=" * $barFilled) + (" " * $barEmpty) + "]"
 
         Write-Host ("`r  $PhaseName  $bar  $pct%   RAM dispo : $ram Go   ($remaining s restantes)") `
             -NoNewline -ForegroundColor $BarColor
@@ -74,32 +72,31 @@ function Measure-Phase {
     return $samples
 }
 
-# ══════════════════════════════════════════════════════════════════════════════
-# DÉMARRAGE
-# ══════════════════════════════════════════════════════════════════════════════
+# =============================================================================
+# DEMARRAGE
+# =============================================================================
 
 Write-Header
 
-Write-Host "  Ce script mesure la RAM disponible pendant 5 minutes SANS RAM-AI," -ForegroundColor Gray
-Write-Host "  puis 5 minutes AVEC RAM-AI, et génère un graphique HTML comparatif." -ForegroundColor Gray
+Write-Host "  Ce script mesure la RAM disponible pendant 5 min SANS RAM-AI," -ForegroundColor Gray
+Write-Host "  puis 5 min AVEC RAM-AI, et genere un graphique HTML comparatif." -ForegroundColor Gray
 Write-Host ""
-Write-Host "  Durée totale estimée : ~12 minutes (2 x 5 min + transitions)" -ForegroundColor DarkGray
+Write-Host "  Duree totale estimee : ~12 minutes (2 x 5 min + transitions)" -ForegroundColor DarkGray
 Write-Host ""
 
-# ── PHASE 1 : SANS RAM-AI ─────────────────────────────────────────────────────
+# -- PHASE 1 : SANS RAM-AI -----------------------------------------------------
 
-Write-Phase "PHASE 1/2 — SANS RAM-AI" "Red"
+Write-Phase "PHASE 1/2 - SANS RAM-AI" "Red"
 
 Write-Host "  ACTION REQUISE :" -ForegroundColor Yellow
-Write-Host "  1. Fermez le dashboard RAM-AI (clic droit icone systray → Quitter)" -ForegroundColor White
-Write-Host "  2. Arrêtez le service si nécessaire (ou laissez-le tourner pour la" -ForegroundColor White
-Write-Host "     baseline naturelle — à votre choix)" -ForegroundColor White
+Write-Host "  1. Fermez le dashboard RAM-AI (clic droit icone systray -> Quitter)" -ForegroundColor White
+Write-Host "  2. Attendez que le service soit arrete si necessaire" -ForegroundColor White
 Write-Host ""
-Write-Host "  Appuyez sur ENTREE quand RAM-AI est fermé pour démarrer la mesure..." -ForegroundColor Yellow
+Write-Host "  Appuyez sur ENTREE quand RAM-AI est ferme pour demarrer la mesure..." -ForegroundColor Yellow
 $null = Read-Host
 
 Write-Host ""
-Write-Host "  Début mesure SANS RAM-AI dans 3 secondes..." -ForegroundColor DarkGray
+Write-Host "  Debut mesure SANS RAM-AI dans 3 secondes..." -ForegroundColor DarkGray
 Start-Sleep -Seconds 3
 
 $samplesWithout = Measure-Phase -PhaseName "SANS RAM-AI" -BarColor "Red"
@@ -112,25 +109,25 @@ Write-Host ""
 Write-Host "  Phase 1 terminee : moy=$avgWithout Go  min=$minWithout Go  max=$maxWithout Go" `
     -ForegroundColor Green
 
-# ── PAUSE ENTRE LES DEUX PHASES ───────────────────────────────────────────────
+# -- PAUSE ENTRE LES DEUX PHASES -----------------------------------------------
 
-Write-Phase "PAUSE — Lancez RAM-AI" "Yellow"
+Write-Phase "PAUSE - Lancez RAM-AI" "Yellow"
 
 Write-Host "  ACTION REQUISE :" -ForegroundColor Yellow
 Write-Host "  1. Lancez le dashboard RAM-AI" -ForegroundColor White
-Write-Host "  2. Attendez que le service Phase3 soit actif (statut 'Actif')" -ForegroundColor White
+Write-Host "  2. Attendez que le service Phase3 soit actif (statut Actif)" -ForegroundColor White
 Write-Host "  3. Si vous voulez tester le Mode Tournoi, activez-le maintenant" -ForegroundColor White
 Write-Host ""
-Write-Host "  Appuyez sur ENTREE quand RAM-AI est actif pour démarrer la mesure..." -ForegroundColor Yellow
+Write-Host "  Appuyez sur ENTREE quand RAM-AI est actif pour demarrer la mesure..." -ForegroundColor Yellow
 $null = Read-Host
 
 Write-Host ""
-Write-Host "  Début mesure AVEC RAM-AI dans 3 secondes..." -ForegroundColor DarkGray
+Write-Host "  Debut mesure AVEC RAM-AI dans 3 secondes..." -ForegroundColor DarkGray
 Start-Sleep -Seconds 3
 
-# ── PHASE 2 : AVEC RAM-AI ─────────────────────────────────────────────────────
+# -- PHASE 2 : AVEC RAM-AI -----------------------------------------------------
 
-Write-Phase "PHASE 2/2 — AVEC RAM-AI" "Green"
+Write-Phase "PHASE 2/2 - AVEC RAM-AI" "Green"
 
 $samplesWith = Measure-Phase -PhaseName "AVEC RAM-AI" -BarColor "Green"
 
@@ -142,7 +139,7 @@ Write-Host ""
 Write-Host "  Phase 2 terminee : moy=$avgWith Go  min=$minWith Go  max=$maxWith Go" `
     -ForegroundColor Green
 
-# ── CALCUL DU GAIN ─────────────────────────────────────────────────────────────
+# -- CALCUL DU GAIN ------------------------------------------------------------
 
 $gainAbs = [math]::Round($avgWith - $avgWithout, 2)
 
@@ -158,12 +155,11 @@ if ($gainAbs -ge 0) {
     $gainSign = ""
 }
 
-# ── GÉNÉRATION DES LABELS ET DONNÉES JAVASCRIPT ───────────────────────────────
+# -- TABLEAUX JS (sans Join-String, sans ternaire) -----------------------------
 
-# Construire les tableaux JS sans ternaire ni Join-String (PS 5.1)
-$labelsArr     = @()
-$dataWithout   = @()
-$dataWith      = @()
+$labelsArr   = @()
+$dataWithout = @()
+$dataWith    = @()
 
 for ($i = 0; $i -lt $TotalPoints; $i++) {
     $labelsArr   += ($i * $IntervalSec).ToString()
@@ -171,38 +167,42 @@ for ($i = 0; $i -lt $TotalPoints; $i++) {
     $dataWith    += $samplesWith[$i].ToString("F2", [System.Globalization.CultureInfo]::InvariantCulture)
 }
 
-$labelsJs     = $labelsArr   -join ","
-$dataWithoutJs= $dataWithout -join ","
-$dataWithJs   = $dataWith    -join ","
+$labelsJs      = $labelsArr   -join ","
+$dataWithoutJs = $dataWithout -join ","
+$dataWithJs    = $dataWith    -join ","
 
-# ── VERDICT TEXTUEL ───────────────────────────────────────────────────────────
+# -- VERDICT -------------------------------------------------------------------
 
 if ($gainAbs -gt 0.5) {
-    $verdictText  = "RAM-AI a significativement amélioré la RAM disponible sur ce système."
+    $verdictText  = "RAM-AI a significativement ameliore la RAM disponible sur ce systeme."
     $verdictColor = "#4CAF50"
 } elseif ($gainAbs -gt 0) {
-    $verdictText  = "RAM-AI a légèrement amélioré la RAM disponible sur ce système."
+    $verdictText  = "RAM-AI a legerement ameliore la RAM disponible sur ce systeme."
     $verdictColor = "#8BC34A"
 } elseif ($gainAbs -eq 0) {
-    $verdictText  = "Aucune différence mesurée — la RAM était déjà optimale."
+    $verdictText  = "Aucune difference mesuree - la RAM etait deja optimale."
     $verdictColor = "#F5A623"
 } else {
-    $verdictText  = "Aucune amélioration mesurée sur cette configuration."
+    $verdictText  = "Aucune amelioration mesuree sur cette configuration."
     $verdictColor = "#F44336"
 }
 
-# Formater la date pour HTML sans ternaire
-$dateStr = (Get-Date).ToString("dd/MM/yyyy HH:mm:ss")
+$dateStr        = (Get-Date).ToString("dd/MM/yyyy HH:mm:ss")
+$totalPointsStr = $TotalPoints.ToString()
 
-# ── CONSTRUCTION DU HTML ──────────────────────────────────────────────────────
+# =============================================================================
+# TEMPLATE HTML - single-quote here-string (@'...'@)
+# Les variables PS ne sont PAS interpolees ici.
+# On utilise des tokens ##NOM## remplaces ensuite par -replace.
+# =============================================================================
 
-$html = @"
+$htmlTemplate = @'
 <!DOCTYPE html>
 <html lang="fr">
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>RAM-AI — Benchmark comparatif</title>
+  <title>RAM-AI - Benchmark comparatif</title>
   <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.2/dist/chart.umd.min.js"></script>
   <style>
     * { box-sizing: border-box; margin: 0; padding: 0; }
@@ -217,7 +217,6 @@ $html = @"
 
     .container { max-width: 960px; margin: 0 auto; }
 
-    /* ── Header ── */
     .header {
       display: flex;
       align-items: center;
@@ -232,14 +231,10 @@ $html = @"
       font-size: 22px; font-weight: 900; color: #fff;
       letter-spacing: -1px;
     }
-    .header h1 {
-      font-size: 22px; font-weight: 700;
-      color: #ffffff;
-    }
+    .header h1 { font-size: 22px; font-weight: 700; color: #ffffff; }
     .header h1 span { color: #3A7BD5; }
     .header p { font-size: 13px; color: #888; margin-top: 3px; }
 
-    /* ── Chart card ── */
     .card {
       background: #161616;
       border: 1px solid #2a2a2a;
@@ -247,20 +242,14 @@ $html = @"
       padding: 28px 24px;
       margin-bottom: 20px;
     }
+    .chart-wrap { position: relative; height: 380px; }
 
-    .chart-wrap {
-      position: relative;
-      height: 380px;
-    }
-
-    /* ── Stats grid ── */
     .stats-grid {
       display: grid;
       grid-template-columns: 1fr 1fr 1fr;
       gap: 14px;
       margin-bottom: 20px;
     }
-
     .stat-card {
       background: #161616;
       border: 1px solid #2a2a2a;
@@ -276,7 +265,6 @@ $html = @"
     .with    .value { color: #66bb6a; }
     .gain    .value { color: #F5A623; }
 
-    /* ── Ligne comparative ── */
     .compare-row {
       display: grid;
       grid-template-columns: 1fr 1fr;
@@ -289,18 +277,13 @@ $html = @"
       border-radius: 10px;
       padding: 18px 20px;
     }
-    .compare-block h3 {
-      font-size: 12px; text-transform: uppercase; letter-spacing: 0.8px;
-      margin-bottom: 12px; color: #888;
-    }
+    .compare-block h3 { font-size: 12px; text-transform: uppercase; letter-spacing: 0.8px; margin-bottom: 12px; color: #888; }
     .compare-block table { width: 100%; border-collapse: collapse; font-size: 13px; }
     .compare-block td { padding: 5px 0; }
     .compare-block td:last-child { text-align: right; font-weight: 600; }
     .red   { color: #ef5350; }
     .green { color: #66bb6a; }
-    .gold  { color: #F5A623; }
 
-    /* ── Verdict ── */
     .verdict {
       background: #161616;
       border: 1px solid #2a2a2a;
@@ -314,96 +297,84 @@ $html = @"
     .verdict-icon { font-size: 28px; }
     .verdict-text { font-size: 14px; font-weight: 600; }
 
-    /* ── Footer ── */
     .footer { text-align: center; font-size: 11px; color: #444; padding-top: 8px; }
-    .footer a { color: #3A7BD5; text-decoration: none; }
   </style>
 </head>
 <body>
 <div class="container">
 
-  <!-- Header -->
   <div class="header">
     <div class="logo">R</div>
     <div>
-      <h1><span>RAM-AI</span> — Benchmark comparatif</h1>
-      <p>RAM disponible sur 5 minutes  •  Généré le $dateStr</p>
+      <h1><span>RAM-AI</span> &mdash; Benchmark comparatif</h1>
+      <p>RAM disponible sur 5 minutes &nbsp;&bull;&nbsp; ##DATE##</p>
     </div>
   </div>
 
-  <!-- Graphique -->
   <div class="card">
     <div class="chart-wrap">
       <canvas id="ramChart"></canvas>
     </div>
   </div>
 
-  <!-- Stats principales -->
   <div class="stats-grid">
     <div class="stat-card without">
       <div class="label">Moyenne sans RAM-AI</div>
-      <div class="value">$avgWithout Go</div>
-      <div class="sub">min $minWithout Go &nbsp;•&nbsp; max $maxWithout Go</div>
+      <div class="value">##AVG_WITHOUT## Go</div>
+      <div class="sub">min ##MIN_WITHOUT## Go &nbsp;&bull;&nbsp; max ##MAX_WITHOUT## Go</div>
     </div>
     <div class="stat-card with">
       <div class="label">Moyenne avec RAM-AI</div>
-      <div class="value">$avgWith Go</div>
-      <div class="sub">min $minWith Go &nbsp;•&nbsp; max $maxWith Go</div>
+      <div class="value">##AVG_WITH## Go</div>
+      <div class="sub">min ##MIN_WITH## Go &nbsp;&bull;&nbsp; max ##MAX_WITH## Go</div>
     </div>
     <div class="stat-card gain">
       <div class="label">Gain moyen</div>
-      <div class="value">${gainSign}$gainAbs Go</div>
-      <div class="sub">${gainSign}$gainPct % de RAM supplémentaire</div>
+      <div class="value">##GAIN_SIGN####GAIN_ABS## Go</div>
+      <div class="sub">##GAIN_SIGN####GAIN_PCT## % de RAM supplementaire</div>
     </div>
   </div>
 
-  <!-- Détail par phase -->
   <div class="compare-row">
     <div class="compare-block">
-      <h3>🔴 Phase 1 — Sans RAM-AI</h3>
+      <h3>Phase 1 &mdash; Sans RAM-AI</h3>
       <table>
-        <tr><td>RAM disponible moyenne</td><td class="red">$avgWithout Go</td></tr>
-        <tr><td>Valeur minimale</td><td class="red">$minWithout Go</td></tr>
-        <tr><td>Valeur maximale</td><td class="red">$maxWithout Go</td></tr>
-        <tr><td>Durée mesurée</td><td>300 secondes</td></tr>
-        <tr><td>Nombre de points</td><td>$TotalPoints mesures (1/10s)</td></tr>
+        <tr><td>RAM disponible moyenne</td><td class="red">##AVG_WITHOUT## Go</td></tr>
+        <tr><td>Valeur minimale</td>        <td class="red">##MIN_WITHOUT## Go</td></tr>
+        <tr><td>Valeur maximale</td>        <td class="red">##MAX_WITHOUT## Go</td></tr>
+        <tr><td>Duree mesuree</td>          <td>300 secondes</td></tr>
+        <tr><td>Nombre de points</td>       <td>##TOTAL_POINTS## mesures (1/10s)</td></tr>
       </table>
     </div>
     <div class="compare-block">
-      <h3>🟢 Phase 2 — Avec RAM-AI</h3>
+      <h3>Phase 2 &mdash; Avec RAM-AI</h3>
       <table>
-        <tr><td>RAM disponible moyenne</td><td class="green">$avgWith Go</td></tr>
-        <tr><td>Valeur minimale</td><td class="green">$minWith Go</td></tr>
-        <tr><td>Valeur maximale</td><td class="green">$maxWith Go</td></tr>
-        <tr><td>Durée mesurée</td><td>300 secondes</td></tr>
-        <tr><td>Nombre de points</td><td>$TotalPoints mesures (1/10s)</td></tr>
+        <tr><td>RAM disponible moyenne</td> <td class="green">##AVG_WITH## Go</td></tr>
+        <tr><td>Valeur minimale</td>         <td class="green">##MIN_WITH## Go</td></tr>
+        <tr><td>Valeur maximale</td>         <td class="green">##MAX_WITH## Go</td></tr>
+        <tr><td>Duree mesuree</td>           <td>300 secondes</td></tr>
+        <tr><td>Nombre de points</td>        <td>##TOTAL_POINTS## mesures (1/10s)</td></tr>
       </table>
     </div>
   </div>
 
-  <!-- Verdict -->
-  <div class="verdict" style="border-color: $verdictColor;">
-    <div class="verdict-icon">📊</div>
-    <div class="verdict-text" style="color: $verdictColor;">$verdictText</div>
+  <div class="verdict" style="border-color: ##VERDICT_COLOR##;">
+    <div class="verdict-icon">&#x1F4CA;</div>
+    <div class="verdict-text" style="color: ##VERDICT_COLOR##;">##VERDICT_TEXT##</div>
   </div>
 
-  <!-- Footer -->
-  <div class="footer">
-    RAM-AI v1.0 &nbsp;•&nbsp; Benchmark généré le $dateStr
-    &nbsp;•&nbsp; <a href="https://ram-ai.app">ram-ai.app</a>
-  </div>
+  <div class="footer">RAM-AI v1.0 &nbsp;&bull;&nbsp; ##DATE##</div>
 
 </div>
-
 <script>
 (function() {
-  var labels       = [$labelsJs];
-  var dataWithout  = [$dataWithoutJs];
-  var dataWith     = [$dataWithJs];
+  var labels      = [##LABELS_JS##];
+  var dataWithout = [##DATA_WITHOUT_JS##];
+  var dataWith    = [##DATA_WITH_JS##];
 
   var ctx = document.getElementById('ramChart').getContext('2d');
 
-  Chart.defaults.color = '#888';
+  Chart.defaults.color       = '#888';
   Chart.defaults.borderColor = '#2a2a2a';
 
   new Chart(ctx, {
@@ -512,9 +483,32 @@ $html = @"
 </script>
 </body>
 </html>
-"@
+'@
 
-# ── ÉCRITURE DU FICHIER ET OUVERTURE ──────────────────────────────────────────
+# =============================================================================
+# REMPLACEMENT DES TOKENS par les valeurs calculees
+# Chaque -replace travaille sur la chaine resultante en cascade.
+# =============================================================================
+
+$html = $htmlTemplate `
+    -replace '##DATE##',           $dateStr `
+    -replace '##AVG_WITHOUT##',    $avgWithout.ToString([System.Globalization.CultureInfo]::InvariantCulture) `
+    -replace '##MIN_WITHOUT##',    $minWithout.ToString([System.Globalization.CultureInfo]::InvariantCulture) `
+    -replace '##MAX_WITHOUT##',    $maxWithout.ToString([System.Globalization.CultureInfo]::InvariantCulture) `
+    -replace '##AVG_WITH##',       $avgWith.ToString([System.Globalization.CultureInfo]::InvariantCulture) `
+    -replace '##MIN_WITH##',       $minWith.ToString([System.Globalization.CultureInfo]::InvariantCulture) `
+    -replace '##MAX_WITH##',       $maxWith.ToString([System.Globalization.CultureInfo]::InvariantCulture) `
+    -replace '##GAIN_ABS##',       $gainAbs.ToString([System.Globalization.CultureInfo]::InvariantCulture) `
+    -replace '##GAIN_SIGN##',      $gainSign `
+    -replace '##GAIN_PCT##',       $gainPct.ToString([System.Globalization.CultureInfo]::InvariantCulture) `
+    -replace '##TOTAL_POINTS##',   $totalPointsStr `
+    -replace '##VERDICT_COLOR##',  $verdictColor `
+    -replace '##VERDICT_TEXT##',   $verdictText `
+    -replace '##LABELS_JS##',      $labelsJs `
+    -replace '##DATA_WITHOUT_JS##',$dataWithoutJs `
+    -replace '##DATA_WITH_JS##',   $dataWithJs
+
+# -- ECRITURE ET OUVERTURE -----------------------------------------------------
 
 if (-not (Test-Path $OutputDir)) {
     New-Item -ItemType Directory -Path $OutputDir -Force | Out-Null
@@ -523,14 +517,14 @@ if (-not (Test-Path $OutputDir)) {
 $html | Out-File -FilePath $OutputFile -Encoding utf8 -Force
 
 Write-Host ""
-Write-Host "  ════════════════════════════════════════════════════" -ForegroundColor Cyan
-Write-Host "  Benchmark terminé !" -ForegroundColor Cyan
-Write-Host "  ════════════════════════════════════════════════════" -ForegroundColor Cyan
+Write-Host "  =================================================" -ForegroundColor Cyan
+Write-Host "  Benchmark termine !" -ForegroundColor Cyan
+Write-Host "  =================================================" -ForegroundColor Cyan
 Write-Host ""
-Write-Host "  Résultats :" -ForegroundColor White
+Write-Host "  Resultats :" -ForegroundColor White
 Write-Host "    SANS RAM-AI : moyenne $avgWithout Go" -ForegroundColor Red
 Write-Host "    AVEC RAM-AI : moyenne $avgWith Go" -ForegroundColor Green
-Write-Host "    Gain        : ${gainSign}$gainAbs Go  (${gainSign}$gainPct %)" -ForegroundColor Yellow
+Write-Host "    Gain        : $gainSign$gainAbs Go  ($gainSign$gainPct %)" -ForegroundColor Yellow
 Write-Host ""
 Write-Host "  Rapport HTML : $OutputFile" -ForegroundColor Gray
 Write-Host ""

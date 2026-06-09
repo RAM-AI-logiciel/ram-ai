@@ -9,7 +9,7 @@
 #   3. Clic droit -> "Executer avec PowerShell"
 # ==============================================================
 
-$GITHUB_TOKEN = "COLLER_VOTRE_TOKEN_ICI"   # <- remplacez ceci
+$GITHUB_TOKEN = ""   # <- collez votre token ici
 $OWNER        = "RAM-AI-logiciel"
 $REPO         = "ram-ai"
 $FILE_PATH    = "RAM-AI-Setup-1.0.0.exe"
@@ -19,8 +19,8 @@ $COMMIT_MSG   = "Ajout installeur RAM-AI"
 
 # -- Validation -------------------------------------------------------
 
-if ($GITHUB_TOKEN -eq "COLLER_VOTRE_TOKEN_ICI") {
-    Write-Host "[ERREUR] Remplacez COLLER_VOTRE_TOKEN_ICI par votre token GitHub." `
+if ($GITHUB_TOKEN -eq "" -or $GITHUB_TOKEN -eq $null) {
+    Write-Host "[ERREUR] Token vide. Collez votre token GitHub a la ligne GITHUB_TOKEN." `
         -ForegroundColor Red
     Write-Host "         Creez un token sur : https://github.com/settings/tokens/new" `
         -ForegroundColor Yellow

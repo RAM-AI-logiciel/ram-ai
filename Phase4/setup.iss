@@ -47,8 +47,9 @@ UninstallDisplayIcon={app}\Phase4\{#AppExe}
 SetupIconFile=Assets\RAM-AI.ico
 
 [Tasks]
-Name: desktopicon; Description: "Raccourci sur le Bureau"; GroupDescription: "Raccourcis :"
-Name: autostart;   Description: "Démarrer RAM-AI automatiquement avec Windows"; GroupDescription: "Options :"; Flags: checkedonce
+Name: desktopicon;          Description: "Raccourci RAM-AI Dashboard sur le Bureau";   GroupDescription: "Raccourcis :"
+Name: benchmarkdesktopicon; Description: "Raccourci RAM-AI Benchmark sur le Bureau";   GroupDescription: "Raccourcis :"; Flags: unchecked
+Name: autostart;            Description: "Démarrer RAM-AI automatiquement avec Windows"; GroupDescription: "Options :"; Flags: checkedonce
 
 [Dirs]
 Name: "{app}\Phase2\model"
@@ -62,11 +63,15 @@ Name: "{app}\Phase4"
 Source: "{#ProtectedPhase4}\*"; DestDir: "{app}\Phase4"; Flags: recursesubdirs ignoreversion
 Source: "{#ProtectedPhase3}\*"; DestDir: "{app}\Phase3"; Flags: recursesubdirs ignoreversion
 Source: "..\Phase2\model\ram-ai.zip"; DestDir: "{app}\Phase2\model"; Flags: ignoreversion
+; Outil benchmark comparatif (script PowerShell)
+Source: "..\Tools\benchmark_comparaison.ps1"; DestDir: "{app}\Tools"; Flags: ignoreversion
 
 [Icons]
-Name: "{group}\{#AppName} Dashboard"; Filename: "{app}\Phase4\{#AppExe}"; IconFilename: "{app}\Phase4\{#AppExe}"
-Name: "{group}\Desinstaller {#AppName}"; Filename: "{uninstallexe}"
-Name: "{commondesktop}\{#AppName}"; Filename: "{app}\Phase4\{#AppExe}"; IconFilename: "{app}\Phase4\{#AppExe}"; Tasks: desktopicon
+Name: "{group}\{#AppName} Dashboard";          Filename: "{app}\Phase4\{#AppExe}"; IconFilename: "{app}\Phase4\{#AppExe}"
+Name: "{group}\{#AppName} — Benchmark comparatif"; Filename: "{sys}\WindowsPowerShell\v1.0\powershell.exe"; Parameters: "-ExecutionPolicy Bypass -File ""{app}\Tools\benchmark_comparaison.ps1"""; WorkingDir: "{app}\Tools"; Comment: "Compare la RAM disponible avec et sans RAM-AI"
+Name: "{group}\Desinstaller {#AppName}";       Filename: "{uninstallexe}"
+Name: "{commondesktop}\{#AppName}";            Filename: "{app}\Phase4\{#AppExe}"; IconFilename: "{app}\Phase4\{#AppExe}"; Tasks: desktopicon
+Name: "{commondesktop}\{#AppName} Benchmark";  Filename: "{sys}\WindowsPowerShell\v1.0\powershell.exe"; Parameters: "-ExecutionPolicy Bypass -File ""{app}\Tools\benchmark_comparaison.ps1"""; WorkingDir: "{app}\Tools"; Comment: "Compare la RAM disponible avec et sans RAM-AI"; Tasks: benchmarkdesktopicon
 
 [Run]
 Filename: "{app}\Phase3\{#ServiceExe}"; Parameters: "--install"; Flags: runhidden waituntilterminated; StatusMsg: "Enregistrement du service RAM-AI Phase 3..."

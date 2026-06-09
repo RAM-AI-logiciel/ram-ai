@@ -20,7 +20,8 @@
   #define ProtectedPhase3 "..\Phase3\bin\Release\net10.0-windows\win-x64\publish"
 #endif
 #ifndef ProtectedPhase4
-  #define ProtectedPhase4 "..\Phase4\bin\Release\net10.0-windows\win-x64\publish"
+  ; Phase4 est publie SANS RID (-r win-x64) donc pas de sous-dossier win-x64
+  #define ProtectedPhase4 "..\Phase4\bin\Release\net10.0-windows\publish"
 #endif
 
 #define DotNetUrl  "https://aka.ms/dotnet/10.0/dotnet-runtime-win-x64.exe"

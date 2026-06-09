@@ -442,7 +442,10 @@
     }
 
     /* ─── HIDE/SHOW LANGUAGE ────────────────────────────────── */
-    [data-fr] .en, [data-en] .fr { display: none !important; }
+    [data-fr] .en,  [data-fr] .es,  [data-fr] .de,
+    [data-en] .fr,  [data-en] .es,  [data-en] .de,
+    [data-es] .fr,  [data-es] .en,  [data-es] .de,
+    [data-de] .fr,  [data-de] .en,  [data-de] .es { display: none !important; }
   </style>
 </head>
 <body data-fr>
@@ -452,6 +455,8 @@
   <div class="lang-switcher">
     <button class="lang-btn active" id="btn-fr" onclick="setLang('fr')">🇫🇷 FR</button>
     <button class="lang-btn" id="btn-en" onclick="setLang('en')">🇬🇧 EN</button>
+    <button class="lang-btn" id="btn-es" onclick="setLang('es')">🇪🇸 ES</button>
+    <button class="lang-btn" id="btn-de" onclick="setLang('de')">🇩🇪 DE</button>
   </div>
 </div>
 
@@ -469,6 +474,8 @@
     <h1 class="hero-title">
       <span class="fr">Libérez la puissance<br>de votre <span>mémoire</span>.</span>
       <span class="en">Unleash the power<br>of your <span>memory</span>.</span>
+      <span class="es">Libera el poder<br>de tu <span>memoria</span>.</span>
+      <span class="de">Entfessle die Kraft<br>deines <span>Speichers</span>.</span>
     </h1>
 
     <p class="hero-tagline-fr fr">"Votre PC va enfin respirer."</p>
@@ -476,16 +483,22 @@
 
     <p class="hero-tagline-fr en">"Votre PC va enfin respirer."</p>
     <p class="hero-tagline-en en" style="color:var(--gold); font-size:clamp(1.3rem,3vw,1.9rem); font-weight:700;">"Your PC can finally breathe."</p>
+    <p class="hero-tagline-en es" style="color:var(--gold); font-size:clamp(1.3rem,3vw,1.9rem); font-weight:700;">"Tu PC por fin puede respirar."</p>
+    <p class="hero-tagline-en de" style="color:var(--gold); font-size:clamp(1.3rem,3vw,1.9rem); font-weight:700;">"Ihr PC kann endlich atmen."</p>
 
     <a href="[LIEN_ACHAT]" class="cta-main">
       <span class="fr">Obtenir RAM-AI Pro — 24,99€</span>
       <span class="en">Get RAM-AI Pro — €24.99</span>
+      <span class="es">Obtener RAM-AI Pro — 24,99€</span>
+      <span class="de">RAM-AI Pro erhalten — 24,99€</span>
       ⚡
     </a>
 
     <p class="cta-sub">
       <span class="fr"><span>Achat unique</span> · Mises à jour incluses · Windows 10 / 11</span>
       <span class="en"><span>One-time purchase</span> · Updates included · Windows 10 / 11</span>
+      <span class="es"><span>Compra única</span> · Actualizaciones incluidas · Windows 10 / 11</span>
+      <span class="de"><span>Einmaliger Kauf</span> · Updates inklusive · Windows 10 / 11</span>
     </p>
   </div>
 
@@ -504,16 +517,22 @@
         <div class="stat-num">100 Go+</div>
         <div class="stat-label fr">libérés en moyenne</div>
         <div class="stat-label en">freed on average</div>
+        <div class="stat-label es">liberados en promedio</div>
+        <div class="stat-label de">durchschnittlich befreit</div>
       </div>
       <div class="stat-card">
         <div class="stat-num">5 000+</div>
         <div class="stat-label fr">processus optimisés</div>
         <div class="stat-label en">optimised processes</div>
+        <div class="stat-label es">procesos optimizados</div>
+        <div class="stat-label de">optimierte Prozesse</div>
       </div>
       <div class="stat-card">
         <div class="stat-num">800ms</div>
         <div class="stat-label fr">cycle d'optimisation</div>
         <div class="stat-label en">optimisation cycle</div>
+        <div class="stat-label es">ciclo de optimización</div>
+        <div class="stat-label de">Optimierungszyklus</div>
       </div>
     </div>
   </div>
@@ -525,13 +544,19 @@
     <div class="center">
       <span class="tag fr">Les Modes</span>
       <span class="tag en">The Modes</span>
+      <span class="tag es">Los Modos</span>
+      <span class="tag de">Die Modi</span>
       <h2 class="section-title">
         <span class="fr">Une intelligence, six modes.</span>
         <span class="en">One intelligence, six modes.</span>
+        <span class="es">Una inteligencia, seis modos.</span>
+        <span class="de">Eine KI, sechs Modi.</span>
       </h2>
       <p class="section-sub">
         <span class="fr">RAM-AI s'adapte automatiquement à votre usage — jeu, IA, navigation ou compétition.</span>
         <span class="en">RAM-AI automatically adapts to your usage — gaming, AI, browsing or competition.</span>
+        <span class="es">RAM-AI se adapta automáticamente a tu uso — juego, IA, navegación o competición.</span>
+        <span class="de">RAM-AI passt sich automatisch deiner Nutzung an — Gaming, KI, Browser oder Wettbewerb.</span>
       </p>
     </div>
 
@@ -541,50 +566,76 @@
         <div class="mode-emoji">🎮</div>
         <div class="mode-title fr">Mode Gaming</div>
         <div class="mode-title en">Gaming Mode</div>
+        <div class="mode-title es">Modo Gaming</div>
+        <div class="mode-title de">Gaming-Modus</div>
         <p class="mode-desc fr">Détection automatique du jeu actif. Libération ciblée des ressources. Gain moyen de +19 places sur UserBenchmark.</p>
         <p class="mode-desc en">Automatic detection of the active game. Targeted resource release. Average gain of +19 places on UserBenchmark.</p>
+        <p class="mode-desc es">Detección automática del juego activo. Liberación específica de recursos. Ganancia media de +19 posiciones en UserBenchmark.</p>
+        <p class="mode-desc de">Automatische Erkennung des aktiven Spiels. Gezielte Ressourcenfreigabe. Durchschnittlicher Gewinn von +19 Plätzen auf UserBenchmark.</p>
       </div>
 
       <div class="mode-card">
         <div class="mode-emoji">🤖</div>
         <div class="mode-title fr">Mode IA</div>
         <div class="mode-title en">AI Mode</div>
+        <div class="mode-title es">Modo IA</div>
+        <div class="mode-title de">KI-Modus</div>
         <p class="mode-desc fr">Optimisé pour Claude, Ollama, LM Studio et tous vos modèles locaux. Plus de RAM disponible = inférences plus rapides.</p>
         <p class="mode-desc en">Optimised for Claude, Ollama, LM Studio and all your local models. More available RAM = faster inference.</p>
+        <p class="mode-desc es">Optimizado para Claude, Ollama, LM Studio y todos tus modelos locales. Más RAM disponible = inferencias más rápidas.</p>
+        <p class="mode-desc de">Optimiert für Claude, Ollama, LM Studio und alle lokalen Modelle. Mehr verfügbarer RAM = schnellere Inferenz.</p>
       </div>
 
       <div class="mode-card">
         <div class="mode-emoji">🌐</div>
         <div class="mode-title fr">Mode Navigateur</div>
         <div class="mode-title en">Browser Mode</div>
+        <div class="mode-title es">Modo Navegador</div>
+        <div class="mode-title de">Browser-Modus</div>
         <p class="mode-desc fr">Compatible Chrome, Edge, Firefox, Brave. Priorise les onglets actifs et réduit l'empreinte mémoire globale.</p>
         <p class="mode-desc en">Compatible with Chrome, Edge, Firefox, Brave. Prioritises active tabs and reduces overall memory footprint.</p>
+        <p class="mode-desc es">Compatible con Chrome, Edge, Firefox, Brave. Prioriza las pestañas activas y reduce el consumo global de memoria.</p>
+        <p class="mode-desc de">Kompatibel mit Chrome, Edge, Firefox, Brave. Priorisiert aktive Tabs und reduziert den gesamten Speicherbedarf.</p>
       </div>
 
       <div class="mode-card">
         <div class="mode-emoji">⚡</div>
         <div class="mode-title fr">Mode Turbo</div>
         <div class="mode-title en">Turbo Mode</div>
+        <div class="mode-title es">Modo Turbo</div>
+        <div class="mode-title de">Turbo-Modus</div>
         <p class="mode-desc fr">Libération massive en un seul clic. Idéal avant une session intensive ou un redémarrage rapide.</p>
         <p class="mode-desc en">Massive release in a single click. Ideal before an intensive session or a quick restart.</p>
+        <p class="mode-desc es">Liberación masiva con un solo clic. Ideal antes de una sesión intensiva o un reinicio rápido.</p>
+        <p class="mode-desc de">Massive Freigabe mit einem einzigen Klick. Ideal vor einer intensiven Sitzung oder einem schnellen Neustart.</p>
       </div>
 
       <div class="mode-card">
         <div class="mode-emoji">🌿</div>
         <div class="mode-title fr">Mode Éco</div>
         <div class="mode-title en">Eco Mode</div>
+        <div class="mode-title es">Modo Eco</div>
+        <div class="mode-title de">Öko-Modus</div>
         <p class="mode-desc fr">Batterie détectée automatiquement. Optimisation douce qui préserve l'autonomie et réduit la chaleur.</p>
         <p class="mode-desc en">Battery automatically detected. Gentle optimisation that preserves battery life and reduces heat.</p>
+        <p class="mode-desc es">Batería detectada automáticamente. Optimización suave que preserva la autonomía y reduce el calor.</p>
+        <p class="mode-desc de">Akku wird automatisch erkannt. Sanfte Optimierung, die die Akkulaufzeit erhält und Wärme reduziert.</p>
       </div>
 
       <div class="mode-card ultra-only">
         <div class="mode-emoji">🏆</div>
         <div class="mode-title fr">Mode Tournoi</div>
         <div class="mode-title en">Tournament Mode</div>
+        <div class="mode-title es">Modo Torneo</div>
+        <div class="mode-title de">Turnier-Modus</div>
         <p class="mode-desc fr">Performances maximales pour la compétition. Gel des processus non essentiels, priorité absolue au jeu.</p>
         <p class="mode-desc en">Maximum performance for competition. Non-essential processes frozen, absolute game priority.</p>
+        <p class="mode-desc es">Rendimiento máximo para la competición. Congelación de procesos no esenciales, prioridad absoluta al juego.</p>
+        <p class="mode-desc de">Maximale Leistung für den Wettkampf. Einfrieren nicht wesentlicher Prozesse, absolute Spielpriorität.</p>
         <div class="mode-badge-ultra fr">Ultra uniquement</div>
         <div class="mode-badge-ultra en">Ultra only</div>
+        <div class="mode-badge-ultra es">Solo Ultra</div>
+        <div class="mode-badge-ultra de">Nur Ultra</div>
       </div>
 
     </div>
@@ -597,13 +648,19 @@
     <div class="center">
       <span class="tag fr">Nos Offres</span>
       <span class="tag en">Our Plans</span>
+      <span class="tag es">Nuestras Ofertas</span>
+      <span class="tag de">Unsere Angebote</span>
       <h2 class="section-title">
         <span class="fr">Choisissez votre niveau.</span>
         <span class="en">Choose your level.</span>
+        <span class="es">Elige tu nivel.</span>
+        <span class="de">Wähle dein Level.</span>
       </h2>
       <p class="section-sub">
         <span class="fr">Pro pour l'essentiel, Ultra pour la domination.</span>
         <span class="en">Pro for essentials, Ultra for total domination.</span>
+        <span class="es">Pro para lo esencial, Ultra para la dominación total.</span>
+        <span class="de">Pro für das Wesentliche, Ultra für totale Dominanz.</span>
       </p>
     </div>
 
@@ -613,25 +670,29 @@
       <div class="compare-card featured">
         <div class="compare-head">
           <div class="compare-plan text-blue">RAM-AI Pro</div>
-          <div class="compare-price">24,99€<span class="fr"> / achat unique</span><span class="en"> / one-time</span></div>
+          <div class="compare-price">24,99€<span class="fr"> / achat unique</span><span class="en"> / one-time</span><span class="es"> / compra única</span><span class="de"> / Einmalkauf</span></div>
           <div class="compare-note fr">Mises à jour incluses à vie</div>
           <div class="compare-note en">Lifetime updates included</div>
+          <div class="compare-note es">Actualizaciones de por vida incluidas</div>
+          <div class="compare-note de">Lebenslange Updates inklusive</div>
         </div>
         <div class="compare-features">
-          <div class="feature-row"><span class="feat-icon">✅</span><span class="feat-text fr">Mode Gaming</span><span class="feat-text en">Gaming Mode</span></div>
-          <div class="feature-row"><span class="feat-icon">✅</span><span class="feat-text fr">Mode IA (Claude, Ollama…)</span><span class="feat-text en">AI Mode (Claude, Ollama…)</span></div>
-          <div class="feature-row"><span class="feat-icon">✅</span><span class="feat-text fr">Mode Navigateur</span><span class="feat-text en">Browser Mode</span></div>
-          <div class="feature-row"><span class="feat-icon">✅</span><span class="feat-text fr">Mode Turbo</span><span class="feat-text en">Turbo Mode</span></div>
-          <div class="feature-row"><span class="feat-icon">✅</span><span class="feat-text fr">Mode Éco (batterie)</span><span class="feat-text en">Eco Mode (battery)</span></div>
-          <div class="feature-row"><span class="feat-icon">✅</span><span class="feat-text fr">Cycle 800ms temps réel</span><span class="feat-text en">800ms real-time cycle</span></div>
-          <div class="feature-row"><span class="feat-icon">✅</span><span class="feat-text fr">Tableau de bord RAM</span><span class="feat-text en">RAM dashboard</span></div>
-          <div class="feature-row"><span class="feat-icon">❌</span><span class="feat-text muted fr">Mode Tournoi</span><span class="feat-text muted en">Tournament Mode</span></div>
-          <div class="feature-row"><span class="feat-icon">❌</span><span class="feat-text muted fr">Profils compétition</span><span class="feat-text muted en">Competition profiles</span></div>
+          <div class="feature-row"><span class="feat-icon">✅</span><span class="feat-text fr">Mode Gaming</span><span class="feat-text en">Gaming Mode</span><span class="feat-text es">Modo Gaming</span><span class="feat-text de">Gaming-Modus</span></div>
+          <div class="feature-row"><span class="feat-icon">✅</span><span class="feat-text fr">Mode IA (Claude, Ollama…)</span><span class="feat-text en">AI Mode (Claude, Ollama…)</span><span class="feat-text es">Modo IA (Claude, Ollama…)</span><span class="feat-text de">KI-Modus (Claude, Ollama…)</span></div>
+          <div class="feature-row"><span class="feat-icon">✅</span><span class="feat-text fr">Mode Navigateur</span><span class="feat-text en">Browser Mode</span><span class="feat-text es">Modo Navegador</span><span class="feat-text de">Browser-Modus</span></div>
+          <div class="feature-row"><span class="feat-icon">✅</span><span class="feat-text fr">Mode Turbo</span><span class="feat-text en">Turbo Mode</span><span class="feat-text es">Modo Turbo</span><span class="feat-text de">Turbo-Modus</span></div>
+          <div class="feature-row"><span class="feat-icon">✅</span><span class="feat-text fr">Mode Éco (batterie)</span><span class="feat-text en">Eco Mode (battery)</span><span class="feat-text es">Modo Eco (batería)</span><span class="feat-text de">Öko-Modus (Akku)</span></div>
+          <div class="feature-row"><span class="feat-icon">✅</span><span class="feat-text fr">Cycle 800ms temps réel</span><span class="feat-text en">800ms real-time cycle</span><span class="feat-text es">Ciclo 800ms tiempo real</span><span class="feat-text de">800ms Echtzeitzyklus</span></div>
+          <div class="feature-row"><span class="feat-icon">✅</span><span class="feat-text fr">Tableau de bord RAM</span><span class="feat-text en">RAM dashboard</span><span class="feat-text es">Panel de control RAM</span><span class="feat-text de">RAM-Dashboard</span></div>
+          <div class="feature-row"><span class="feat-icon">❌</span><span class="feat-text muted fr">Mode Tournoi</span><span class="feat-text muted en">Tournament Mode</span><span class="feat-text muted es">Modo Torneo</span><span class="feat-text muted de">Turnier-Modus</span></div>
+          <div class="feature-row"><span class="feat-icon">❌</span><span class="feat-text muted fr">Profils compétition</span><span class="feat-text muted en">Competition profiles</span><span class="feat-text muted es">Perfiles de competición</span><span class="feat-text muted de">Wettkampfprofile</span></div>
         </div>
         <div class="compare-cta">
           <a href="[LIEN_ACHAT]" class="btn-buy">
             <span class="fr">Obtenir Pro — 24,99€</span>
             <span class="en">Get Pro — €24.99</span>
+            <span class="es">Obtener Pro — 24,99€</span>
+            <span class="de">Pro erhalten — 24,99€</span>
             ⚡
           </a>
         </div>
@@ -644,22 +705,28 @@
           <div class="compare-price" style="color:var(--gold);">
             <span class="fr">Bientôt</span>
             <span class="en">Coming<br>soon</span>
+            <span class="es">Próximamente</span>
+            <span class="de">Demnächst</span>
           </div>
           <div class="compare-note fr">Rejoignez la liste d'attente</div>
           <div class="compare-note en">Join the waitlist</div>
+          <div class="compare-note es">Únete a la lista de espera</div>
+          <div class="compare-note de">Warteliste beitreten</div>
         </div>
         <div class="compare-features">
-          <div class="feature-row"><span class="feat-icon">✅</span><span class="feat-text fr">Tout de Pro inclus</span><span class="feat-text en">Everything in Pro</span></div>
-          <div class="feature-row"><span class="feat-icon">🏆</span><span class="feat-text fr">Mode Tournoi exclusif</span><span class="feat-text en">Exclusive Tournament Mode</span></div>
-          <div class="feature-row"><span class="feat-icon">🏆</span><span class="feat-text fr">Profils compétition</span><span class="feat-text en">Competition profiles</span></div>
-          <div class="feature-row"><span class="feat-icon">🏆</span><span class="feat-text fr">Optimisation eSport avancée</span><span class="feat-text en">Advanced eSport optimisation</span></div>
-          <div class="feature-row"><span class="feat-icon">🏆</span><span class="feat-text fr">Support prioritaire</span><span class="feat-text en">Priority support</span></div>
-          <div class="feature-row"><span class="feat-icon">🏆</span><span class="feat-text fr">Accès bêta anticipé</span><span class="feat-text en">Early beta access</span></div>
+          <div class="feature-row"><span class="feat-icon">✅</span><span class="feat-text fr">Tout de Pro inclus</span><span class="feat-text en">Everything in Pro</span><span class="feat-text es">Todo lo de Pro incluido</span><span class="feat-text de">Alles aus Pro enthalten</span></div>
+          <div class="feature-row"><span class="feat-icon">🏆</span><span class="feat-text fr">Mode Tournoi exclusif</span><span class="feat-text en">Exclusive Tournament Mode</span><span class="feat-text es">Modo Torneo exclusivo</span><span class="feat-text de">Exklusiver Turnier-Modus</span></div>
+          <div class="feature-row"><span class="feat-icon">🏆</span><span class="feat-text fr">Profils compétition</span><span class="feat-text en">Competition profiles</span><span class="feat-text es">Perfiles de competición</span><span class="feat-text de">Wettkampfprofile</span></div>
+          <div class="feature-row"><span class="feat-icon">🏆</span><span class="feat-text fr">Optimisation eSport avancée</span><span class="feat-text en">Advanced eSport optimisation</span><span class="feat-text es">Optimización eSport avanzada</span><span class="feat-text de">Erweiterte eSport-Optimierung</span></div>
+          <div class="feature-row"><span class="feat-icon">🏆</span><span class="feat-text fr">Support prioritaire</span><span class="feat-text en">Priority support</span><span class="feat-text es">Soporte prioritario</span><span class="feat-text de">Prioritärer Support</span></div>
+          <div class="feature-row"><span class="feat-icon">🏆</span><span class="feat-text fr">Accès bêta anticipé</span><span class="feat-text en">Early beta access</span><span class="feat-text es">Acceso anticipado a la beta</span><span class="feat-text de">Frühzeitiger Beta-Zugang</span></div>
         </div>
         <div class="compare-cta">
           <div class="btn-soon">
             <span class="fr">Bientôt disponible</span>
             <span class="en">Coming soon</span>
+            <span class="es">Próximamente</span>
+            <span class="de">Demnächst verfügbar</span>
           </div>
         </div>
       </div>
@@ -674,30 +741,40 @@
     <div class="cta-box">
       <div class="tag fr">Offre de lancement</div>
       <div class="tag en">Launch offer</div>
+      <div class="tag es">Oferta de lanzamiento</div>
+      <div class="tag de">Einführungsangebot</div>
 
       <h2>
         <span class="fr">Prêt à libérer votre PC ?</span>
         <span class="en">Ready to free your PC?</span>
+        <span class="es">¿Listo para liberar tu PC?</span>
+        <span class="de">Bereit, deinen PC zu befreien?</span>
       </h2>
       <p>
         <span class="fr">Achat unique. Aucun abonnement. Mises à jour incluses.</span>
         <span class="en">One-time purchase. No subscription. Updates included.</span>
+        <span class="es">Compra única. Sin suscripción. Actualizaciones incluidas.</span>
+        <span class="de">Einmaliger Kauf. Kein Abo. Updates inklusive.</span>
       </p>
 
       <div class="price-display">24,99€</div>
       <div class="price-note fr">Achat unique — valable à vie</div>
       <div class="price-note en">One-time purchase — yours for life</div>
+      <div class="price-note es">Compra única — tuyo de por vida</div>
+      <div class="price-note de">Einmaliger Kauf — lebenslang gültig</div>
 
       <a href="[LIEN_ACHAT]" class="cta-main" style="width:100%; justify-content:center;">
         <span class="fr">Obtenir RAM-AI Pro maintenant</span>
         <span class="en">Get RAM-AI Pro now</span>
+        <span class="es">Obtener RAM-AI Pro ahora</span>
+        <span class="de">RAM-AI Pro jetzt erhalten</span>
         ⚡
       </a>
 
       <div class="guarantee-badges">
-        <span class="g-badge">🔒 <span class="fr">Paiement sécurisé</span><span class="en">Secure payment</span></span>
-        <span class="g-badge">♻️ <span class="fr">Achat unique</span><span class="en">One-time purchase</span></span>
-        <span class="g-badge">🔄 <span class="fr">Mises à jour incluses</span><span class="en">Updates included</span></span>
+        <span class="g-badge">🔒 <span class="fr">Paiement sécurisé</span><span class="en">Secure payment</span><span class="es">Pago seguro</span><span class="de">Sichere Zahlung</span></span>
+        <span class="g-badge">♻️ <span class="fr">Achat unique</span><span class="en">One-time purchase</span><span class="es">Compra única</span><span class="de">Einmaliger Kauf</span></span>
+        <span class="g-badge">🔄 <span class="fr">Mises à jour incluses</span><span class="en">Updates included</span><span class="es">Actualizaciones incluidas</span><span class="de">Updates inklusive</span></span>
         <span class="g-badge">💻 Windows 10 / 11</span>
       </div>
     </div>
@@ -710,17 +787,27 @@
     <div class="footer-logo">RAM-<span>AI</span></div>
     <div class="footer-sub fr">Memory Intelligence — Achat unique, mises à jour incluses.</div>
     <div class="footer-sub en">Memory Intelligence — One-time purchase, updates included.</div>
+    <div class="footer-sub es">Memory Intelligence — Compra única, actualizaciones incluidas.</div>
+    <div class="footer-sub de">Memory Intelligence — Einmaliger Kauf, Updates inklusive.</div>
     <div class="footer-links">
       <a href="[LIEN_ACHAT]" class="fr">Acheter</a>
       <a href="[LIEN_ACHAT]" class="en">Buy</a>
+      <a href="[LIEN_ACHAT]" class="es">Comprar</a>
+      <a href="[LIEN_ACHAT]" class="de">Kaufen</a>
       <a href="mailto:contact@ram-ai.fr" class="fr">Contact</a>
       <a href="mailto:contact@ram-ai.fr" class="en">Contact</a>
+      <a href="mailto:contact@ram-ai.fr" class="es">Contacto</a>
+      <a href="mailto:contact@ram-ai.fr" class="de">Kontakt</a>
       <a href="#" class="fr">Politique de confidentialité</a>
       <a href="#" class="en">Privacy policy</a>
+      <a href="#" class="es">Política de privacidad</a>
+      <a href="#" class="de">Datenschutz</a>
       <a href="#" class="fr">CGV</a>
       <a href="#" class="en">Terms</a>
+      <a href="#" class="es">Términos</a>
+      <a href="#" class="de">AGB</a>
     </div>
-    <div class="footer-copy">© 2026 RAM-AI. <span class="fr">Tous droits réservés.</span><span class="en">All rights reserved.</span></div>
+    <div class="footer-copy">© 2026 RAM-AI. <span class="fr">Tous droits réservés.</span><span class="en">All rights reserved.</span><span class="es">Todos los derechos reservados.</span><span class="de">Alle Rechte vorbehalten.</span></div>
   </div>
 </footer>
 
@@ -730,10 +817,14 @@
     const body = document.body;
     body.removeAttribute('data-fr');
     body.removeAttribute('data-en');
+    body.removeAttribute('data-es');
+    body.removeAttribute('data-de');
     body.setAttribute('data-' + lang, '');
     document.documentElement.lang = lang;
     document.getElementById('btn-fr').classList.toggle('active', lang === 'fr');
     document.getElementById('btn-en').classList.toggle('active', lang === 'en');
+    document.getElementById('btn-es').classList.toggle('active', lang === 'es');
+    document.getElementById('btn-de').classList.toggle('active', lang === 'de');
     localStorage.setItem('ramai-lang', lang);
   }
   (function() {

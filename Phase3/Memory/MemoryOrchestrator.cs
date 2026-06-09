@@ -1311,11 +1311,12 @@ internal sealed class MemoryOrchestrator : IDisposable
                 });
             }
 
-            // Double frappe : EmptyWorkingSet déplace les pages vers la liste standby,
-            // SetProcessWorkingSetSizeEx(-1,-1) force un trim immédiat du working set.
+            // EmptyWorkingSet déplace les pages vers la liste standby (soft trim).
+            // SetProcessWorkingSetSizeEx(-1,-1) force un hard trim immédiat → évite les page faults
+            // en Mode Tournoi où chaque interruption jeu est visible comme stutter.
             bool ok = NativeMemory.EmptyWorkingSet(hProc);
-            NativeMemory.SetProcessWorkingSetSizeEx(
-                hProc, new IntPtr(-1), new IntPtr(-1), 0);
+            if (!_tournamentModeActive)
+                NativeMemory.SetProcessWorkingSetSizeEx(hProc, new IntPtr(-1), new IntPtr(-1), 0);
 
             if (!ok)
             {

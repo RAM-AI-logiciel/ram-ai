@@ -328,13 +328,28 @@ public sealed partial class MainViewModel : ObservableObject
         catch { }
     }
 
-    // ── Boucle de rafraîchissement UI toutes les 2 s ──────────────────────────
+    // ── Cache statut service (évite sc.exe toutes les 2s → source de stutter) ────
+    private DateTime _lastServiceRefresh  = DateTime.MinValue;
+    private string   _cachedServiceStatus = "Inconnu";
+
+    // ── Boucle de rafraîchissement UI ─────────────────────────────────────────
+    // Délai normal : 2 s. Délai Tournoi : 5 s (réduit la pression CPU/scheduler).
+    // GetServiceStatus() (spawn sc.exe) mis en cache : appel max toutes les 10 s.
 
     private async Task RefreshLoop()
     {
         while (true)
         {
-            var    status      = GetServiceStatus();
+            bool inTournament = IsTournamentModeActive;
+
+            // Rafraîchir le statut service max toutes les 10 s pour éviter
+            // de spawner sc.exe à chaque tick (cause de micro-spikes CPU en jeu).
+            if ((DateTime.UtcNow - _lastServiceRefresh).TotalSeconds >= 10)
+            {
+                _cachedServiceStatus = GetServiceStatus();
+                _lastServiceRefresh  = DateTime.UtcNow;
+            }
+            var    status      = _cachedServiceStatus;
             var    (_, usedMb) = SystemMemory.GetPhysicalMemoryMb();
             string flagContent = ReadFlagContent();
 
@@ -360,7 +375,8 @@ public sealed partial class MainViewModel : ObservableObject
                 }
             });
 
-            await Task.Delay(2000);
+            // Intervalle réduit en Mode Tournoi pour libérer le scheduler Windows
+            await Task.Delay(inTournament ? 5_000 : 2_000);
         }
         // ReSharper disable once FunctionNeverReturns
     }
@@ -381,40 +397,47 @@ public sealed partial class MainViewModel : ObservableObject
                 double usedGb  = usedMb / 1024.0;
 
                 // Compter les processus et détecter les relances (Point 3)
-                int    procCount = 0;
-                var    restartDetected = new List<string>();
+                // En Mode Tournoi : on skippe l'énumération pour ne pas perturber le jeu.
+                // Process.GetProcesses() déclenche un appel kernel qui peut causer des
+                // micro-spikes CPU perceptibles comme stutter.
+                int  procCount       = 0;
+                var  restartDetected = new List<string>();
+                bool skipEnum        = IsTournamentModeActive;
 
-                try
+                if (!skipEnum)
                 {
-                    var allProcs = Process.GetProcesses();
-                    procCount = allProcs.Length;
-
-                    // Construire la vue des processus à instance unique
-                    var currentSingle = allProcs
-                        .GroupBy(p => p.ProcessName, StringComparer.OrdinalIgnoreCase)
-                        .Where(g => g.Count() == 1)
-                        .Select(g => g.Key)
-                        .ToHashSet(StringComparer.OrdinalIgnoreCase);
-
-                    // Détecter les relances : était absent au tick précédent, réapparu maintenant
-                    foreach (var name in _goneLastTick)
+                    try
                     {
-                        if (currentSingle.Contains(name))
+                        var allProcs = Process.GetProcesses();
+                        procCount = allProcs.Length;
+
+                        // Construire la vue des processus à instance unique
+                        var currentSingle = allProcs
+                            .GroupBy(p => p.ProcessName, StringComparer.OrdinalIgnoreCase)
+                            .Where(g => g.Count() == 1)
+                            .Select(g => g.Key)
+                            .ToHashSet(StringComparer.OrdinalIgnoreCase);
+
+                        // Détecter les relances : était absent au tick précédent, réapparu maintenant
+                        foreach (var name in _goneLastTick)
                         {
-                            _restartCounts[name] = _restartCounts.GetValueOrDefault(name, 0) + 1;
-                            restartDetected.Add(name);
+                            if (currentSingle.Contains(name))
+                            {
+                                _restartCounts[name] = _restartCounts.GetValueOrDefault(name, 0) + 1;
+                                restartDetected.Add(name);
+                            }
                         }
+
+                        // Mettre à jour les sets pour le prochain tick
+                        _goneLastTick            = new HashSet<string>(_prevSingleInstanceProcs.Except(currentSingle), StringComparer.OrdinalIgnoreCase);
+                        _prevSingleInstanceProcs = currentSingle;
+
+                        // Disposer les objets Process pour éviter les fuites
+                        foreach (var p in allProcs)
+                            try { p.Dispose(); } catch { }
                     }
-
-                    // Mettre à jour les sets pour le prochain tick
-                    _goneLastTick             = new HashSet<string>(_prevSingleInstanceProcs.Except(currentSingle), StringComparer.OrdinalIgnoreCase);
-                    _prevSingleInstanceProcs  = currentSingle;
-
-                    // Disposer les objets Process pour éviter les fuites
-                    foreach (var p in allProcs)
-                        try { p.Dispose(); } catch { }
+                    catch { /* Process.GetProcesses() peut échouer si accès refusé */ }
                 }
-                catch { /* Process.GetProcesses() peut échouer si accès refusé */ }
 
                 _measureService.Add(new MeasurePoint
                 {

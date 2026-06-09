@@ -39,6 +39,9 @@ internal sealed class MemoryOrchestrator : IDisposable
     private const float TournamentRamThresholdPct = 0.25f; // n'agir que si RAM dispo < 25% du total
     private const float TournamentEmergencyPct    = 0.15f; // Turbo d'urgence si dispo < 15%
     private const float TournamentMaxReleasePct   = 0.10f; // libérer max 10% de la RAM récupérable par cycle
+    private const long  TournamentMaxReleaseMb    =  50L;  // hard cap absolu : jamais > 50 Mo libérés par cycle
+    private const float TournamentGameRamPct      = 0.80f; // suspension si jeu WS > 80% de la RAM dispo
+    private const int   TournamentSuspendMs       = 2_000; // durée de suspension anti-stutter en ms
 
     // ── Optimisation prédictive (Ultra) ───────────────────────────────────────
     private const int  PredictiveHistorySize          = 10;
@@ -72,8 +75,9 @@ internal sealed class MemoryOrchestrator : IDisposable
     private static readonly string GamingProfilesPath = Path.Combine(SharedFlagDir, "gaming_profiles.json");
 
     // ── État Ultra ────────────────────────────────────────────────────────────
-    private bool   _tournamentModeActive;
-    private long   _vramMb;   // VRAM totale de l'adaptateur (WMI, mise à jour périodique)
+    private bool     _tournamentModeActive;
+    private DateTime _tournamentSuspendUntil = DateTime.MinValue; // suspension 2s anti-stutter
+    private long     _vramMb;   // VRAM totale de l'adaptateur (WMI, mise à jour périodique)
 
     // ── Optimisation prédictive — historique RAM disponible ──────────────────
     private readonly Queue<long> _availMbHistory = new();
@@ -490,7 +494,33 @@ internal sealed class MemoryOrchestrator : IDisposable
                 long availMb   = NativeMemory.GetAvailablePhysicalMb();
                 float availPct = totalMb > 0 ? (float)availMb / totalMb : 0f;
 
-                if (availPct < TournamentEmergencyPct)
+                // ── Suspension anti-stutter 2s : jeu WS > 80% RAM dispo ─────────
+                if (DateTime.UtcNow < _tournamentSuspendUntil)
+                {
+                    _log.LogDebug("[TOURNOI] Cycle suspendu (anti-stutter 2s actif)");
+                    Console.WriteLine($"[RAM-AI] 🏆 Tournoi: cycle suspendu (anti-stutter 2s)");
+                    foreach (var dp in otherProcs) try { dp.Dispose(); } catch { }
+                    otherProcs.Clear();
+                    skipTournamentEviction = true;
+                }
+                else
+                {
+                    long gameWsMb = GetGameWorkingSetMb(_currentGame);
+                    if (availMb > 0L && gameWsMb > (long)(availMb * TournamentGameRamPct))
+                    {
+                        _tournamentSuspendUntil = DateTime.UtcNow.AddMilliseconds(TournamentSuspendMs);
+                        _log.LogInformation(
+                            "[TOURNOI] Jeu WS={W}Mo > 80% RAM dispo ({A}Mo) → suspension {S}ms",
+                            gameWsMb, availMb, TournamentSuspendMs);
+                        Console.WriteLine(
+                            $"[RAM-AI] 🏆 Tournoi: jeu {gameWsMb}Mo > 80% RAM dispo ({availMb}Mo) → suspension 2s");
+                        foreach (var dp in otherProcs) try { dp.Dispose(); } catch { }
+                        otherProcs.Clear();
+                        skipTournamentEviction = true;
+                    }
+                }
+
+                if (!skipTournamentEviction && availPct < TournamentEmergencyPct)
                 {
                     // Urgence < 15% : Turbo immédiat sur tous les processus non-protégés
                     _log.LogWarning("[TOURNOI] 🚨 URGENCE RAM {P:P0} < {E:P0} — Turbo d'urgence", availPct, TournamentEmergencyPct);
@@ -523,11 +553,13 @@ internal sealed class MemoryOrchestrator : IDisposable
                 }
                 else
                 {
-                    // Entre 15% et 25% : libérer au maximum 10% de la RAM récupérable
+                    // Entre 15% et 25% : max 10% récupérable ET hard cap 50 Mo
                     long reclaimableMb = (long)(totalMb * TournamentRamThresholdPct) - availMb;
-                    tournamentCapMb    = Math.Max(0L, (long)(reclaimableMb * TournamentMaxReleasePct));
-                    _log.LogInformation("[TOURNOI] RAM {P:P0} — cap libération = {C}Mo ce cycle", availPct, tournamentCapMb);
-                    Console.WriteLine($"[RAM-AI] 🏆 Tournoi: RAM {availPct:P0}, libération plafonnée à {tournamentCapMb}Mo");
+                    tournamentCapMb    = Math.Min(
+                        Math.Max(0L, (long)(reclaimableMb * TournamentMaxReleasePct)),
+                        TournamentMaxReleaseMb);
+                    _log.LogInformation("[TOURNOI] RAM {P:P0} — cap libération = {C}Mo ce cycle (max {M}Mo)", availPct, tournamentCapMb, TournamentMaxReleaseMb);
+                    Console.WriteLine($"[RAM-AI] 🏆 Tournoi: RAM {availPct:P0}, libération plafonnée à {tournamentCapMb}Mo (max {TournamentMaxReleaseMb}Mo)");
                 }
             }
 
@@ -562,7 +594,11 @@ internal sealed class MemoryOrchestrator : IDisposable
                         {
                             Interlocked.Increment(ref coldEvicted);
                             Interlocked.Add(ref mbSaved, freed);
-                            if (_tournamentModeActive) tournamentMbThisCycle += freed;
+                            if (_tournamentModeActive)
+                            {
+                                tournamentMbThisCycle += freed;
+                                Thread.Sleep(100); // anti-stutter : délai 100ms après libération
+                            }
                         }
                         gamingProcessed++;
                     }
@@ -1308,6 +1344,28 @@ internal sealed class MemoryOrchestrator : IDisposable
     /// </summary>
     private long EvictTurbo(Process proc) =>
         EvictProcess(proc, 0f, storeToColdCache: false);
+
+    // ── Helper Tournoi : Working Set du jeu actif ────────────────────────────
+
+    /// <summary>
+    /// Retourne le WorkingSet (en Mo) du premier processus correspondant au nom du jeu.
+    /// Retourne 0 si introuvable ou accès refusé.
+    /// </summary>
+    private static long GetGameWorkingSetMb(string gameName)
+    {
+        if (string.IsNullOrEmpty(gameName)) return 0L;
+        // _currentGame peut contenir des suffixes comme " (>1Go RAM)" ou "(dashboard)"
+        // → n'utiliser que le premier token (le nom du processus réel)
+        string procName = gameName.Split(' ')[0];
+        try
+        {
+            var procs = Process.GetProcessesByName(procName);
+            long ws = procs.Length > 0 ? procs[0].WorkingSet64 / (1024L * 1024L) : 0L;
+            foreach (var p in procs) p.Dispose();
+            return ws;
+        }
+        catch { return 0L; }
+    }
 
     // ── Hot path ──────────────────────────────────────────────────────────────
 

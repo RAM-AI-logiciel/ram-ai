@@ -4,7 +4,7 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>RAM-AI — Memory Intelligence</title>
-  <meta name="description" content="RAM-AI optimise votre mémoire vive en temps réel. Libérez 100 Go+, boostez vos jeux, votre IA et votre navigation. RAM-AI Pro — 24,99€ achat unique." />
+  <meta name="description" content="RAM-AI optimise votre mémoire vive en temps réel via l'API Windows SetProcessWorkingSetSizeEx. +7% à +35% de RAM libérée, réduction swap 77–94%. RAM-AI Pro — 24,99€ achat unique." />
   <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700;800;900&display=swap" rel="stylesheet" />
   <style>
     /* ─── RESET & BASE ─────────────────────────────────────── */
@@ -555,25 +555,25 @@
   <div class="container">
     <div class="stats-grid">
       <div class="stat-card">
-        <div class="stat-num">100 Go+</div>
-        <div class="stat-label fr">libérés en moyenne</div>
-        <div class="stat-label en">freed on average</div>
-        <div class="stat-label es">liberados en promedio</div>
-        <div class="stat-label de">durchschnittlich befreit</div>
+        <div class="stat-num">+35%</div>
+        <div class="stat-label fr">RAM disponible supplémentaire</div>
+        <div class="stat-label en">additional available RAM</div>
+        <div class="stat-label es">RAM adicional disponible</div>
+        <div class="stat-label de">zusätzlicher verfügbarer RAM</div>
       </div>
       <div class="stat-card">
-        <div class="stat-num">5 000+</div>
-        <div class="stat-label fr">processus optimisés</div>
-        <div class="stat-label en">optimised processes</div>
-        <div class="stat-label es">procesos optimizados</div>
-        <div class="stat-label de">optimierte Prozesse</div>
+        <div class="stat-num">−94%</div>
+        <div class="stat-label fr">réduction du swap</div>
+        <div class="stat-label en">swap reduction</div>
+        <div class="stat-label es">reducción del swap</div>
+        <div class="stat-label de">Swap-Reduzierung</div>
       </div>
       <div class="stat-card">
-        <div class="stat-num">800ms</div>
-        <div class="stat-label fr">cycle d'optimisation</div>
-        <div class="stat-label en">optimisation cycle</div>
-        <div class="stat-label es">ciclo de optimización</div>
-        <div class="stat-label de">Optimierungszyklus</div>
+        <div class="stat-num">0,46%</div>
+        <div class="stat-label fr">CPU moyen consommé</div>
+        <div class="stat-label en">average CPU usage</div>
+        <div class="stat-label es">uso medio de CPU</div>
+        <div class="stat-label de">durchschnittliche CPU-Nutzung</div>
       </div>
     </div>
   </div>
@@ -588,16 +588,16 @@
       <span class="tag es">Los Modos</span>
       <span class="tag de">Die Modi</span>
       <h2 class="section-title">
-        <span class="fr">Une intelligence, six modes.</span>
-        <span class="en">One intelligence, six modes.</span>
-        <span class="es">Una inteligencia, seis modos.</span>
-        <span class="de">Eine KI, sechs Modi.</span>
+        <span class="fr">Un moteur, cinq modes.</span>
+        <span class="en">One engine, five modes.</span>
+        <span class="es">Un motor, cinco modos.</span>
+        <span class="de">Ein Motor, fünf Modi.</span>
       </h2>
       <p class="section-sub">
-        <span class="fr">RAM-AI s'adapte automatiquement à votre usage — jeu, IA, navigation ou compétition.</span>
-        <span class="en">RAM-AI automatically adapts to your usage — gaming, AI, browsing or competition.</span>
-        <span class="es">RAM-AI se adapta automáticamente a tu uso — juego, IA, navegación o competición.</span>
-        <span class="de">RAM-AI passt sich automatisch deiner Nutzung an — Gaming, KI, Browser oder Wettbewerb.</span>
+        <span class="fr">RAM-AI s'adapte automatiquement à votre usage — usage quotidien, jeu, batterie ou compétition.</span>
+        <span class="en">RAM-AI automatically adapts to your usage — daily use, gaming, battery or competition.</span>
+        <span class="es">RAM-AI se adapta automáticamente a tu uso — uso diario, juego, batería o competición.</span>
+        <span class="de">RAM-AI passt sich automatisch deiner Nutzung an — Alltag, Gaming, Akku oder Wettkampf.</span>
       </p>
     </div>
 
@@ -609,35 +609,25 @@
         <div class="mode-title en">Gaming Mode</div>
         <div class="mode-title es">Modo Gaming</div>
         <div class="mode-title de">Gaming-Modus</div>
-        <p class="mode-desc fr">Détection automatique du jeu actif. Libération ciblée des ressources. Gain moyen de +19 places sur UserBenchmark.</p>
-        <p class="mode-desc en">Automatic detection of the active game. Targeted resource release. Average gain of +19 places on UserBenchmark.</p>
-        <p class="mode-desc es">Detección automática del juego activo. Liberación específica de recursos. Ganancia media de +19 posiciones en UserBenchmark.</p>
-        <p class="mode-desc de">Automatische Erkennung des aktiven Spiels. Gezielte Ressourcenfreigabe. Durchschnittlicher Gewinn von +19 Plätzen auf UserBenchmark.</p>
+        <p class="mode-desc fr">Détecte automatiquement 50+ jeux. Libère la RAM des processus froids, protège le jeu actif. Thread BelowNormal pour ne jamais gêner vos FPS.</p>
+        <p class="mode-desc en">Automatically detects 50+ games. Frees RAM from cold processes, protects the active game. BelowNormal thread to never impact your FPS.</p>
+        <p class="mode-desc es">Detecta automáticamente 50+ juegos. Libera la RAM de procesos fríos, protege el juego activo. Hilo BelowNormal para no afectar tus FPS.</p>
+        <p class="mode-desc de">Erkennt automatisch 50+ Spiele. Gibt RAM von kalten Prozessen frei, schützt das aktive Spiel. BelowNormal-Thread, damit deine FPS nie beeinträchtigt werden.</p>
       </div>
 
       <div class="mode-card">
-        <div class="mode-emoji">🤖</div>
-        <div class="mode-title fr">Mode IA</div>
-        <div class="mode-title en">AI Mode</div>
-        <div class="mode-title es">Modo IA</div>
-        <div class="mode-title de">KI-Modus</div>
-        <p class="mode-desc fr">Optimisé pour Claude, Ollama, LM Studio et tous vos modèles locaux. Plus de RAM disponible = inférences plus rapides.</p>
-        <p class="mode-desc en">Optimised for Claude, Ollama, LM Studio and all your local models. More available RAM = faster inference.</p>
-        <p class="mode-desc es">Optimizado para Claude, Ollama, LM Studio y todos tus modelos locales. Más RAM disponible = inferencias más rápidas.</p>
-        <p class="mode-desc de">Optimiert für Claude, Ollama, LM Studio und alle lokalen Modelle. Mehr verfügbarer RAM = schnellere Inferenz.</p>
+        <div class="mode-emoji">🔄</div>
+        <div class="mode-title fr">Mode Adaptatif</div>
+        <div class="mode-title en">Adaptive Mode</div>
+        <div class="mode-title es">Modo Adaptativo</div>
+        <div class="mode-title de">Adaptiver Modus</div>
+        <p class="mode-desc fr">Mode par défaut. Intervalle 3 000 ms au repos, 2 000 ms sous charge. S'ajuste automatiquement selon la pression mémoire pour un équilibre optimal.</p>
+        <p class="mode-desc en">Default mode. 3 000 ms interval at rest, 2 000 ms under load. Automatically adjusts based on memory pressure for optimal balance.</p>
+        <p class="mode-desc es">Modo predeterminado. Intervalo de 3 000 ms en reposo, 2 000 ms bajo carga. Se ajusta automáticamente según la presión de memoria.</p>
+        <p class="mode-desc de">Standardmodus. 3 000 ms Intervall im Ruhezustand, 2 000 ms unter Last. Passt sich automatisch dem Speicherdruck an.</p>
       </div>
 
-      <div class="mode-card">
-        <div class="mode-emoji">🌐</div>
-        <div class="mode-title fr">Mode Navigateur</div>
-        <div class="mode-title en">Browser Mode</div>
-        <div class="mode-title es">Modo Navegador</div>
-        <div class="mode-title de">Browser-Modus</div>
-        <p class="mode-desc fr">Compatible Chrome, Edge, Firefox, Brave. Priorise les onglets actifs et réduit l'empreinte mémoire globale.</p>
-        <p class="mode-desc en">Compatible with Chrome, Edge, Firefox, Brave. Prioritises active tabs and reduces overall memory footprint.</p>
-        <p class="mode-desc es">Compatible con Chrome, Edge, Firefox, Brave. Prioriza las pestañas activas y reduce el consumo global de memoria.</p>
-        <p class="mode-desc de">Kompatibel mit Chrome, Edge, Firefox, Brave. Priorisiert aktive Tabs und reduziert den gesamten Speicherbedarf.</p>
-      </div>
+
 
       <div class="mode-card">
         <div class="mode-emoji">⚡</div>
@@ -657,10 +647,10 @@
         <div class="mode-title en">Eco Mode</div>
         <div class="mode-title es">Modo Eco</div>
         <div class="mode-title de">Öko-Modus</div>
-        <p class="mode-desc fr">Batterie détectée automatiquement. Optimisation douce qui préserve l'autonomie et réduit la chaleur.</p>
-        <p class="mode-desc en">Battery automatically detected. Gentle optimisation that preserves battery life and reduces heat.</p>
-        <p class="mode-desc es">Batería detectada automáticamente. Optimización suave que preserva la autonomía y reduce el calor.</p>
-        <p class="mode-desc de">Akku wird automatisch erkannt. Sanfte Optimierung, die die Akkulaufzeit erhält und Wärme reduziert.</p>
+        <p class="mode-desc fr">Batterie détectée automatiquement. Intervalle 3 000 ms, maximum 8 processus par cycle. Libère de la RAM tout en préservant l'autonomie.</p>
+        <p class="mode-desc en">Battery automatically detected. 3 000 ms interval, maximum 8 processes per cycle. Frees RAM while preserving battery life.</p>
+        <p class="mode-desc es">Batería detectada automáticamente. Intervalo de 3 000 ms, máximo 8 procesos por ciclo. Libera RAM preservando la autonomía.</p>
+        <p class="mode-desc de">Akku wird automatisch erkannt. 3 000 ms Intervall, maximal 8 Prozesse pro Zyklus. Gibt RAM frei und schont die Akkulaufzeit.</p>
       </div>
 
       <div class="mode-card ultra-only">
@@ -669,10 +659,10 @@
         <div class="mode-title en">Tournament Mode</div>
         <div class="mode-title es">Modo Torneo</div>
         <div class="mode-title de">Turnier-Modus</div>
-        <p class="mode-desc fr">Performances maximales pour la compétition. Gel des processus non essentiels, priorité absolue au jeu.</p>
-        <p class="mode-desc en">Maximum performance for competition. Non-essential processes frozen, absolute game priority.</p>
-        <p class="mode-desc es">Rendimiento máximo para la competición. Congelación de procesos no esenciales, prioridad absoluta al juego.</p>
-        <p class="mode-desc de">Maximale Leistung für den Wettkampf. Einfrieren nicht wesentlicher Prozesse, absolute Spielpriorität.</p>
+        <p class="mode-desc fr">Optimisation maximale pour la compétition. Intervalle 500 ms, seuil d'activation 25%. Libère le maximum de RAM sans toucher au jeu ni aux processus système.</p>
+        <p class="mode-desc en">Maximum optimisation for competition. 500 ms interval, 25% activation threshold. Frees maximum RAM without touching the game or system processes.</p>
+        <p class="mode-desc es">Optimización máxima para la competición. Intervalo de 500 ms, umbral de activación del 25%. Libera la máxima RAM sin tocar el juego ni los procesos del sistema.</p>
+        <p class="mode-desc de">Maximale Optimierung für den Wettkampf. 500 ms Intervall, 25% Aktivierungsschwelle. Gibt maximalen RAM frei, ohne das Spiel oder Systemprozesse zu berühren.</p>
         <div class="mode-badge-ultra fr">Ultra uniquement</div>
         <div class="mode-badge-ultra en">Ultra only</div>
         <div class="mode-badge-ultra es">Solo Ultra</div>
@@ -718,15 +708,15 @@
           <div class="compare-note de">Lebenslange Updates inklusive</div>
         </div>
         <div class="compare-features">
-          <div class="feature-row"><span class="feat-icon">✅</span><span class="feat-text fr">Mode Gaming</span><span class="feat-text en">Gaming Mode</span><span class="feat-text es">Modo Gaming</span><span class="feat-text de">Gaming-Modus</span></div>
-          <div class="feature-row"><span class="feat-icon">✅</span><span class="feat-text fr">Mode IA (Claude, Ollama…)</span><span class="feat-text en">AI Mode (Claude, Ollama…)</span><span class="feat-text es">Modo IA (Claude, Ollama…)</span><span class="feat-text de">KI-Modus (Claude, Ollama…)</span></div>
-          <div class="feature-row"><span class="feat-icon">✅</span><span class="feat-text fr">Mode Navigateur</span><span class="feat-text en">Browser Mode</span><span class="feat-text es">Modo Navegador</span><span class="feat-text de">Browser-Modus</span></div>
-          <div class="feature-row"><span class="feat-icon">✅</span><span class="feat-text fr">Mode Turbo</span><span class="feat-text en">Turbo Mode</span><span class="feat-text es">Modo Turbo</span><span class="feat-text de">Turbo-Modus</span></div>
-          <div class="feature-row"><span class="feat-icon">✅</span><span class="feat-text fr">Mode Éco (batterie)</span><span class="feat-text en">Eco Mode (battery)</span><span class="feat-text es">Modo Eco (batería)</span><span class="feat-text de">Öko-Modus (Akku)</span></div>
-          <div class="feature-row"><span class="feat-icon">✅</span><span class="feat-text fr">Cycle 800ms temps réel</span><span class="feat-text en">800ms real-time cycle</span><span class="feat-text es">Ciclo 800ms tiempo real</span><span class="feat-text de">800ms Echtzeitzyklus</span></div>
-          <div class="feature-row"><span class="feat-icon">✅</span><span class="feat-text fr">Tableau de bord RAM</span><span class="feat-text en">RAM dashboard</span><span class="feat-text es">Panel de control RAM</span><span class="feat-text de">RAM-Dashboard</span></div>
-          <div class="feature-row"><span class="feat-icon">❌</span><span class="feat-text muted fr">Mode Tournoi</span><span class="feat-text muted en">Tournament Mode</span><span class="feat-text muted es">Modo Torneo</span><span class="feat-text muted de">Turnier-Modus</span></div>
-          <div class="feature-row"><span class="feat-icon">❌</span><span class="feat-text muted fr">Profils compétition</span><span class="feat-text muted en">Competition profiles</span><span class="feat-text muted es">Perfiles de competición</span><span class="feat-text muted de">Wettkampfprofile</span></div>
+          <div class="feature-row"><span class="feat-icon">✅</span><span class="feat-text fr">Mode Adaptatif (défaut)</span><span class="feat-text en">Adaptive Mode (default)</span><span class="feat-text es">Modo Adaptativo (defecto)</span><span class="feat-text de">Adaptiver Modus (Standard)</span></div>
+          <div class="feature-row"><span class="feat-icon">✅</span><span class="feat-text fr">Mode Gaming — 50+ jeux détectés</span><span class="feat-text en">Gaming Mode — 50+ games detected</span><span class="feat-text es">Modo Gaming — 50+ juegos detectados</span><span class="feat-text de">Gaming-Modus — 50+ Spiele erkannt</span></div>
+          <div class="feature-row"><span class="feat-icon">✅</span><span class="feat-text fr">Mode Turbo (one-shot)</span><span class="feat-text en">Turbo Mode (one-shot)</span><span class="feat-text es">Modo Turbo (disparo único)</span><span class="feat-text de">Turbo-Modus (einmalig)</span></div>
+          <div class="feature-row"><span class="feat-icon">✅</span><span class="feat-text fr">Mode Éco (batterie, 3 000 ms)</span><span class="feat-text en">Eco Mode (battery, 3 000 ms)</span><span class="feat-text es">Modo Eco (batería, 3 000 ms)</span><span class="feat-text de">Öko-Modus (Akku, 3 000 ms)</span></div>
+          <div class="feature-row"><span class="feat-icon">✅</span><span class="feat-text fr">API Windows native (SetProcessWorkingSetSizeEx)</span><span class="feat-text en">Native Windows API (SetProcessWorkingSetSizeEx)</span><span class="feat-text es">API Windows nativa (SetProcessWorkingSetSizeEx)</span><span class="feat-text de">Native Windows-API (SetProcessWorkingSetSizeEx)</span></div>
+          <div class="feature-row"><span class="feat-icon">✅</span><span class="feat-text fr">Seuils dynamiques selon RAM totale</span><span class="feat-text en">Dynamic thresholds based on total RAM</span><span class="feat-text es">Umbrales dinámicos según RAM total</span><span class="feat-text de">Dynamische Schwellenwerte je nach RAM</span></div>
+          <div class="feature-row"><span class="feat-icon">✅</span><span class="feat-text fr">Tableau de bord WPF temps réel</span><span class="feat-text en">Real-time WPF dashboard</span><span class="feat-text es">Panel WPF en tiempo real</span><span class="feat-text de">Echtzeit-WPF-Dashboard</span></div>
+          <div class="feature-row"><span class="feat-icon">❌</span><span class="feat-text muted fr">Mode Tournoi (Ultra)</span><span class="feat-text muted en">Tournament Mode (Ultra)</span><span class="feat-text muted es">Modo Torneo (Ultra)</span><span class="feat-text muted de">Turnier-Modus (Ultra)</span></div>
+          <div class="feature-row"><span class="feat-icon">❌</span><span class="feat-text muted fr">Profils gaming avancés</span><span class="feat-text muted en">Advanced gaming profiles</span><span class="feat-text muted es">Perfiles gaming avanzados</span><span class="feat-text muted de">Erweiterte Gaming-Profile</span></div>
         </div>
         <div class="compare-cta">
           <a href="[LIEN_ACHAT]" class="btn-buy">
@@ -756,11 +746,11 @@
         </div>
         <div class="compare-features">
           <div class="feature-row"><span class="feat-icon">✅</span><span class="feat-text fr">Tout de Pro inclus</span><span class="feat-text en">Everything in Pro</span><span class="feat-text es">Todo lo de Pro incluido</span><span class="feat-text de">Alles aus Pro enthalten</span></div>
-          <div class="feature-row"><span class="feat-icon">🏆</span><span class="feat-text fr">Mode Tournoi exclusif</span><span class="feat-text en">Exclusive Tournament Mode</span><span class="feat-text es">Modo Torneo exclusivo</span><span class="feat-text de">Exklusiver Turnier-Modus</span></div>
-          <div class="feature-row"><span class="feat-icon">🏆</span><span class="feat-text fr">Profils compétition</span><span class="feat-text en">Competition profiles</span><span class="feat-text es">Perfiles de competición</span><span class="feat-text de">Wettkampfprofile</span></div>
-          <div class="feature-row"><span class="feat-icon">🏆</span><span class="feat-text fr">Optimisation eSport avancée</span><span class="feat-text en">Advanced eSport optimisation</span><span class="feat-text es">Optimización eSport avanzada</span><span class="feat-text de">Erweiterte eSport-Optimierung</span></div>
+          <div class="feature-row"><span class="feat-icon">🏆</span><span class="feat-text fr">Mode Tournoi (500 ms, seuil 25%)</span><span class="feat-text en">Tournament Mode (500 ms, 25% threshold)</span><span class="feat-text es">Modo Torneo (500 ms, umbral 25%)</span><span class="feat-text de">Turnier-Modus (500 ms, 25% Schwellenwert)</span></div>
+          <div class="feature-row"><span class="feat-icon">🏆</span><span class="feat-text fr">Profils gaming avancés</span><span class="feat-text en">Advanced gaming profiles</span><span class="feat-text es">Perfiles gaming avanzados</span><span class="feat-text de">Erweiterte Gaming-Profile</span></div>
+          <div class="feature-row"><span class="feat-icon">🏆</span><span class="feat-text fr">Optimisation VRAM</span><span class="feat-text en">VRAM optimisation</span><span class="feat-text es">Optimización VRAM</span><span class="feat-text de">VRAM-Optimierung</span></div>
+          <div class="feature-row"><span class="feat-icon">🏆</span><span class="feat-text fr">Analyse prédictive mémoire</span><span class="feat-text en">Predictive memory analysis</span><span class="feat-text es">Análisis predictivo de memoria</span><span class="feat-text de">Prädiktive Speicheranalyse</span></div>
           <div class="feature-row"><span class="feat-icon">🏆</span><span class="feat-text fr">Support prioritaire</span><span class="feat-text en">Priority support</span><span class="feat-text es">Soporte prioritario</span><span class="feat-text de">Prioritärer Support</span></div>
-          <div class="feature-row"><span class="feat-icon">🏆</span><span class="feat-text fr">Accès bêta anticipé</span><span class="feat-text en">Early beta access</span><span class="feat-text es">Acceso anticipado a la beta</span><span class="feat-text de">Frühzeitiger Beta-Zugang</span></div>
         </div>
         <div class="compare-cta">
           <div class="btn-soon">

@@ -484,12 +484,55 @@
       color: var(--muted);
       font-style: italic;
     }
+
+    /* ─── DOCS SECTION ──────────────────────────────────────── */
+    #docs { background: var(--bg2); }
+    .docs-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+      gap: 24px;
+    }
+    .doc-card {
+      background: var(--card-bg);
+      border: 1px solid var(--border);
+      border-radius: var(--radius-lg);
+      padding: 32px 28px;
+      display: flex; flex-direction: column; align-items: center;
+      text-align: center;
+      transition: transform .25s, border-color .25s, box-shadow .25s;
+    }
+    .doc-card:hover {
+      transform: translateY(-6px);
+      border-color: var(--blue);
+      box-shadow: 0 16px 48px rgba(58,123,213,.22);
+    }
+    .doc-icon { font-size: 2.6rem; margin-bottom: 16px; }
+    .doc-card-title { font-size: 1.15rem; font-weight: 700; margin-bottom: 8px; }
+    .doc-card-desc { color: var(--muted); font-size: .9rem; line-height: 1.55; margin-bottom: 24px; flex: 1; }
+    .btn-dl {
+      display: inline-flex; align-items: center; gap: 8px;
+      background: transparent; color: var(--blue-lt);
+      font-family: 'Outfit', sans-serif;
+      font-size: .95rem; font-weight: 700;
+      padding: 11px 28px; border-radius: 50px;
+      border: 2px solid var(--blue);
+      cursor: pointer; text-decoration: none; transition: all .2s;
+    }
+    .btn-dl:hover { background: var(--blue); color: #fff; box-shadow: 0 8px 24px rgba(58,123,213,.38); }
+    .nav-doc-link {
+      font-family: 'Outfit', sans-serif;
+      font-size: .85rem; font-weight: 600; color: var(--muted);
+      text-decoration: none; padding: 6px 16px; border-radius: 50px;
+      border: 1px solid transparent; transition: all .2s; margin-right: auto;
+    }
+    .nav-doc-link:hover { color: var(--blue-lt); border-color: var(--border); }
   </style>
 </head>
 <body data-fr>
 
 <!-- LANGUAGE BAR -->
 <div id="lang-bar">
+  <a href="#docs" class="nav-doc-link">📄 Documentation</a>
   <div class="lang-switcher">
     <button class="lang-btn active" id="btn-fr" onclick="setLang('fr')">🇫🇷 FR</button>
     <button class="lang-btn" id="btn-en" onclick="setLang('en')">🇬🇧 EN</button>
@@ -777,6 +820,36 @@
 </section>
 
 
+
+
+<!-- DOCS -->
+<section id="docs" class="section section-alt">
+  <div class="container center">
+    <span class="tag">Ressources</span>
+    <h2 class="section-title">Documentation</h2>
+    <p class="section-sub">Téléchargez nos guides au format Word (.docx)</p>
+    <div class="docs-grid">
+      <div class="doc-card">
+        <div class="doc-icon">📄</div>
+        <div class="doc-card-title">Fiche Présentation</div>
+        <p class="doc-card-desc">Découvrez RAM-AI — modes, fonctionnalités et comparatif Pro/Ultra</p>
+        <a href="docs/RAM-AI_Fiche_Presentation.docx" class="btn-dl" download>⬇ Télécharger</a>
+      </div>
+      <div class="doc-card">
+        <div class="doc-icon">📄</div>
+        <div class="doc-card-title">Guide d’installation</div>
+        <p class="doc-card-desc">Installation pas à pas, options, premier lancement et FAQ</p>
+        <a href="docs/RAM-AI_Guide_Installation.docx" class="btn-dl" download>⬇ Télécharger</a>
+      </div>
+      <div class="doc-card">
+        <div class="doc-icon">📄</div>
+        <div class="doc-card-title">Guide Technique &amp; Benchmark</div>
+        <p class="doc-card-desc">Comment ça marche, technologie et guide du benchmark</p>
+        <a href="docs/RAM-AI_Guide_Technique.docx" class="btn-dl" download>⬇ Télécharger</a>
+      </div>
+    </div>
+  </div>
+</section>
 
 <!-- FOOTER -->
 <footer>

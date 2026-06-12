@@ -526,6 +526,60 @@
       border: 1px solid transparent; transition: all .2s; margin-right: auto;
     }
     .nav-doc-link:hover { color: var(--blue-lt); border-color: var(--border); }
+
+    /* ─── TRIAL FORM SECTION ─────────────────────────────────── */
+    #trial { background: var(--bg3); }
+    .trial-box {
+      max-width: 560px; margin: 0 auto;
+      background: var(--card-bg);
+      border: 1px solid var(--border);
+      border-radius: var(--radius-lg);
+      padding: 52px 44px;
+      box-shadow: 0 24px 80px rgba(0,0,0,.4);
+    }
+    .trial-box h2 { font-size: clamp(1.5rem,3vw,2.1rem); font-weight: 800; margin-bottom: 10px; }
+    .trial-box .trial-sub { color: var(--muted); font-size: 1rem; margin-bottom: 32px; }
+    .trial-form { display: flex; flex-direction: column; gap: 14px; }
+    .trial-input {
+      background: rgba(255,255,255,.05);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      color: var(--text);
+      font-family: 'Outfit', sans-serif;
+      font-size: .98rem;
+      padding: 13px 18px;
+      outline: none;
+      transition: border-color .2s;
+      width: 100%;
+    }
+    .trial-input::placeholder { color: var(--muted); }
+    .trial-input:focus { border-color: var(--blue); }
+    .btn-trial {
+      display: inline-flex; align-items: center; justify-content: center; gap: 8px;
+      background: linear-gradient(135deg, var(--gold), var(--gold-dk));
+      color: #0D1B2A;
+      font-family: 'Outfit', sans-serif;
+      font-size: 1rem; font-weight: 800;
+      padding: 15px 32px;
+      border-radius: 50px; border: none; cursor: pointer;
+      box-shadow: 0 8px 28px rgba(245,166,35,.38);
+      transition: transform .2s, box-shadow .2s;
+      margin-top: 6px;
+    }
+    .btn-trial:hover { transform: translateY(-3px); box-shadow: 0 14px 36px rgba(245,166,35,.55); }
+    .trial-note { font-size: .78rem; color: var(--muted); margin-top: 14px; }
+
+    /* TRIAL FORM */
+    #trial { background: var(--bg3); }
+    .trial-box { max-width: 560px; margin: 0 auto; background: var(--card-bg); border: 1px solid var(--border); border-radius: var(--radius-lg); padding: 52px 44px; box-shadow: 0 24px 80px rgba(0,0,0,.4); }
+    .trial-box h2 { font-size: clamp(1.5rem,3vw,2.1rem); font-weight: 800; margin-bottom: 10px; }
+    .trial-form { display: flex; flex-direction: column; gap: 14px; }
+    .trial-input { background: rgba(255,255,255,.05); border: 1px solid var(--border); border-radius: var(--radius); color: var(--text); font-family: 'Outfit', sans-serif; font-size: .98rem; padding: 13px 18px; outline: none; transition: border-color .2s; width: 100%; }
+    .trial-input::placeholder { color: var(--muted); }
+    .trial-input:focus { border-color: var(--blue); }
+    .btn-trial { display: inline-flex; align-items: center; justify-content: center; gap: 8px; background: linear-gradient(135deg,var(--gold),var(--gold-dk)); color: #0D1B2A; font-family: 'Outfit', sans-serif; font-size: 1rem; font-weight: 800; padding: 15px 32px; border-radius: 50px; border: none; cursor: pointer; box-shadow: 0 8px 28px rgba(245,166,35,.38); transition: transform .2s,box-shadow .2s; margin-top: 6px; }
+    .btn-trial:hover { transform: translateY(-3px); box-shadow: 0 14px 36px rgba(245,166,35,.55); }
+    .trial-note { font-size: .78rem; color: var(--muted); margin-top: 14px; }
   </style>
 </head>
 <body data-fr>
@@ -581,7 +635,7 @@
         <span class="de">Ultra erhalten — 39,99€ ⚡</span>
       </a>
     </div>
-    <a href="https://ram-ai-logiciel.github.io/ram-ai/RAM-AI-Setup-1.0.0.exe" class="cta-download" download>
+    <a href="https://ram-ai-logiciel.github.io/ram-ai/RAM-AI-Setup-1.0.0.exe" class="cta-download">
       ⬇ <span class="fr">Télécharger RAM-AI (gratuit)</span>
          <span class="en">Download RAM-AI (free)</span>
          <span class="es">Descargar RAM-AI (gratis)</span>
@@ -822,6 +876,42 @@
 
 
 
+<!-- TRIAL -->
+<section id="trial" class="section">
+  <div class="container center">
+    <span class="tag">🎁 Offre découverte</span>
+    <h2 class="section-title">Essai gratuit <span class="text-gold">30 jours</span></h2>
+    <p class="section-sub">Testez RAM-AI Pro sans engagement. Pas de carte bancaire requise.</p>
+    <div class="trial-box">
+      <form class="trial-form" action="https://formspree.io/f/YOUR_FORM_ID" method="POST">
+        <input type="hidden" name="_subject" value="Demande d'essai gratuit RAM-AI">
+        <input class="trial-input" type="text" name="name" placeholder="Votre prénom" required>
+        <input class="trial-input" type="email" name="email" placeholder="Votre adresse email" required>
+        <button class="btn-trial" type="submit">🚀 Démarrer mon essai gratuit</button>
+      </form>
+      <p class="trial-note">✓ Aucune carte bancaire &nbsp;·&nbsp; ✓ Accès immédiat &nbsp;·&nbsp; ✓ Annulable à tout moment</p>
+    </div>
+  </div>
+</section>
+
+<!-- TRIAL -->
+<section id="trial" class="section">
+  <div class="container center">
+    <span class="tag">Offre découverte</span>
+    <h2 class="section-title">Essai gratuit <span class="text-gold">30 jours</span></h2>
+    <p class="section-sub">Testez RAM-AI Pro sans engagement. Pas de carte bancaire requise.</p>
+    <div class="trial-box">
+      <form class="trial-form" action="https://formspree.io/f/YOUR_FORM_ID" method="POST">
+        <input type="hidden" name="_subject" value="Demande essai gratuit RAM-AI">
+        <input class="trial-input" type="text" name="name" placeholder="Votre prénom" required>
+        <input class="trial-input" type="email" name="email" placeholder="Votre adresse email" required>
+        <button class="btn-trial" type="submit">Démarrer mon essai gratuit</button>
+      </form>
+      <p class="trial-note">Aucune carte bancaire &nbsp;·&nbsp; Accès immédiat &nbsp;·&nbsp; Annulable à tout moment</p>
+    </div>
+  </div>
+</section>
+
 <!-- DOCS -->
 <section id="docs" class="section section-alt">
   <div class="container center">
@@ -833,19 +923,19 @@
         <div class="doc-icon">📄</div>
         <div class="doc-card-title">Fiche Présentation</div>
         <p class="doc-card-desc">Découvrez RAM-AI — modes, fonctionnalités et comparatif Pro/Ultra</p>
-        <a href="docs/RAM-AI_Fiche_Presentation.docx" class="btn-dl" download>⬇ Télécharger</a>
+        <a href="#" class="btn-dl">⬇ Télécharger</a>
       </div>
       <div class="doc-card">
         <div class="doc-icon">📄</div>
         <div class="doc-card-title">Guide d’installation</div>
         <p class="doc-card-desc">Installation pas à pas, options, premier lancement et FAQ</p>
-        <a href="docs/RAM-AI_Guide_Installation.docx" class="btn-dl" download>⬇ Télécharger</a>
+        <a href="#" class="btn-dl">⬇ Télécharger</a>
       </div>
       <div class="doc-card">
         <div class="doc-icon">📄</div>
         <div class="doc-card-title">Guide Technique &amp; Benchmark</div>
         <p class="doc-card-desc">Comment ça marche, technologie et guide du benchmark</p>
-        <a href="docs/RAM-AI_Guide_Technique.docx" class="btn-dl" download>⬇ Télécharger</a>
+        <a href="#" class="btn-dl">⬇ Télécharger</a>
       </div>
     </div>
   </div>

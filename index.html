@@ -943,14 +943,14 @@
       <a href="mailto:contact@ram-ai.fr" class="en">Contact</a>
       <a href="mailto:contact@ram-ai.fr" class="es">Contacto</a>
       <a href="mailto:contact@ram-ai.fr" class="de">Kontakt</a>
-      <a href="#" class="fr">Politique de confidentialité</a>
-      <a href="#" class="en">Privacy policy</a>
-      <a href="#" class="es">Política de privacidad</a>
-      <a href="#" class="de">Datenschutz</a>
-      <a href="#" class="fr">CGV</a>
-      <a href="#" class="en">Terms</a>
-      <a href="#" class="es">Términos</a>
-      <a href="#" class="de">AGB</a>
+      <a href="#" class="fr" onclick="openModal('privacy');return false;">Politique de confidentialité</a>
+      <a href="#" class="en" onclick="openModal('privacy');return false;">Privacy policy</a>
+      <a href="#" class="es" onclick="openModal('privacy');return false;">Política de privacidad</a>
+      <a href="#" class="de" onclick="openModal('privacy');return false;">Datenschutz</a>
+      <a href="#" class="fr" onclick="openModal('cgv');return false;">CGV</a>
+      <a href="#" class="en" onclick="openModal('cgv');return false;">Terms</a>
+      <a href="#" class="es" onclick="openModal('cgv');return false;">Términos</a>
+      <a href="#" class="de" onclick="openModal('cgv');return false;">AGB</a>
     </div>
     <div class="footer-copy">© 2026 RAM-AI. <span class="fr">Tous droits réservés.</span><span class="en">All rights reserved.</span><span class="es">Todos los derechos reservados.</span><span class="de">Alle Rechte vorbehalten.</span></div>
   </div>
@@ -976,6 +976,71 @@
     const saved = localStorage.getItem('ramai-lang');
     if (saved && saved !== 'fr') setLang(saved);
   })();
+</script>
+
+
+<!-- MODALS: Politique de confidentialité / CGV -->
+<style>
+  .modal-overlay { display:none; position:fixed; inset:0; background:rgba(10,21,32,.78); z-index:9999; align-items:center; justify-content:center; padding:20px; }
+  .modal-overlay.open { display:flex; }
+  .modal-card { background:var(--card-bg); border:1px solid var(--border); border-radius:var(--radius-lg); max-width:560px; width:100%; max-height:80vh; overflow-y:auto; padding:32px; position:relative; color:var(--text); box-shadow:0 20px 60px rgba(0,0,0,.5); }
+  .modal-card h3 { color:var(--gold); margin-top:0; font-family:'Outfit',sans-serif; }
+  .modal-card p { color:var(--muted); line-height:1.7; white-space:pre-line; }
+  .modal-close { position:absolute; top:14px; right:14px; background:transparent; border:1px solid var(--border); color:var(--text); width:32px; height:32px; border-radius:50%; cursor:pointer; font-size:1.1rem; line-height:1; }
+  .modal-close:hover { background:var(--blue); border-color:var(--blue); }
+</style>
+
+<div class="modal-overlay" id="modal-privacy" onclick="if(event.target===this)closeModal('privacy')">
+  <div class="modal-card">
+    <button class="modal-close" onclick="closeModal('privacy')" aria-label="Close">×</button>
+    <h3 class="fr">Politique de confidentialité</h3>
+    <h3 class="en">Privacy Policy</h3>
+    <h3 class="es">Política de privacidad</h3>
+    <h3 class="de">Datenschutzerklärung</h3>
+    <p class="fr">RAM-AI collecte uniquement l'adresse email fournie lors de l'achat, transmise par Lemon Squeezy pour l'envoi de la clé de licence. Aucune donnée personnelle supplémentaire n'est collectée. Les données ne sont pas revendues ni partagées avec des tiers. Conformément au RGPD, vous pouvez demander la suppression de vos données à : RAM.AI.logiciel@proton.me</p>
+    <p class="en">RAM-AI only collects the email address provided at purchase, passed on by Lemon Squeezy to deliver the license key. No additional personal data is collected. Data is never sold or shared with third parties. In accordance with the GDPR, you may request deletion of your data at: RAM.AI.logiciel@proton.me</p>
+    <p class="es">RAM-AI recopila únicamente la dirección de correo electrónico facilitada en el momento de la compra, transmitida por Lemon Squeezy para el envío de la clave de licencia. No se recopilan datos personales adicionales. Los datos no se venden ni se comparten con terceros. De conformidad con el RGPD, puede solicitar la eliminación de sus datos en: RAM.AI.logiciel@proton.me</p>
+    <p class="de">RAM-AI erhebt ausschließlich die beim Kauf angegebene E-Mail-Adresse, die von Lemon Squeezy zur Zusendung des Lizenzschlüssels übermittelt wird. Es werden keine weiteren personenbezogenen Daten erhoben. Die Daten werden nicht verkauft oder an Dritte weitergegeben. Gemäß der DSGVO können Sie die Löschung Ihrer Daten beantragen unter: RAM.AI.logiciel@proton.me</p>
+  </div>
+</div>
+
+<div class="modal-overlay" id="modal-cgv" onclick="if(event.target===this)closeModal('cgv')">
+  <div class="modal-card">
+    <button class="modal-close" onclick="closeModal('cgv')" aria-label="Close">×</button>
+    <h3 class="fr">Conditions Générales de Vente</h3>
+    <h3 class="en">Terms and Conditions of Sale</h3>
+    <h3 class="es">Términos y Condiciones de Venta</h3>
+    <h3 class="de">Allgemeine Geschäftsbedingungen</h3>
+    <p class="fr">Vendeur : Anthony Machado — RAM-AI, Majorque, Espagne
+Contact : RAM.AI.logiciel@proton.me
+Produits : Licences logicielles RAM-AI (Pro 24,99€ / Ultra 39,99€ / Essai gratuit 30 jours)
+Paiement : Sécurisé via Lemon Squeezy. La clé de licence est délivrée par email après confirmation du paiement.
+Remboursement : Aucun remboursement n'est accordé après livraison de la clé de licence. Un essai gratuit de 30 jours est disponible avant tout achat.
+Droit applicable : Droit espagnol.</p>
+    <p class="en">Seller: Anthony Machado — RAM-AI, Majorca, Spain
+Contact: RAM.AI.logiciel@proton.me
+Products: RAM-AI software licenses (Pro €24.99 / Ultra €39.99 / 30-day free trial)
+Payment: Secured via Lemon Squeezy. The license key is delivered by email after payment confirmation.
+Refunds: No refund is granted after the license key has been delivered. A 30-day free trial is available before any purchase.
+Applicable law: Spanish law.</p>
+    <p class="es">Vendedor: Anthony Machado — RAM-AI, Mallorca, España
+Contacto: RAM.AI.logiciel@proton.me
+Productos: Licencias de software RAM-AI (Pro 24,99€ / Ultra 39,99€ / Prueba gratuita de 30 días)
+Pago: Seguro a través de Lemon Squeezy. La clave de licencia se envía por correo electrónico tras la confirmación del pago.
+Reembolso: No se concede ningún reembolso una vez entregada la clave de licencia. Hay disponible una prueba gratuita de 30 días antes de cualquier compra.
+Derecho aplicable: Derecho español.</p>
+    <p class="de">Verkäufer: Anthony Machado — RAM-AI, Mallorca, Spanien
+Kontakt: RAM.AI.logiciel@proton.me
+Produkte: RAM-AI Softwarelizenzen (Pro 24,99€ / Ultra 39,99€ / 30-tägige kostenlose Testversion)
+Zahlung: Sicher über Lemon Squeezy. Der Lizenzschlüssel wird nach Zahlungsbestätigung per E-Mail zugestellt.
+Rückerstattung: Nach Lieferung des Lizenzschlüssels wird keine Rückerstattung gewährt. Vor dem Kauf steht eine 30-tägige kostenlose Testversion zur Verfügung.
+Anwendbares Recht: Spanisches Recht.</p>
+  </div>
+</div>
+
+<script>
+  function openModal(id){ document.getElementById('modal-'+id).classList.add('open'); }
+  function closeModal(id){ document.getElementById('modal-'+id).classList.remove('open'); }
 </script>
 
 </body>

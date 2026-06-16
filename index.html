@@ -3,8 +3,8 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>RAM-AI — Memory Intelligence</title>
-  <meta name="description" content="RAM-AI optimise votre mémoire vive en temps réel. Libérez 100 Go+, boostez vos jeux, votre IA et votre navigation. RAM-AI Pro — 24,99€ achat unique." />
+  <title>RAM-AI — Smart Memory Optimizer</title>
+  <meta name="description" content="RAM-AI optimise votre mémoire vive en temps réel via l'API Windows SetProcessWorkingSetSizeEx. +7% à +35% de RAM libérée, réduction swap 77–94%. RAM-AI Pro — 24,99€ achat unique." />
   <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700;800;900&display=swap" rel="stylesheet" />
   <style>
     /* ─── RESET & BASE ─────────────────────────────────────── */
@@ -442,7 +442,39 @@
     }
 
     /* ─── HIDE/SHOW LANGUAGE ────────────────────────────────── */
-    [data-fr] .en, [data-en] .fr { display: none !important; }
+    [data-fr] .en,  [data-fr] .es,  [data-fr] .de,
+    [data-en] .fr,  [data-en] .es,  [data-en] .de,
+    [data-es] .fr,  [data-es] .en,  [data-es] .de,
+    [data-de] .fr,  [data-de] .en,  [data-de] .es { display: none !important; }
+
+    /* ─── DOWNLOAD BUTTON ───────────────────────────────────── */
+    .cta-download {
+      display: inline-flex; align-items: center; gap: 10px;
+      background: transparent;
+      color: var(--blue-lt);
+      font-family: 'Outfit', sans-serif;
+      font-size: 1rem; font-weight: 700;
+      padding: 14px 36px;
+      border-radius: 50px;
+      border: 2px solid var(--blue);
+      cursor: pointer;
+      box-shadow: 0 0 20px rgba(58,123,213,.2);
+      transition: transform .2s, box-shadow .2s, border-color .2s;
+      text-decoration: none;
+      margin-top: 14px;
+    }
+    .cta-download:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 8px 28px rgba(58,123,213,.38);
+      border-color: var(--blue-lt);
+      color: #fff;
+    }
+    .dl-note {
+      margin-top: 10px;
+      font-size: .78rem;
+      color: var(--muted);
+      font-style: italic;
+    }
   </style>
 </head>
 <body data-fr>
@@ -452,6 +484,8 @@
   <div class="lang-switcher">
     <button class="lang-btn active" id="btn-fr" onclick="setLang('fr')">🇫🇷 FR</button>
     <button class="lang-btn" id="btn-en" onclick="setLang('en')">🇬🇧 EN</button>
+    <button class="lang-btn" id="btn-es" onclick="setLang('es')">🇪🇸 ES</button>
+    <button class="lang-btn" id="btn-de" onclick="setLang('de')">🇩🇪 DE</button>
   </div>
 </div>
 
@@ -464,11 +498,13 @@
          onerror="this.style.display='none'; document.getElementById('logo-placeholder').style.display='flex';" />
     <div id="logo-placeholder" class="hero-logo-placeholder" style="display:none;">⚡</div>
 
-    <div class="hero-badge">RAM-AI — Memory Intelligence</div>
+    <div class="hero-badge">RAM-AI — Smart Memory Optimizer</div>
 
     <h1 class="hero-title">
       <span class="fr">Libérez la puissance<br>de votre <span>mémoire</span>.</span>
       <span class="en">Unleash the power<br>of your <span>memory</span>.</span>
+      <span class="es">Libera el poder<br>de tu <span>memoria</span>.</span>
+      <span class="de">Entfessle die Kraft<br>deines <span>Speichers</span>.</span>
     </h1>
 
     <p class="hero-tagline-fr fr">"Votre PC va enfin respirer."</p>
@@ -476,16 +512,34 @@
 
     <p class="hero-tagline-fr en">"Votre PC va enfin respirer."</p>
     <p class="hero-tagline-en en" style="color:var(--gold); font-size:clamp(1.3rem,3vw,1.9rem); font-weight:700;">"Your PC can finally breathe."</p>
+    <p class="hero-tagline-en es" style="color:var(--gold); font-size:clamp(1.3rem,3vw,1.9rem); font-weight:700;">"Tu PC por fin puede respirar."</p>
+    <p class="hero-tagline-en de" style="color:var(--gold); font-size:clamp(1.3rem,3vw,1.9rem); font-weight:700;">"Ihr PC kann endlich atmen."</p>
 
     <a href="[LIEN_ACHAT]" class="cta-main">
       <span class="fr">Obtenir RAM-AI Pro — 24,99€</span>
       <span class="en">Get RAM-AI Pro — €24.99</span>
+      <span class="es">Obtener RAM-AI Pro — 24,99€</span>
+      <span class="de">RAM-AI Pro erhalten — 24,99€</span>
       ⚡
     </a>
 
     <p class="cta-sub">
       <span class="fr"><span>Achat unique</span> · Mises à jour incluses · Windows 10 / 11</span>
       <span class="en"><span>One-time purchase</span> · Updates included · Windows 10 / 11</span>
+      <span class="es"><span>Compra única</span> · Actualizaciones incluidas · Windows 10 / 11</span>
+      <span class="de"><span>Einmaliger Kauf</span> · Updates inklusive · Windows 10 / 11</span>
+    </p>
+    <a href="https://github.com/RAM-AI-logiciel/ram-ai/releases/download/v1.0.0/RAM-AI-Setup-1.0.0.exe" class="cta-download" download>
+      ⬇ <span class="fr">Télécharger RAM-AI (gratuit)</span>
+         <span class="en">Download RAM-AI (free)</span>
+         <span class="es">Descargar RAM-AI (gratis)</span>
+         <span class="de">RAM-AI herunterladen (kostenlos)</span>
+    </a>
+    <p class="dl-note">
+      <span class="fr">Licence Pro requise pour toutes les fonctionnalités</span>
+      <span class="en">Pro licence required for all features</span>
+      <span class="es">Licencia Pro requerida para todas las funciones</span>
+      <span class="de">Pro-Lizenz für alle Funktionen erforderlich</span>
     </p>
   </div>
 
@@ -501,19 +555,25 @@
   <div class="container">
     <div class="stats-grid">
       <div class="stat-card">
-        <div class="stat-num">100 Go+</div>
-        <div class="stat-label fr">libérés en moyenne</div>
-        <div class="stat-label en">freed on average</div>
+        <div class="stat-num">+35%</div>
+        <div class="stat-label fr">RAM disponible supplémentaire</div>
+        <div class="stat-label en">additional available RAM</div>
+        <div class="stat-label es">RAM adicional disponible</div>
+        <div class="stat-label de">zusätzlicher verfügbarer RAM</div>
       </div>
       <div class="stat-card">
-        <div class="stat-num">5 000+</div>
-        <div class="stat-label fr">processus optimisés</div>
-        <div class="stat-label en">optimised processes</div>
+        <div class="stat-num">−94%</div>
+        <div class="stat-label fr">réduction du swap</div>
+        <div class="stat-label en">swap reduction</div>
+        <div class="stat-label es">reducción del swap</div>
+        <div class="stat-label de">Swap-Reduzierung</div>
       </div>
       <div class="stat-card">
-        <div class="stat-num">800ms</div>
-        <div class="stat-label fr">cycle d'optimisation</div>
-        <div class="stat-label en">optimisation cycle</div>
+        <div class="stat-num">0,46%</div>
+        <div class="stat-label fr">CPU moyen consommé</div>
+        <div class="stat-label en">average CPU usage</div>
+        <div class="stat-label es">uso medio de CPU</div>
+        <div class="stat-label de">durchschnittliche CPU-Nutzung</div>
       </div>
     </div>
   </div>
@@ -525,13 +585,19 @@
     <div class="center">
       <span class="tag fr">Les Modes</span>
       <span class="tag en">The Modes</span>
+      <span class="tag es">Los Modos</span>
+      <span class="tag de">Die Modi</span>
       <h2 class="section-title">
-        <span class="fr">Une intelligence, six modes.</span>
-        <span class="en">One intelligence, six modes.</span>
+        <span class="fr">Un moteur, cinq modes.</span>
+        <span class="en">One engine, five modes.</span>
+        <span class="es">Un motor, cinco modos.</span>
+        <span class="de">Ein Motor, fünf Modi.</span>
       </h2>
       <p class="section-sub">
-        <span class="fr">RAM-AI s'adapte automatiquement à votre usage — jeu, IA, navigation ou compétition.</span>
-        <span class="en">RAM-AI automatically adapts to your usage — gaming, AI, browsing or competition.</span>
+        <span class="fr">RAM-AI s'adapte automatiquement à votre usage — usage quotidien, jeu, batterie ou compétition.</span>
+        <span class="en">RAM-AI automatically adapts to your usage — daily use, gaming, battery or competition.</span>
+        <span class="es">RAM-AI se adapta automáticamente a tu uso — uso diario, juego, batería o competición.</span>
+        <span class="de">RAM-AI passt sich automatisch deiner Nutzung an — Alltag, Gaming, Akku oder Wettkampf.</span>
       </p>
     </div>
 
@@ -541,50 +607,65 @@
         <div class="mode-emoji">🎮</div>
         <div class="mode-title fr">Mode Gaming</div>
         <div class="mode-title en">Gaming Mode</div>
-        <p class="mode-desc fr">Détection automatique du jeu actif. Libération ciblée des ressources. Gain moyen de +19 places sur UserBenchmark.</p>
-        <p class="mode-desc en">Automatic detection of the active game. Targeted resource release. Average gain of +19 places on UserBenchmark.</p>
+        <div class="mode-title es">Modo Gaming</div>
+        <div class="mode-title de">Gaming-Modus</div>
+        <p class="mode-desc fr">Détecte automatiquement 50+ jeux. Libère la RAM des processus froids, protège le jeu actif. Thread BelowNormal pour ne jamais gêner vos FPS.</p>
+        <p class="mode-desc en">Automatically detects 50+ games. Frees RAM from cold processes, protects the active game. BelowNormal thread to never impact your FPS.</p>
+        <p class="mode-desc es">Detecta automáticamente 50+ juegos. Libera la RAM de procesos fríos, protege el juego activo. Hilo BelowNormal para no afectar tus FPS.</p>
+        <p class="mode-desc de">Erkennt automatisch 50+ Spiele. Gibt RAM von kalten Prozessen frei, schützt das aktive Spiel. BelowNormal-Thread, damit deine FPS nie beeinträchtigt werden.</p>
       </div>
 
       <div class="mode-card">
-        <div class="mode-emoji">🤖</div>
-        <div class="mode-title fr">Mode IA</div>
-        <div class="mode-title en">AI Mode</div>
-        <p class="mode-desc fr">Optimisé pour Claude, Ollama, LM Studio et tous vos modèles locaux. Plus de RAM disponible = inférences plus rapides.</p>
-        <p class="mode-desc en">Optimised for Claude, Ollama, LM Studio and all your local models. More available RAM = faster inference.</p>
+        <div class="mode-emoji">🔄</div>
+        <div class="mode-title fr">Mode Adaptatif</div>
+        <div class="mode-title en">Adaptive Mode</div>
+        <div class="mode-title es">Modo Adaptativo</div>
+        <div class="mode-title de">Adaptiver Modus</div>
+        <p class="mode-desc fr">Mode par défaut. Intervalle 3 000 ms au repos, 2 000 ms sous charge. S'ajuste automatiquement selon la pression mémoire pour un équilibre optimal.</p>
+        <p class="mode-desc en">Default mode. 3 000 ms interval at rest, 2 000 ms under load. Automatically adjusts based on memory pressure for optimal balance.</p>
+        <p class="mode-desc es">Modo predeterminado. Intervalo de 3 000 ms en reposo, 2 000 ms bajo carga. Se ajusta automáticamente según la presión de memoria.</p>
+        <p class="mode-desc de">Standardmodus. 3 000 ms Intervall im Ruhezustand, 2 000 ms unter Last. Passt sich automatisch dem Speicherdruck an.</p>
       </div>
 
-      <div class="mode-card">
-        <div class="mode-emoji">🌐</div>
-        <div class="mode-title fr">Mode Navigateur</div>
-        <div class="mode-title en">Browser Mode</div>
-        <p class="mode-desc fr">Compatible Chrome, Edge, Firefox, Brave. Priorise les onglets actifs et réduit l'empreinte mémoire globale.</p>
-        <p class="mode-desc en">Compatible with Chrome, Edge, Firefox, Brave. Prioritises active tabs and reduces overall memory footprint.</p>
-      </div>
 
       <div class="mode-card">
         <div class="mode-emoji">⚡</div>
         <div class="mode-title fr">Mode Turbo</div>
         <div class="mode-title en">Turbo Mode</div>
+        <div class="mode-title es">Modo Turbo</div>
+        <div class="mode-title de">Turbo-Modus</div>
         <p class="mode-desc fr">Libération massive en un seul clic. Idéal avant une session intensive ou un redémarrage rapide.</p>
         <p class="mode-desc en">Massive release in a single click. Ideal before an intensive session or a quick restart.</p>
+        <p class="mode-desc es">Liberación masiva con un solo clic. Ideal antes de una sesión intensiva o un reinicio rápido.</p>
+        <p class="mode-desc de">Massive Freigabe mit einem einzigen Klick. Ideal vor einer intensiven Sitzung oder einem schnellen Neustart.</p>
       </div>
 
       <div class="mode-card">
         <div class="mode-emoji">🌿</div>
         <div class="mode-title fr">Mode Éco</div>
         <div class="mode-title en">Eco Mode</div>
-        <p class="mode-desc fr">Batterie détectée automatiquement. Optimisation douce qui préserve l'autonomie et réduit la chaleur.</p>
-        <p class="mode-desc en">Battery automatically detected. Gentle optimisation that preserves battery life and reduces heat.</p>
+        <div class="mode-title es">Modo Eco</div>
+        <div class="mode-title de">Öko-Modus</div>
+        <p class="mode-desc fr">Batterie détectée automatiquement. Intervalle 3 000 ms, maximum 8 processus par cycle. Libère de la RAM tout en préservant l'autonomie.</p>
+        <p class="mode-desc en">Battery automatically detected. 3 000 ms interval, maximum 8 processes per cycle. Frees RAM while preserving battery life.</p>
+        <p class="mode-desc es">Batería detectada automáticamente. Intervalo de 3 000 ms, máximo 8 procesos por ciclo. Libera RAM preservando la autonomía.</p>
+        <p class="mode-desc de">Akku wird automatisch erkannt. 3 000 ms Intervall, maximal 8 Prozesse pro Zyklus. Gibt RAM frei und schont die Akkulaufzeit.</p>
       </div>
 
       <div class="mode-card ultra-only">
         <div class="mode-emoji">🏆</div>
         <div class="mode-title fr">Mode Tournoi</div>
         <div class="mode-title en">Tournament Mode</div>
-        <p class="mode-desc fr">Performances maximales pour la compétition. Gel des processus non essentiels, priorité absolue au jeu.</p>
-        <p class="mode-desc en">Maximum performance for competition. Non-essential processes frozen, absolute game priority.</p>
+        <div class="mode-title es">Modo Torneo</div>
+        <div class="mode-title de">Turnier-Modus</div>
+        <p class="mode-desc fr">Optimisation maximale pour la compétition. Intervalle 500 ms, seuil d'activation 25%. Libère le maximum de RAM sans toucher au jeu ni aux processus système.</p>
+        <p class="mode-desc en">Maximum optimisation for competition. 500 ms interval, 25% activation threshold. Frees maximum RAM without touching the game or system processes.</p>
+        <p class="mode-desc es">Optimización máxima para la competición. Intervalo de 500 ms, umbral de activación del 25%. Libera la máxima RAM sin tocar el juego ni los procesos del sistema.</p>
+        <p class="mode-desc de">Maximale Optimierung für den Wettkampf. 500 ms Intervall, 25% Aktivierungsschwelle. Gibt maximalen RAM frei, ohne das Spiel oder Systemprozesse zu berühren.</p>
         <div class="mode-badge-ultra fr">Ultra uniquement</div>
         <div class="mode-badge-ultra en">Ultra only</div>
+        <div class="mode-badge-ultra es">Solo Ultra</div>
+        <div class="mode-badge-ultra de">Nur Ultra</div>
       </div>
 
     </div>
@@ -597,13 +678,19 @@
     <div class="center">
       <span class="tag fr">Nos Offres</span>
       <span class="tag en">Our Plans</span>
+      <span class="tag es">Nuestras Ofertas</span>
+      <span class="tag de">Unsere Angebote</span>
       <h2 class="section-title">
         <span class="fr">Choisissez votre niveau.</span>
         <span class="en">Choose your level.</span>
+        <span class="es">Elige tu nivel.</span>
+        <span class="de">Wähle dein Level.</span>
       </h2>
       <p class="section-sub">
         <span class="fr">Pro pour l'essentiel, Ultra pour la domination.</span>
         <span class="en">Pro for essentials, Ultra for total domination.</span>
+        <span class="es">Pro para lo esencial, Ultra para la dominación total.</span>
+        <span class="de">Pro für das Wesentliche, Ultra für totale Dominanz.</span>
       </p>
     </div>
 
@@ -613,25 +700,29 @@
       <div class="compare-card featured">
         <div class="compare-head">
           <div class="compare-plan text-blue">RAM-AI Pro</div>
-          <div class="compare-price">24,99€<span class="fr"> / achat unique</span><span class="en"> / one-time</span></div>
+          <div class="compare-price">24,99€<span class="fr"> / achat unique</span><span class="en"> / one-time</span><span class="es"> / compra única</span><span class="de"> / Einmalkauf</span></div>
           <div class="compare-note fr">Mises à jour incluses à vie</div>
           <div class="compare-note en">Lifetime updates included</div>
+          <div class="compare-note es">Actualizaciones de por vida incluidas</div>
+          <div class="compare-note de">Lebenslange Updates inklusive</div>
         </div>
         <div class="compare-features">
-          <div class="feature-row"><span class="feat-icon">✅</span><span class="feat-text fr">Mode Gaming</span><span class="feat-text en">Gaming Mode</span></div>
-          <div class="feature-row"><span class="feat-icon">✅</span><span class="feat-text fr">Mode IA (Claude, Ollama…)</span><span class="feat-text en">AI Mode (Claude, Ollama…)</span></div>
-          <div class="feature-row"><span class="feat-icon">✅</span><span class="feat-text fr">Mode Navigateur</span><span class="feat-text en">Browser Mode</span></div>
-          <div class="feature-row"><span class="feat-icon">✅</span><span class="feat-text fr">Mode Turbo</span><span class="feat-text en">Turbo Mode</span></div>
-          <div class="feature-row"><span class="feat-icon">✅</span><span class="feat-text fr">Mode Éco (batterie)</span><span class="feat-text en">Eco Mode (battery)</span></div>
-          <div class="feature-row"><span class="feat-icon">✅</span><span class="feat-text fr">Cycle 800ms temps réel</span><span class="feat-text en">800ms real-time cycle</span></div>
-          <div class="feature-row"><span class="feat-icon">✅</span><span class="feat-text fr">Tableau de bord RAM</span><span class="feat-text en">RAM dashboard</span></div>
-          <div class="feature-row"><span class="feat-icon">❌</span><span class="feat-text muted fr">Mode Tournoi</span><span class="feat-text muted en">Tournament Mode</span></div>
-          <div class="feature-row"><span class="feat-icon">❌</span><span class="feat-text muted fr">Profils compétition</span><span class="feat-text muted en">Competition profiles</span></div>
+          <div class="feature-row"><span class="feat-icon">✅</span><span class="feat-text fr">Mode Adaptatif (défaut)</span><span class="feat-text en">Adaptive Mode (default)</span><span class="feat-text es">Modo Adaptativo (defecto)</span><span class="feat-text de">Adaptiver Modus (Standard)</span></div>
+          <div class="feature-row"><span class="feat-icon">✅</span><span class="feat-text fr">Mode Gaming — 50+ jeux détectés</span><span class="feat-text en">Gaming Mode — 50+ games detected</span><span class="feat-text es">Modo Gaming — 50+ juegos detectados</span><span class="feat-text de">Gaming-Modus — 50+ Spiele erkannt</span></div>
+          <div class="feature-row"><span class="feat-icon">✅</span><span class="feat-text fr">Mode Turbo (one-shot)</span><span class="feat-text en">Turbo Mode (one-shot)</span><span class="feat-text es">Modo Turbo (disparo único)</span><span class="feat-text de">Turbo-Modus (einmalig)</span></div>
+          <div class="feature-row"><span class="feat-icon">✅</span><span class="feat-text fr">Mode Éco (batterie, 3 000 ms)</span><span class="feat-text en">Eco Mode (battery, 3 000 ms)</span><span class="feat-text es">Modo Eco (batería, 3 000 ms)</span><span class="feat-text de">Öko-Modus (Akku, 3 000 ms)</span></div>
+          <div class="feature-row"><span class="feat-icon">✅</span><span class="feat-text fr">API Windows native (SetProcessWorkingSetSizeEx)</span><span class="feat-text en">Native Windows API (SetProcessWorkingSetSizeEx)</span><span class="feat-text es">API Windows nativa (SetProcessWorkingSetSizeEx)</span><span class="feat-text de">Native Windows-API (SetProcessWorkingSetSizeEx)</span></div>
+          <div class="feature-row"><span class="feat-icon">✅</span><span class="feat-text fr">Seuils dynamiques selon RAM totale</span><span class="feat-text en">Dynamic thresholds based on total RAM</span><span class="feat-text es">Umbrales dinámicos según RAM total</span><span class="feat-text de">Dynamische Schwellenwerte je nach RAM</span></div>
+          <div class="feature-row"><span class="feat-icon">✅</span><span class="feat-text fr">Tableau de bord WPF temps réel</span><span class="feat-text en">Real-time WPF dashboard</span><span class="feat-text es">Panel WPF en tiempo real</span><span class="feat-text de">Echtzeit-WPF-Dashboard</span></div>
+          <div class="feature-row"><span class="feat-icon">❌</span><span class="feat-text muted fr">Mode Tournoi (Ultra)</span><span class="feat-text muted en">Tournament Mode (Ultra)</span><span class="feat-text muted es">Modo Torneo (Ultra)</span><span class="feat-text muted de">Turnier-Modus (Ultra)</span></div>
+          <div class="feature-row"><span class="feat-icon">❌</span><span class="feat-text muted fr">Profils gaming avancés</span><span class="feat-text muted en">Advanced gaming profiles</span><span class="feat-text muted es">Perfiles gaming avanzados</span><span class="feat-text muted de">Erweiterte Gaming-Profile</span></div>
         </div>
         <div class="compare-cta">
           <a href="[LIEN_ACHAT]" class="btn-buy">
             <span class="fr">Obtenir Pro — 24,99€</span>
             <span class="en">Get Pro — €24.99</span>
+            <span class="es">Obtener Pro — 24,99€</span>
+            <span class="de">Pro erhalten — 24,99€</span>
             ⚡
           </a>
         </div>
@@ -644,22 +735,28 @@
           <div class="compare-price" style="color:var(--gold);">
             <span class="fr">Bientôt</span>
             <span class="en">Coming<br>soon</span>
+            <span class="es">Próximamente</span>
+            <span class="de">Demnächst</span>
           </div>
           <div class="compare-note fr">Rejoignez la liste d'attente</div>
           <div class="compare-note en">Join the waitlist</div>
+          <div class="compare-note es">Únete a la lista de espera</div>
+          <div class="compare-note de">Warteliste beitreten</div>
         </div>
         <div class="compare-features">
-          <div class="feature-row"><span class="feat-icon">✅</span><span class="feat-text fr">Tout de Pro inclus</span><span class="feat-text en">Everything in Pro</span></div>
-          <div class="feature-row"><span class="feat-icon">🏆</span><span class="feat-text fr">Mode Tournoi exclusif</span><span class="feat-text en">Exclusive Tournament Mode</span></div>
-          <div class="feature-row"><span class="feat-icon">🏆</span><span class="feat-text fr">Profils compétition</span><span class="feat-text en">Competition profiles</span></div>
-          <div class="feature-row"><span class="feat-icon">🏆</span><span class="feat-text fr">Optimisation eSport avancée</span><span class="feat-text en">Advanced eSport optimisation</span></div>
-          <div class="feature-row"><span class="feat-icon">🏆</span><span class="feat-text fr">Support prioritaire</span><span class="feat-text en">Priority support</span></div>
-          <div class="feature-row"><span class="feat-icon">🏆</span><span class="feat-text fr">Accès bêta anticipé</span><span class="feat-text en">Early beta access</span></div>
+          <div class="feature-row"><span class="feat-icon">✅</span><span class="feat-text fr">Tout de Pro inclus</span><span class="feat-text en">Everything in Pro</span><span class="feat-text es">Todo lo de Pro incluido</span><span class="feat-text de">Alles aus Pro enthalten</span></div>
+          <div class="feature-row"><span class="feat-icon">🏆</span><span class="feat-text fr">Mode Tournoi (500 ms, seuil 25%)</span><span class="feat-text en">Tournament Mode (500 ms, 25% threshold)</span><span class="feat-text es">Modo Torneo (500 ms, umbral 25%)</span><span class="feat-text de">Turnier-Modus (500 ms, 25% Schwellenwert)</span></div>
+          <div class="feature-row"><span class="feat-icon">🏆</span><span class="feat-text fr">Profils gaming avancés</span><span class="feat-text en">Advanced gaming profiles</span><span class="feat-text es">Perfiles gaming avanzados</span><span class="feat-text de">Erweiterte Gaming-Profile</span></div>
+          <div class="feature-row"><span class="feat-icon">🏆</span><span class="feat-text fr">Optimisation VRAM</span><span class="feat-text en">VRAM optimisation</span><span class="feat-text es">Optimización VRAM</span><span class="feat-text de">VRAM-Optimierung</span></div>
+          <div class="feature-row"><span class="feat-icon">🏆</span><span class="feat-text fr">Analyse prédictive mémoire</span><span class="feat-text en">Predictive memory analysis</span><span class="feat-text es">Análisis predictivo de memoria</span><span class="feat-text de">Prädiktive Speicheranalyse</span></div>
+          <div class="feature-row"><span class="feat-icon">🏆</span><span class="feat-text fr">Support prioritaire</span><span class="feat-text en">Priority support</span><span class="feat-text es">Soporte prioritario</span><span class="feat-text de">Prioritärer Support</span></div>
         </div>
         <div class="compare-cta">
           <div class="btn-soon">
             <span class="fr">Bientôt disponible</span>
             <span class="en">Coming soon</span>
+            <span class="es">Próximamente</span>
+            <span class="de">Demnächst verfügbar</span>
           </div>
         </div>
       </div>
@@ -674,30 +771,40 @@
     <div class="cta-box">
       <div class="tag fr">Offre de lancement</div>
       <div class="tag en">Launch offer</div>
+      <div class="tag es">Oferta de lanzamiento</div>
+      <div class="tag de">Einführungsangebot</div>
 
       <h2>
         <span class="fr">Prêt à libérer votre PC ?</span>
         <span class="en">Ready to free your PC?</span>
+        <span class="es">¿Listo para liberar tu PC?</span>
+        <span class="de">Bereit, deinen PC zu befreien?</span>
       </h2>
       <p>
         <span class="fr">Achat unique. Aucun abonnement. Mises à jour incluses.</span>
         <span class="en">One-time purchase. No subscription. Updates included.</span>
+        <span class="es">Compra única. Sin suscripción. Actualizaciones incluidas.</span>
+        <span class="de">Einmaliger Kauf. Kein Abo. Updates inklusive.</span>
       </p>
 
       <div class="price-display">24,99€</div>
       <div class="price-note fr">Achat unique — valable à vie</div>
       <div class="price-note en">One-time purchase — yours for life</div>
+      <div class="price-note es">Compra única — tuyo de por vida</div>
+      <div class="price-note de">Einmaliger Kauf — lebenslang gültig</div>
 
       <a href="[LIEN_ACHAT]" class="cta-main" style="width:100%; justify-content:center;">
         <span class="fr">Obtenir RAM-AI Pro maintenant</span>
         <span class="en">Get RAM-AI Pro now</span>
+        <span class="es">Obtener RAM-AI Pro ahora</span>
+        <span class="de">RAM-AI Pro jetzt erhalten</span>
         ⚡
       </a>
 
       <div class="guarantee-badges">
-        <span class="g-badge">🔒 <span class="fr">Paiement sécurisé</span><span class="en">Secure payment</span></span>
-        <span class="g-badge">♻️ <span class="fr">Achat unique</span><span class="en">One-time purchase</span></span>
-        <span class="g-badge">🔄 <span class="fr">Mises à jour incluses</span><span class="en">Updates included</span></span>
+        <span class="g-badge">🔒 <span class="fr">Paiement sécurisé</span><span class="en">Secure payment</span><span class="es">Pago seguro</span><span class="de">Sichere Zahlung</span></span>
+        <span class="g-badge">♻️ <span class="fr">Achat unique</span><span class="en">One-time purchase</span><span class="es">Compra única</span><span class="de">Einmaliger Kauf</span></span>
+        <span class="g-badge">🔄 <span class="fr">Mises à jour incluses</span><span class="en">Updates included</span><span class="es">Actualizaciones incluidas</span><span class="de">Updates inklusive</span></span>
         <span class="g-badge">💻 Windows 10 / 11</span>
       </div>
     </div>
@@ -708,19 +815,29 @@
 <footer>
   <div class="container">
     <div class="footer-logo">RAM-<span>AI</span></div>
-    <div class="footer-sub fr">Memory Intelligence — Achat unique, mises à jour incluses.</div>
-    <div class="footer-sub en">Memory Intelligence — One-time purchase, updates included.</div>
+    <div class="footer-sub fr">Smart Memory Optimizer — Achat unique, mises à jour incluses.</div>
+    <div class="footer-sub en">Smart Memory Optimizer — One-time purchase, updates included.</div>
+    <div class="footer-sub es">Smart Memory Optimizer — Compra única, actualizaciones incluidas.</div>
+    <div class="footer-sub de">Smart Memory Optimizer — Einmaliger Kauf, Updates inklusive.</div>
     <div class="footer-links">
       <a href="[LIEN_ACHAT]" class="fr">Acheter</a>
       <a href="[LIEN_ACHAT]" class="en">Buy</a>
+      <a href="[LIEN_ACHAT]" class="es">Comprar</a>
+      <a href="[LIEN_ACHAT]" class="de">Kaufen</a>
       <a href="mailto:contact@ram-ai.fr" class="fr">Contact</a>
       <a href="mailto:contact@ram-ai.fr" class="en">Contact</a>
+      <a href="mailto:contact@ram-ai.fr" class="es">Contacto</a>
+      <a href="mailto:contact@ram-ai.fr" class="de">Kontakt</a>
       <a href="#" class="fr">Politique de confidentialité</a>
       <a href="#" class="en">Privacy policy</a>
+      <a href="#" class="es">Política de privacidad</a>
+      <a href="#" class="de">Datenschutz</a>
       <a href="#" class="fr">CGV</a>
       <a href="#" class="en">Terms</a>
+      <a href="#" class="es">Términos</a>
+      <a href="#" class="de">AGB</a>
     </div>
-    <div class="footer-copy">© 2026 RAM-AI. <span class="fr">Tous droits réservés.</span><span class="en">All rights reserved.</span></div>
+    <div class="footer-copy">© 2026 RAM-AI. <span class="fr">Tous droits réservés.</span><span class="en">All rights reserved.</span><span class="es">Todos los derechos reservados.</span><span class="de">Alle Rechte vorbehalten.</span></div>
   </div>
 </footer>
 
@@ -730,17 +847,16 @@
     const body = document.body;
     body.removeAttribute('data-fr');
     body.removeAttribute('data-en');
+    body.removeAttribute('data-es');
+    body.removeAttribute('data-de');
     body.setAttribute('data-' + lang, '');
     document.documentElement.lang = lang;
     document.getElementById('btn-fr').classList.toggle('active', lang === 'fr');
     document.getElementById('btn-en').classList.toggle('active', lang === 'en');
+    document.getElementById('btn-es').classList.toggle('active', lang === 'es');
+    document.getElementById('btn-de').classList.toggle('active', lang === 'de');
     localStorage.setItem('ramai-lang', lang);
   }
   (function() {
     const saved = localStorage.getItem('ramai-lang');
-    if (saved && saved !== 'fr') setLang(saved);
-  })();
-</script>
-
-</body>
-</html>
+    if (saved && 

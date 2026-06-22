@@ -40,7 +40,7 @@ internal sealed class EventLogger : IDisposable
             AutoFlush = true,
         };
 
-        AppendLine(new { marker = "SERVICE_START", timestamp = DateTime.UtcNow });
+        AppendLine(new ServiceStartMarker { Marker = "SERVICE_START", Timestamp = DateTime.UtcNow });
     }
 
     /// <summary>Écrit une entrée de tick dans le log.</summary>
@@ -57,7 +57,7 @@ internal sealed class EventLogger : IDisposable
     /// <summary>Écrit un marqueur libre (ex: "GAMING MODE ON — cs2").</summary>
     internal void WriteMarker(string text)
     {
-        AppendLine(new { marker = text, timestamp = DateTime.UtcNow });
+        AppendLine(new FreeMarker { Marker = text, Timestamp = DateTime.UtcNow });
     }
 
     // camelCase pour correspondre aux [JsonPropertyName] de Phase4
@@ -77,20 +77,54 @@ internal sealed class EventLogger : IDisposable
     {
         try
         {
-            AppendLine(new
+            AppendLine(new ServiceStopMarker
             {
-                marker             = "SERVICE_STOP",
-                timestamp          = DateTime.UtcNow,
-                totalFaultsAvoided = _totalFaultsAvoided,
-                totalMbSaved       = _totalMbSaved,
-                averageLatencyMs   = AverageLatencyMs,
-                totalTicks         = _totalTicks,
+                Marker             = "SERVICE_STOP",
+                Timestamp          = DateTime.UtcNow,
+                TotalFaultsAvoided = _totalFaultsAvoided,
+                TotalMbSaved       = _totalMbSaved,
+                AverageLatencyMs   = AverageLatencyMs,
+                TotalTicks         = _totalTicks,
             });
             _writer.Flush();
         }
         catch { }
         _writer.Dispose();
     }
+}
+
+// ── Marqueurs de session (types nommés — évite le renommage Obfuscar des types anonymes) ──
+
+internal sealed class ServiceStartMarker
+{
+    [System.Text.Json.Serialization.JsonPropertyName("marker")]
+    public string   Marker    { get; init; } = string.Empty;
+    [System.Text.Json.Serialization.JsonPropertyName("timestamp")]
+    public DateTime Timestamp { get; init; }
+}
+
+internal sealed class FreeMarker
+{
+    [System.Text.Json.Serialization.JsonPropertyName("marker")]
+    public string   Marker    { get; init; } = string.Empty;
+    [System.Text.Json.Serialization.JsonPropertyName("timestamp")]
+    public DateTime Timestamp { get; init; }
+}
+
+internal sealed class ServiceStopMarker
+{
+    [System.Text.Json.Serialization.JsonPropertyName("marker")]
+    public string   Marker             { get; init; } = string.Empty;
+    [System.Text.Json.Serialization.JsonPropertyName("timestamp")]
+    public DateTime Timestamp          { get; init; }
+    [System.Text.Json.Serialization.JsonPropertyName("totalFaultsAvoided")]
+    public long     TotalFaultsAvoided { get; init; }
+    [System.Text.Json.Serialization.JsonPropertyName("totalMbSaved")]
+    public long     TotalMbSaved       { get; init; }
+    [System.Text.Json.Serialization.JsonPropertyName("averageLatencyMs")]
+    public long     AverageLatencyMs   { get; init; }
+    [System.Text.Json.Serialization.JsonPropertyName("totalTicks")]
+    public long     TotalTicks         { get; init; }
 }
 
 // ── Tick entry DTO (sérialisé en JSON) ───────────────────────────────────────

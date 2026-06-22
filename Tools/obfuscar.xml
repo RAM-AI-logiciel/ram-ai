@@ -18,6 +18,13 @@
   <Var name="InPath"  value="$INPATH"  />
   <Var name="OutPath" value="$OUTPATH" />
 
+  <!--
+    WPF / WindowsDesktop runtime : chemin injecte par build_protected.ps1
+    Necessaire pour que Obfuscar resolve PresentationFramework, PresentationCore, etc.
+    Sans ce chemin, Obfuscar echoue avec "Unable to resolve dependency: PresentationFramework".
+  -->
+  <Var name="ExtraFrameworkFolders" value="$WPF_FRAMEWORK_PATH" />
+
   <!-- Options d'obfuscation -->
   <Var name="KeepPublicApi"    value="false" />
   <Var name="HideStrings"      value="true"  />

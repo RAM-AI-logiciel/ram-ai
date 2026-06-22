@@ -61,6 +61,17 @@ function Invoke-Cmd {
     }
 }
 
+function Get-WpfFrameworkPath {
+    # Cherche la version la plus recente de Microsoft.WindowsDesktop.App
+    $base = "C:\Program Files\dotnet\shared\Microsoft.WindowsDesktop.App"
+    if (-not (Test-Path $base)) { return "" }
+    $latest = Get-ChildItem $base -Directory |
+              Sort-Object { [Version]($_.Name -replace '[^0-9.]','') } -Descending |
+              Select-Object -First 1
+    if ($latest) { return $latest.FullName }
+    return ""
+}
+
 function New-ObfuscarConfig {
     param(
         [string]$inPath,
@@ -71,15 +82,19 @@ function New-ObfuscarConfig {
     # Chemin absolu vers la DLL : evite toute ambiguite sur InPath
     $fullDll = Join-Path $inPath $dllName
 
+    # Chemin WPF runtime (pour que Obfuscar resolve PresentationFramework, etc.)
+    $wpfPath = Get-WpfFrameworkPath
+
     $content = Get-Content $ObfuscarXml -Raw -Encoding UTF8
-    # Remplacer les tokens (utiliser des guillemets simples pour eviter l'interpolation)
-    $content = $content.Replace('$INPATH',  $inPath)
-    $content = $content.Replace('$OUTPATH', $outPath)
-    $content = $content.Replace('$FULLDLL', $fullDll)   # chemin absolu complet
+    $content = $content.Replace('$INPATH',             $inPath)
+    $content = $content.Replace('$OUTPATH',            $outPath)
+    $content = $content.Replace('$FULLDLL',            $fullDll)
+    $content = $content.Replace('$WPF_FRAMEWORK_PATH', $wpfPath)
     Set-Content $destXml $content -Encoding UTF8
     Write-Host "  Config generee : $destXml"
     Write-Host "  DLL cible      : $fullDll"
     Write-Host "  Sortie         : $outPath"
+    if ($wpfPath) { Write-Host "  WPF runtime    : $wpfPath" }
 }
 
 function Copy-PublishDir([string]$src, [string]$dst) {

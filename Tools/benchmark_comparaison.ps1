@@ -95,6 +95,15 @@ function Get-Median {
     return ($sorted[$n / 2 - 1] + $sorted[$n / 2]) / 2.0
 }
 
+function Get-P95 {
+    param([double[]]$Values)
+    if ($Values.Count -eq 0) { return 0.0 }
+    $sorted = $Values | Sort-Object
+    $idx = [math]::Ceiling($sorted.Count * 0.95) - 1
+    if ($idx -lt 0) { $idx = 0 }
+    return $sorted[$idx]
+}
+
 function Get-RamAvailableGb {
     $cs = Get-CimInstance -ClassName Win32_OperatingSystem
     $mb = [math]::Round($cs.FreePhysicalMemory / 1024, 0)
@@ -447,6 +456,7 @@ $p1AvgRam  = [math]::Round(($p1Ram  | Measure-Object -Average).Average, 2)
 $p1MinRam  = [math]::Round(($p1Ram  | Measure-Object -Minimum).Minimum, 2)
 $p1MaxRam  = [math]::Round(($p1Ram  | Measure-Object -Maximum).Maximum, 2)
 $p1AvgSwap = [math]::Round((Get-Median $p1Swap), 1)
+$p1P95Swap = [math]::Round((Get-P95 $p1Swap), 1)
 $p1MaxSwap = [math]::Round(($p1Swap | Measure-Object -Maximum).Maximum, 1)
 $p1Actions = Get-PhaseActions -PhaseStart $p1Start -PhaseEnd $p1End
 
@@ -506,6 +516,7 @@ $p2AvgRam    = [math]::Round(($p2Ram     | Measure-Object -Average).Average, 2)
 $p2MinRam    = [math]::Round(($p2Ram     | Measure-Object -Minimum).Minimum, 2)
 $p2MaxRam    = [math]::Round(($p2Ram     | Measure-Object -Maximum).Maximum, 2)
 $p2AvgSwap   = [math]::Round((Get-Median $p2Swap), 1)
+$p2P95Swap   = [math]::Round((Get-P95 $p2Swap), 1)
 $p2MaxSwap   = [math]::Round(($p2Swap    | Measure-Object -Maximum).Maximum, 1)
 $p2AvgCpuRai = [math]::Round(($p2CpuRamAi | Measure-Object -Average).Average, 2)
 $p2MaxCpuRai = [math]::Round(($p2CpuRamAi | Measure-Object -Maximum).Maximum, 2)
@@ -524,7 +535,7 @@ Write-Host "  Phase 2 OK : RAM moy=$p2AvgRam Go  Gain=$p2GainSign$p2GainAbs Go  
 
 $p3Ram = @(); $p3Swap = @(); $p3CpuRamAi = @(); $p3Actions = @()
 $p3AvgRam = 0.0; $p3MinRam = 0.0; $p3MaxRam = 0.0
-$p3AvgSwap = 0.0; $p3MaxSwap = 0.0
+$p3AvgSwap = 0.0; $p3P95Swap = 0.0; $p3MaxSwap = 0.0
 $p3AvgCpuRai = 0.0; $p3MaxCpuRai = 0.0
 $p3GainAbs = 0.0; $p3GainPct = 0.0; $p3GainSign = "+"
 
@@ -555,6 +566,7 @@ if ($hasGaming) {
     $p3MinRam    = [math]::Round(($p3Ram      | Measure-Object -Minimum).Minimum, 2)
     $p3MaxRam    = [math]::Round(($p3Ram      | Measure-Object -Maximum).Maximum, 2)
     $p3AvgSwap   = [math]::Round((Get-Median $p3Swap), 1)
+    $p3P95Swap   = [math]::Round((Get-P95 $p3Swap), 1)
     $p3MaxSwap   = [math]::Round(($p3Swap     | Measure-Object -Maximum).Maximum, 1)
     $p3AvgCpuRai = [math]::Round(($p3CpuRamAi | Measure-Object -Average).Average, 2)
     $p3MaxCpuRai = [math]::Round(($p3CpuRamAi | Measure-Object -Maximum).Maximum, 2)
@@ -575,7 +587,7 @@ if ($hasGaming) {
 
 $p4Ram = @(); $p4Swap = @(); $p4CpuRamAi = @(); $p4Actions = @()
 $p4AvgRam = 0.0; $p4MinRam = 0.0; $p4MaxRam = 0.0
-$p4AvgSwap = 0.0; $p4MaxSwap = 0.0
+$p4AvgSwap = 0.0; $p4P95Swap = 0.0; $p4MaxSwap = 0.0
 $p4AvgCpuRai = 0.0; $p4MaxCpuRai = 0.0
 $p4GainAbs = 0.0; $p4GainPct = 0.0; $p4GainSign = "+"
 
@@ -605,6 +617,7 @@ if ($hasTournoi) {
     $p4MinRam    = [math]::Round(($p4Ram      | Measure-Object -Minimum).Minimum, 2)
     $p4MaxRam    = [math]::Round(($p4Ram      | Measure-Object -Maximum).Maximum, 2)
     $p4AvgSwap   = [math]::Round((Get-Median $p4Swap), 1)
+    $p4P95Swap   = [math]::Round((Get-P95 $p4Swap), 1)
     $p4MaxSwap   = [math]::Round(($p4Swap     | Measure-Object -Maximum).Maximum, 1)
     $p4AvgCpuRai = [math]::Round(($p4CpuRamAi | Measure-Object -Average).Average, 2)
     $p4MaxCpuRai = [math]::Round(($p4CpuRamAi | Measure-Object -Maximum).Maximum, 2)
@@ -747,23 +760,42 @@ $p2CpuJs = ConvertTo-JsArray -Data $p2CpuRamAi -Fmt "F2"
 if ($hasGaming)  { $p3CpuJs = ConvertTo-JsArray -Data $p3CpuRamAi -Fmt "F2" } else { $p3CpuJs = "" }
 if ($hasTournoi) { $p4CpuJs = ConvertTo-JsArray -Data $p4CpuRamAi -Fmt "F2" } else { $p4CpuJs = "" }
 
-# Swap bar chart : labels, data, couleurs
+# Swap bar chart : labels, data, couleurs dynamiques (vert=amelioration, rouge=degradation vs P1)
+function Get-SwapBarColor {
+    param([double]$Val, [double]$Ref, [string]$NeutralColor)
+    $tol = 0.5  # < 0.5 p/s de difference = neutre
+    if ($Ref -le 0 -and $Val -le 0) { return '"rgba(66,165,245,0.75)"' }  # pas de swap = bleu
+    if ($Val -le ($Ref - $tol))     { return '"rgba(102,187,106,0.75)"' }  # mieux = vert
+    if ($Val -ge ($Ref + $tol))     { return '"rgba(239,83,80,0.75)"'   }  # pire  = rouge
+    return $NeutralColor                                                     # stable = couleur neutre
+}
+
 $swapLabelsArr = @('"Sans RAM-AI"', '"Mode Auto"')
 $swapDataArr   = @($p1AvgSwap.ToString("F1", $inv), $p2AvgSwap.ToString("F1", $inv))
-$swapColorsArr = @('"rgba(239,83,80,0.75)"', '"rgba(102,187,106,0.75)"')
+# Phase 1 = reference : neutre gris (c'est la baseline, pas "mauvaise" en soi)
+$swapColorsArr = @('"rgba(150,150,150,0.6)"', (Get-SwapBarColor $p2AvgSwap $p1AvgSwap '"rgba(102,187,106,0.75)"'))
 if ($hasGaming) {
     $swapLabelsArr += '"Mode Gaming"'
     $swapDataArr   += $p3AvgSwap.ToString("F1", $inv)
-    $swapColorsArr += '"rgba(245,166,35,0.75)"'
+    $swapColorsArr += (Get-SwapBarColor $p3AvgSwap $p1AvgSwap '"rgba(245,166,35,0.75)"')
 }
 if ($hasTournoi) {
     $swapLabelsArr += '"Mode Tournoi"'
     $swapDataArr   += $p4AvgSwap.ToString("F1", $inv)
-    $swapColorsArr += '"rgba(171,71,188,0.75)"'
+    $swapColorsArr += (Get-SwapBarColor $p4AvgSwap $p1AvgSwap '"rgba(171,71,188,0.75)"')
 }
 $swapLabelsJs = $swapLabelsArr -join ","
 $swapDataJs   = $swapDataArr   -join ","
 $swapColorsJs = $swapColorsArr -join ","
+
+# Titre dynamique du graphique swap
+if ($p2AvgSwap -lt ($p1AvgSwap - 0.5)) {
+    $swapChartTitle = "Reduction du Swap &mdash; Impact RAM-AI"
+} elseif ($p2AvgSwap -gt ($p1AvgSwap + 0.5)) {
+    $swapChartTitle = "Swap &mdash; Augmentation detectee avec RAM-AI actif"
+} else {
+    $swapChartTitle = "Swap &mdash; Aucune variation significative"
+}
 
 # Stat : reduction swap % — vert si reduit (bon), rouge si augmente (mauvais)
 if ($p1AvgSwap -eq 0 -and $p2AvgSwap -eq 0) {
@@ -895,11 +927,13 @@ $htmlTemplate = @'
     .c-pur { color: #AB47BC !important; font-weight: 600; }
     .c-dim { color: #555 !important; }
 
-    /* Verdict */
-    .verdict      { background: #161616; border: 1px solid #2a2a2a; border-left: 4px solid ##VERDICT_COLOR##;      border-radius: 10px; padding: 14px 20px; display: flex; align-items: center; gap: 12px; margin-bottom: 12px; }
-    .verdict-swap { background: #161616; border: 1px solid #2a2a2a; border-left: 4px solid ##VERDICT_SWAP_COLOR##; border-radius: 10px; padding: 14px 20px; display: flex; align-items: center; gap: 12px; margin-bottom: 20px; }
-    .verdict-icon { font-size: 22px; }
-    .verdict-text { font-size: 14px; font-weight: 600; }
+    /* Verdict fusionné */
+    .verdict-card { background: #161616; border: 1px solid #2a2a2a; border-radius: 10px; padding: 16px 20px; margin-bottom: 20px; }
+    .verdict-row  { display: flex; align-items: center; gap: 12px; padding: 6px 0; }
+    .verdict-row + .verdict-row { border-top: 1px solid #222; margin-top: 4px; padding-top: 10px; }
+    .verdict-icon { font-size: 20px; flex-shrink: 0; }
+    .verdict-label { font-size: 10px; text-transform: uppercase; letter-spacing: 0.8px; color: #555; margin-bottom: 2px; }
+    .verdict-text { font-size: 13px; font-weight: 600; }
 
     /* Rapport */
     .rapport-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; margin-bottom: 16px; }
@@ -929,7 +963,7 @@ $htmlTemplate = @'
 
   <!-- Graphique 1 : Swap par phase (barres) -->
   <div class="card">
-    <div class="card-title">Reduction du Swap &mdash; Impact RAM-AI</div>
+    <div class="card-title">##SWAP_CHART_TITLE##</div>
     <div class="card-subtitle">Le swap = utilisation du disque comme memoire de secours. Moins c'est bas, mieux c'est.</div>
     <div class="chart-wrap-swap"><canvas id="swapChart"></canvas></div>
   </div>
@@ -984,11 +1018,18 @@ $htmlTemplate = @'
         <th style="##P4_COL_STYLE##" class="c-pur">Phase 4 (Tournoi)</th>
       </tr>
       <tr>
-        <td>Swap moy (p/s)</td>
+        <td>Swap median (p/s)</td>
         <td class="c-red">##P1_AVG_SWAP##</td>
         <td class="c-grn">##P2_AVG_SWAP##</td>
         <td style="##P3_COL_STYLE##" class="c-org">##P3_AVG_SWAP##</td>
         <td style="##P4_COL_STYLE##" class="c-pur">##P4_AVG_SWAP##</td>
+      </tr>
+      <tr>
+        <td>Swap P95 (p/s)</td>
+        <td class="c-red">##P1_P95_SWAP##</td>
+        <td class="c-grn">##P2_P95_SWAP##</td>
+        <td style="##P3_COL_STYLE##" class="c-org">##P3_P95_SWAP##</td>
+        <td style="##P4_COL_STYLE##" class="c-pur">##P4_P95_SWAP##</td>
       </tr>
       <tr>
         <td>RAM moy (Go)</td>
@@ -1021,14 +1062,22 @@ $htmlTemplate = @'
     </table>
   </div>
 
-  <!-- Verdict -->
-  <div class="verdict">
-    <div class="verdict-icon">&#x1F4CA;</div>
-    <div class="verdict-text" style="color:##VERDICT_COLOR##;">##VERDICT_TEXT##</div>
-  </div>
-  <div class="verdict-swap">
-    <div class="verdict-icon">&#x1F4BE;</div>
-    <div class="verdict-text" style="color:##VERDICT_SWAP_COLOR##;">##VERDICT_SWAP_TEXT##</div>
+  <!-- Verdict fusionné RAM + Swap -->
+  <div class="verdict-card">
+    <div class="verdict-row">
+      <div class="verdict-icon">&#x1F4CA;</div>
+      <div>
+        <div class="verdict-label">RAM disponible</div>
+        <div class="verdict-text" style="color:##VERDICT_COLOR##;">##VERDICT_TEXT##</div>
+      </div>
+    </div>
+    <div class="verdict-row">
+      <div class="verdict-icon">&#x1F4BE;</div>
+      <div>
+        <div class="verdict-label">Swap (acces disque)</div>
+        <div class="verdict-text" style="color:##VERDICT_SWAP_COLOR##;">##VERDICT_SWAP_TEXT##</div>
+      </div>
+    </div>
   </div>
 
   <!-- Rapport global -->
@@ -1043,7 +1092,7 @@ $htmlTemplate = @'
         <table>
           <tr><td>Date</td><td>##DATE##</td></tr>
           <tr><td>RAM recuperee auj.</td><td class="c-grn">##RPT_TODAY_RAM## Go</td></tr>
-          <tr><td>Processus optimises auj.</td><td>##RPT_TODAY_PROCS##</td></tr>
+          <tr><td>Actions d'optimisation auj.</td><td>##RPT_TODAY_PROCS##</td></tr>
         </table>
       </div>
       <div class="rapport-block">
@@ -1068,8 +1117,8 @@ $htmlTemplate = @'
       <div class="rapport-block">
         <h4>Swap benchmark</h4>
         <table>
-          <tr><td>Phase 1 (sans RAM-AI)</td><td>moy ##P1_AVG_SWAP## p/s &mdash; max ##P1_MAX_SWAP## p/s</td></tr>
-          <tr><td>Phase 2 (Mode Auto)</td><td>moy ##P2_AVG_SWAP## p/s &mdash; max ##P2_MAX_SWAP## p/s</td></tr>
+          <tr><td>Phase 1 (sans RAM-AI)</td><td>med ##P1_AVG_SWAP## &mdash; P95 ##P1_P95_SWAP## &mdash; max ##P1_MAX_SWAP## p/s</td></tr>
+          <tr><td>Phase 2 (Mode Auto)</td><td>med ##P2_AVG_SWAP## &mdash; P95 ##P2_P95_SWAP## &mdash; max ##P2_MAX_SWAP## p/s</td></tr>
         </table>
       </div>
     </div>
@@ -1183,6 +1232,15 @@ $htmlTemplate = @'
           grid: { color: '#1e1e1e' }
         },
         y: {
+          grace: '8%',
+          afterDataLimits: function(axis) {
+            var span = axis.max - axis.min;
+            if (span < 0.8) {
+              var mid = (axis.max + axis.min) / 2;
+              axis.min = Math.max(0, mid - 0.4);
+              axis.max = mid + 0.4;
+            }
+          },
           title: { display: true, text: 'RAM disponible (Go)', color: '#aaa', font: { size: 12 } },
           ticks: { color: '#aaa', callback: function(v) { return (Math.round(v * 10) / 10).toFixed(1) + ' Go'; } },
           grid: { color: '#1e1e1e' }
@@ -1307,11 +1365,13 @@ $html = $htmlTemplate `
     -replace '##P1_MIN_RAM##',         $p1MinRam.ToString($inv2) `
     -replace '##P1_MAX_RAM##',         $p1MaxRam.ToString($inv2) `
     -replace '##P1_AVG_SWAP##',        $p1AvgSwap.ToString($inv2) `
+    -replace '##P1_P95_SWAP##',        $p1P95Swap.ToString($inv2) `
     -replace '##P1_MAX_SWAP##',        $p1MaxSwap.ToString($inv2) `
     -replace '##P2_AVG_RAM##',         $p2AvgRam.ToString($inv2) `
     -replace '##P2_MIN_RAM##',         $p2MinRam.ToString($inv2) `
     -replace '##P2_MAX_RAM##',         $p2MaxRam.ToString($inv2) `
     -replace '##P2_AVG_SWAP##',        $p2AvgSwap.ToString($inv2) `
+    -replace '##P2_P95_SWAP##',        $p2P95Swap.ToString($inv2) `
     -replace '##P2_MAX_SWAP##',        $p2MaxSwap.ToString($inv2) `
     -replace '##P2_AVG_CPU_RAI##',     $p2AvgCpuRai.ToString($inv2) `
     -replace '##P2_MAX_CPU_RAI##',     $p2MaxCpuRai.ToString($inv2) `
@@ -1324,6 +1384,7 @@ $html = $htmlTemplate `
     -replace '##P3_MIN_RAM##',         $p3MinRam.ToString($inv2) `
     -replace '##P3_MAX_RAM##',         $p3MaxRam.ToString($inv2) `
     -replace '##P3_AVG_SWAP##',        $p3AvgSwap.ToString($inv2) `
+    -replace '##P3_P95_SWAP##',        $p3P95Swap.ToString($inv2) `
     -replace '##P3_MAX_SWAP##',        $p3MaxSwap.ToString($inv2) `
     -replace '##P3_AVG_CPU_RAI##',     $p3AvgCpuRai.ToString($inv2) `
     -replace '##P3_MAX_CPU_RAI##',     $p3MaxCpuRai.ToString($inv2) `
@@ -1336,6 +1397,7 @@ $html = $htmlTemplate `
     -replace '##P4_MIN_RAM##',         $p4MinRam.ToString($inv2) `
     -replace '##P4_MAX_RAM##',         $p4MaxRam.ToString($inv2) `
     -replace '##P4_AVG_SWAP##',        $p4AvgSwap.ToString($inv2) `
+    -replace '##P4_P95_SWAP##',        $p4P95Swap.ToString($inv2) `
     -replace '##P4_MAX_SWAP##',        $p4MaxSwap.ToString($inv2) `
     -replace '##P4_AVG_CPU_RAI##',     $p4AvgCpuRai.ToString($inv2) `
     -replace '##P4_MAX_CPU_RAI##',     $p4MaxCpuRai.ToString($inv2) `
@@ -1343,6 +1405,7 @@ $html = $htmlTemplate `
     -replace '##P4_GAIN_SIGN##',       $p4GainSign `
     -replace '##P4_GAIN_PCT##',        $p4GainPct.ToString($inv2) `
     -replace '##P4_TOTAL_ACT##',       $p4TotalAct.ToString() `
+    -replace '##SWAP_CHART_TITLE##',   $swapChartTitle `
     -replace '##VERDICT_COLOR##',      $verdictColor `
     -replace '##VERDICT_TEXT##',       $verdictText `
     -replace '##VERDICT_SWAP_COLOR##', $verdictSwapColor `

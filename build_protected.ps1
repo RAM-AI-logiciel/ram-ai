@@ -199,30 +199,27 @@ else {
         Copy-PublishDir $Phase4Publish $Phase4ObfOut
     }
 
-    # Copier les fichiers NON-geres (assets, configs, launcher exe, pdbs)
-    # qu'Obfuscar ne copie pas automatiquement
-    Write-Host "  Copie des fichiers annexes (assets, configs, exe launcher)..."
-    $skipExts = @(".exe", ".dll")   # Obfuscar les a deja traites
+    # Copier TOUS les fichiers publish que Obfuscar n'a pas deja ecrits dans Protected\.
+    # Obfuscar ecrit uniquement la DLL cible obfusquee — les DLLs tierces,
+    # l'apphost natif (.exe), les configs et les pdbs doivent tous etre copies.
+    Write-Host "  Copie des fichiers annexes (DLLs tierces, apphost, configs)..."
 
-    foreach ($item in (Get-ChildItem $Phase3Publish -Recurse |
-                        Where-Object { -not $_.PSIsContainer -and
-                                       $_.Extension -notin $skipExts })) {
-        $rel  = $item.FullName.Substring($Phase3Publish.Length + 1)
-        $dest = "$Protected\Phase3\$rel"
-        $dir  = Split-Path $dest -Parent
-        if (-not (Test-Path $dir)) { New-Item -ItemType Directory -Path $dir | Out-Null }
-        Copy-Item $item.FullName $dest -Force
+    function Copy-MissingFiles([string]$src, [string]$dst) {
+        foreach ($item in (Get-ChildItem $src -Recurse |
+                            Where-Object { -not $_.PSIsContainer })) {
+            $rel    = $item.FullName.Substring($src.Length + 1)
+            $target = Join-Path $dst $rel
+            # Ne pas ecraser ce qu'Obfuscar a deja produit (la DLL obfusquee)
+            if (-not (Test-Path $target)) {
+                $dir = Split-Path $target -Parent
+                if (-not (Test-Path $dir)) { New-Item -ItemType Directory -Path $dir | Out-Null }
+                Copy-Item $item.FullName $target -Force
+            }
+        }
     }
 
-    foreach ($item in (Get-ChildItem $Phase4Publish -Recurse |
-                        Where-Object { -not $_.PSIsContainer -and
-                                       $_.Extension -notin $skipExts })) {
-        $rel  = $item.FullName.Substring($Phase4Publish.Length + 1)
-        $dest = "$Protected\Phase4\$rel"
-        $dir  = Split-Path $dest -Parent
-        if (-not (Test-Path $dir)) { New-Item -ItemType Directory -Path $dir | Out-Null }
-        Copy-Item $item.FullName $dest -Force
-    }
+    Copy-MissingFiles $Phase3Publish "$Protected\Phase3"
+    Copy-MissingFiles $Phase4Publish "$Protected\Phase4"
 
     # Nettoyer configs temporaires
     Remove-Item $cfgPhase3, $cfgPhase4 -ErrorAction SilentlyContinue

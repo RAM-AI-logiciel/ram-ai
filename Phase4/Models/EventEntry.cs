@@ -25,4 +25,6 @@ public sealed class EventEntry
     [JsonPropertyName("isEcoMode")]             public bool     IsEcoMode            { get; init; }
     [JsonPropertyName("isTournamentMode")]      public bool     IsTournamentMode     { get; init; }
     [JsonPropertyName("vramMb")]                public long     VramMb               { get; init; }
+    [JsonPropertyName("swapPagesPerSec")]       public float    SwapPagesPerSec      { get; init; }
+    [JsonPropertyName("antiSwapIntervention")]  public bool     AntiSwapIntervention { get; init; }
 }

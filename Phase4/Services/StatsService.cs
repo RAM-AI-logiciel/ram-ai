@@ -40,6 +40,7 @@ public sealed class StatsData
 
     public int    TurboUseCount             { get; set; } = 0;
     public int    TournamentUseCount        { get; set; } = 0;
+    public long   AntiSwapInterventions     { get; set; } = 0;
 }
 
 /// <summary>

@@ -152,4 +152,8 @@ internal sealed class EventEntry
     public bool     IsEcoMode            { get; init; }
     public bool     IsTournamentMode     { get; init; }
     public long     VramMb               { get; init; }
+    /// <summary>Taux de pagination système au moment du tick (PerformanceCounter "Memory\Pages/sec").</summary>
+    public float    SwapPagesPerSec      { get; init; }
+    /// <summary>True si RAM-AI est intervenu de façon agressive ce tick pour réduire le swap (>100 p/s).</summary>
+    public bool     AntiSwapIntervention { get; init; }
 }

@@ -50,6 +50,11 @@ public sealed partial class MainViewModel : ObservableObject
     [ObservableProperty] private bool   _isEcoModeActive;
     [ObservableProperty] private string _ecoModeText       = string.Empty;
 
+    // ── Anti-swap ─────────────────────────────────────────────────────────────
+    [ObservableProperty] private bool   _isAntiSwapActive;
+    [ObservableProperty] private string _antiSwapText      = string.Empty;
+    [ObservableProperty] private string _swapLevelColor    = "#3FB950"; // vert par défaut
+
     // ── Ultra ─────────────────────────────────────────────────────────────────
     [ObservableProperty] private bool   _isUltraModeActive;
     [ObservableProperty] private bool   _isTournamentModeActive;
@@ -280,6 +285,28 @@ public sealed partial class MainViewModel : ObservableObject
             if (!_prevEco && ecoNow) _stats.EcoActivations++;
             _prevEco = ecoNow;
             if (ecoNow) _todayEcoTicks++;
+
+            // ── Anti-swap ──
+            float pps = entry.SwapPagesPerSec;
+            if (pps > 100f)
+            {
+                IsAntiSwapActive = true;
+                AntiSwapText     = $"⚠ ANTI-SWAP ACTIF — {pps:F0} pages/sec — Libération agressive en cours";
+                SwapLevelColor   = "#E94560"; // rouge
+                _stats.AntiSwapInterventions++;
+            }
+            else if (pps > 10f)
+            {
+                IsAntiSwapActive = false;
+                AntiSwapText     = $"⚡ Swap léger : {pps:F0} pages/sec";
+                SwapLevelColor   = "#D29922"; // orange
+            }
+            else
+            {
+                IsAntiSwapActive = false;
+                AntiSwapText     = string.Empty;
+                SwapLevelColor   = "#3FB950"; // vert
+            }
 
             // ── Ultra ──
             IsTournamentModeActive = entry.IsTournamentMode;
@@ -724,6 +751,7 @@ public sealed partial class MainViewModel : ObservableObject
             sb.AppendLine($"Mode Eco        : {_stats.EcoActivations,3} sessions — {_stats.EcoRamFreedGb:F2} Go récupérés");
             sb.AppendLine($"Mode Turbo      : {_stats.TurboUseCount,3} utilisation(s)");
             sb.AppendLine($"Mode Tournoi    : {_stats.TournamentUseCount,3} utilisation(s)");
+            sb.AppendLine($"Interventions anti-swap : {_stats.AntiSwapInterventions,3} (ticks avec swap > 100 pages/sec)");
             sb.AppendLine();
 
             // Point 3 : PROCESSUS RELANCÉS

@@ -74,6 +74,14 @@ internal sealed class MemoryOrchestrator : IDisposable
     private static readonly string TournamentFlagPath = Path.Combine(SharedFlagDir, "tournament_mode.force");
     private static readonly string GamingProfilesPath = Path.Combine(SharedFlagDir, "gaming_profiles.json");
 
+    // ── Anti-swap (PerformanceCounter "Memory\Pages/sec") ────────────────────
+    private const float SwapThresholdOrange = 10f;   // < 10 : normal (vert)
+    private const float SwapThresholdRed    = 100f;  // > 100 : intervention agressive
+
+    private System.Diagnostics.PerformanceCounter? _swapCounter;
+    private float _swapPagesPerSec;
+    private long  _antiSwapInterventions;   // cumulatif toute la durée de vie du service
+
     // ── État Ultra ────────────────────────────────────────────────────────────
     private bool     _tournamentModeActive;
     private DateTime _tournamentSuspendUntil = DateTime.MinValue; // suspension 2s anti-stutter
@@ -279,6 +287,13 @@ internal sealed class MemoryOrchestrator : IDisposable
         _cache  = cache;
         _events = events;
 
+        try
+        {
+            _swapCounter = new System.Diagnostics.PerformanceCounter("Memory", "Pages/sec", readOnly: true);
+            _ = _swapCounter.NextValue(); // premier appel toujours 0 — consommer pour initialiser
+        }
+        catch { _swapCounter = null; }
+
         if (modelPath is not null)
         {
             _log.LogInformation("Loading ML model: {P}", modelPath);
@@ -382,7 +397,23 @@ internal sealed class MemoryOrchestrator : IDisposable
             }
         }
 
-        float coldThreshold = _gamingModeActive ? ColdThresholdGaming : ColdThreshold;
+        // ── Lecture Pages/sec + seuil anti-swap ──────────────────────────────
+        bool antiSwapIntervention = false;
+        if (_swapCounter is not null)
+        {
+            try { _swapPagesPerSec = _swapCounter.NextValue(); }
+            catch { _swapPagesPerSec = 0f; }
+        }
+        if (_swapPagesPerSec > SwapThresholdRed)
+        {
+            antiSwapIntervention = true;
+            Interlocked.Increment(ref _antiSwapInterventions);
+        }
+
+        // En intervention anti-swap, abaisser le seuil d'éviction pour libérer plus
+        float coldThreshold = _gamingModeActive   ? ColdThresholdGaming :
+                              antiSwapIntervention ? Math.Min(ColdThreshold + 0.15f, 0.45f) :
+                                                     ColdThreshold;
 
         // ── 3. Mode Tournoi (Ultra) — appliqué en priorité si gaming actif ────
         bool tournamentMode = _gamingModeActive && File.Exists(TournamentFlagPath);
@@ -818,6 +849,8 @@ internal sealed class MemoryOrchestrator : IDisposable
             IsEcoMode              = _ecoMode,
             IsTournamentMode       = _tournamentModeActive,
             VramMb                 = _vramMb,
+            SwapPagesPerSec        = _swapPagesPerSec,
+            AntiSwapIntervention   = antiSwapIntervention,
         });
 
         _log.LogDebug(
@@ -1421,6 +1454,7 @@ internal sealed class MemoryOrchestrator : IDisposable
     {
         _engine?.Dispose();   // null si mode sans ML
         _cache.Dispose();
+        _swapCounter?.Dispose();
     }
 }
 

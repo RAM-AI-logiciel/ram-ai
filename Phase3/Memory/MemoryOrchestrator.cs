@@ -239,24 +239,68 @@ internal sealed class MemoryOrchestrator : IDisposable
     /// <summary>Pause en ms entre chaque batch de processus.</summary>
     private int BatchSleepMs => _ecoMode ? EcoBatchSleepMs : NormalBatchSleepMs;
 
-    // ── Intervalle courant (recalculé par UpdateInterval()) ───────────────────
+    // ── Intervalle courant (recalculé par UpdateInterval() à chaque tick) ──────
     private int _intervalMs = NormalIntervalMs;
 
+    // Bornes du mode adaptatif (RAM disponible → intervalle en ms)
+    private const double RamHighPct   = 0.40; // ≥ 40 % dispo → 3000ms
+    private const double RamLowPct    = 0.20; // < 20 % dispo → vers 500ms
+    private const int    IntervalHigh = 3_000;
+    private const int    IntervalMid  = 1_500;
+    private const int    IntervalMin  =   500;
+
     /// <summary>
-    /// Recalcule l'intervalle selon la priorité et le mode éco :
-    /// Gaming > IA > Navigateur > Normal   ×2-5 si sur batterie.
+    /// Recalcule _intervalMs chaque tick.
+    /// Priorité (override total) : Tournoi > Gaming > Éco > Adaptatif RAM.
+    /// En mode adaptatif, l'intervalle varie en continu avec la pression RAM :
+    ///   ≥ 40 % dispo → 3000 ms
+    ///   20–40 %      → interpolation linéaire 3000 → 1500 ms
+    ///    0–20 %      → interpolation linéaire 1500 →  500 ms
+    /// IA et Navigateur n'influencent plus l'intervalle.
     /// </summary>
     private void UpdateInterval()
     {
-        int gaming  = _ecoMode ? EcoGamingIntervalMs  : GamingIntervalMs;
-        int ai      = _ecoMode ? EcoAiIntervalMs      : AiIntervalMs;
-        int browser = _ecoMode ? EcoBrowserIntervalMs : BrowserIntervalMs;
-        int normal  = _ecoMode ? EcoNormalIntervalMs  : NormalIntervalMs;
+        // Tournoi : géré directement dans Tick() — ne pas écraser
+        if (_tournamentModeActive) return;
 
-        _intervalMs = _gamingModeActive  ? gaming  :
-                      _aiModeActive      ? ai      :
-                      _browserModeActive ? browser :
-                                           normal;
+        // Gaming override
+        if (_gamingModeActive)
+        {
+            _intervalMs = _ecoMode ? EcoGamingIntervalMs : GamingIntervalMs;
+            return;
+        }
+
+        // Éco override (batterie) — intervalle fixe conservateur
+        if (_ecoMode)
+        {
+            _intervalMs = EcoNormalIntervalMs;
+            return;
+        }
+
+        // Mode adaptatif : interpolation continue basée sur la pression RAM
+        long availMb = NativeMemory.GetAvailablePhysicalMb();
+        long totalMb = NativeMemory.GetTotalPhysicalMb();
+        double availPct = totalMb > 0 ? (double)availMb / totalMb : 0.5;
+
+        int adaptive;
+        if (availPct >= RamHighPct)
+        {
+            adaptive = IntervalHigh;
+        }
+        else if (availPct >= RamLowPct)
+        {
+            // Interpolation linéaire 3000 → 1500 ms sur la plage [20%, 40%]
+            double t = (availPct - RamLowPct) / (RamHighPct - RamLowPct); // 0..1
+            adaptive = IntervalMid + (int)(t * (IntervalHigh - IntervalMid));
+        }
+        else
+        {
+            // Interpolation linéaire 1500 → 500 ms sur la plage [0%, 20%]
+            double t = availPct / RamLowPct; // 0..1
+            adaptive = IntervalMin + (int)(t * (IntervalMid - IntervalMin));
+        }
+
+        _intervalMs = adaptive;
     }
 
     // ── Dépendances ───────────────────────────────────────────────────────────
@@ -341,6 +385,10 @@ internal sealed class MemoryOrchestrator : IDisposable
             if (_tickCount % 60 == 0)
                 RefreshVramInfo();
 
+            // Libérer la mémoire de RAM-AI lui-même toutes les ~60 secondes
+            if ((DateTime.UtcNow - _lastSelfTrimTime).TotalSeconds >= 60)
+                SelfTrimMemory();
+
             var sw = Stopwatch.StartNew();
             try   { Tick(); }
             catch (Exception ex) { _log.LogError(ex, "Tick error"); }
@@ -354,10 +402,14 @@ internal sealed class MemoryOrchestrator : IDisposable
     // ── Tick ─────────────────────────────────────────────────────────────────
 
     // Compteur de ticks pour les logs périodiques (évite de flooder)
-    private int _tickCount;
+    private int      _tickCount;
+    private DateTime _lastSelfTrimTime = DateTime.MinValue;
 
     private void Tick()
     {
+        // Recalcule _intervalMs à chaque tick selon la pression RAM courante
+        UpdateInterval();
+
         var sw = Stopwatch.StartNew();
         int  coldEvicted        = 0;
         int  hotPrefetch        = 0;
@@ -1448,6 +1500,23 @@ internal sealed class MemoryOrchestrator : IDisposable
             return delta * 4f;
         }
         finally { NativeMemory.CloseHandle(hProc); }
+    }
+
+    /// <summary>
+    /// Libère la mémoire de RAM-AI lui-même (~60s d'intervalle).
+    /// GC doux (non-bloquant) + EmptyWorkingSet sur le processus courant.
+    /// </summary>
+    private void SelfTrimMemory()
+    {
+        _lastSelfTrimTime = DateTime.UtcNow;
+        try
+        {
+            // GC génération 2 en mode optimisé (non-bloquant) — compacte le tas managé
+            GC.Collect(2, GCCollectionMode.Optimized, blocking: false);
+            // Trim du working set natif — pages inactives renvoyées au kernel
+            NativeMemory.EmptyWorkingSet(Process.GetCurrentProcess().Handle);
+        }
+        catch { /* jamais de crash en self-trim */ }
     }
 
     public void Dispose()

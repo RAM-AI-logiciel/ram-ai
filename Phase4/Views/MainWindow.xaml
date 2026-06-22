@@ -108,7 +108,7 @@
                                Foreground="#8B949E" VerticalAlignment="Center"/>
                 </StackPanel>
 
-                <!-- Contrôles à droite — ordre : Badge Ultra | Rapport | Licence | ▶ | ■ | Turbo | Tournoi | VRAM | Forcer Gaming -->
+                <!-- Contrôles à droite — ordre : Badge Ultra | Licence | ▶ | ■ | Turbo | Tournoi | VRAM | Forcer Gaming -->
                 <StackPanel Grid.Column="2" Orientation="Horizontal"
                             VerticalAlignment="Center" Margin="0,0,6,0">
 
@@ -167,13 +167,6 @@
                             </TextBlock>
                         </StackPanel>
                     </Border>
-
-                    <!-- 2. Rapport -->
-                    <Button Content="📄 Rapport"
-                            Style="{StaticResource ToolBtn}"
-                            Command="{Binding GenerateReportCommand}"
-                            ToolTip="Générer un rapport détaillé .txt dans le Bloc-notes"
-                            Margin="0,0,4,0"/>
 
                     <!-- 3. Licence -->
                     <Button Content="🔑 Licence"

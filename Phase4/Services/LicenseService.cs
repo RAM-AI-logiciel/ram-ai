@@ -1,3 +1,4 @@
+using System.Diagnostics;
 using System.Net.Http;
 using System.Security.Cryptography;
 using System.Text;
@@ -111,35 +112,54 @@ public sealed class LicenseService
                                             .ConfigureAwait(false);
 
             string json = await response.Content.ReadAsStringAsync().ConfigureAwait(false);
+
+            Trace.WriteLine($"[LicenseService] LS validate HTTP {(int)response.StatusCode} — {json}");
+
             JsonNode? node = JsonNode.Parse(json);
 
             bool   valid  = node?["valid"]?.GetValue<bool>()   ?? false;
             string status = node?["license_key"]?["status"]?.GetValue<string>() ?? "";
 
-            if (!valid || !string.Equals(status, "active", StringComparison.OrdinalIgnoreCase))
+            Trace.WriteLine($"[LicenseService] valid={valid} status={status}");
+
+            if (!valid)
                 return new(LicenseTier.None, LsError.None);
+
+            // Statuts acceptés : "active" (déjà activée) ou "inactive" (jamais activée — 1ère utilisation).
+            // "expired" et "disabled" sont des refus légitimes.
+            bool statusOk = string.Equals(status, "active",   StringComparison.OrdinalIgnoreCase)
+                         || string.Equals(status, "inactive", StringComparison.OrdinalIgnoreCase);
+
+            if (!statusOk)
+            {
+                Trace.WriteLine($"[LicenseService] Rejet : statut '{status}' non accepté");
+                return new(LicenseTier.None, LsError.None);
+            }
 
             // Déterminer le tier depuis le nom produit / variante
             string productName = node?["meta"]?["product_name"]?.GetValue<string>() ?? "";
             string variantName = node?["meta"]?["variant_name"]?.GetValue<string>() ?? "";
+
+            Trace.WriteLine($"[LicenseService] product='{productName}' variant='{variantName}'");
 
             bool isUltra = productName.Contains("Ultra", StringComparison.OrdinalIgnoreCase)
                         || variantName.Contains("Ultra", StringComparison.OrdinalIgnoreCase);
 
             return new(isUltra ? LicenseTier.Ultra : LicenseTier.Pro, LsError.None);
         }
-        catch (HttpRequestException)
+        catch (HttpRequestException ex)
         {
+            Trace.WriteLine($"[LicenseService] Erreur réseau : {ex.Message}");
             return new(LicenseTier.None, LsError.Network);
         }
         catch (TaskCanceledException)
         {
-            // Timeout
+            Trace.WriteLine("[LicenseService] Timeout");
             return new(LicenseTier.None, LsError.Network);
         }
-        catch
+        catch (Exception ex)
         {
-            // JSON malformé ou autre — clé considérée invalide
+            Trace.WriteLine($"[LicenseService] Erreur inattendue : {ex}");
             return new(LicenseTier.None, LsError.None);
         }
     }

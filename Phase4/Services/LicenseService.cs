@@ -1,5 +1,7 @@
+using System.Net.Http;
 using System.Security.Cryptography;
 using System.Text;
+using System.Text.Json.Nodes;
 using System.Text.RegularExpressions;
 using Microsoft.Win32;
 using RamAI.Phase4.Models;
@@ -8,18 +10,19 @@ using DPScope = System.Security.Cryptography.DataProtectionScope;
 namespace RamAI.Phase4.Services;
 
 /// <summary>
-/// Validation HMAC/SHA-256 et persistance de la licence dans le registre Windows.
+/// Validation de licence — deux chemins :
 ///
-/// Emplacement registre : HKCU\Software\RAM-AI\License  (valeur "Key")
-/// Activation bêta     : HKCU\Software\RAM-AI\License  (valeur "BetaActivation")
+///   1. Clés locales (offline) — HMAC/SHA-256, pas de réseau :
+///        Pro   : P-{XXXX}-{XXXX}                  SHA-256 % 251
+///        Ultra : ULT-{XXXX}-{XXXX}-{XXXX}-{CCCC}  HMAC-SHA256
+///        Bêta  : BETA-{XXXX}-{XXXX}-{XXXX}-{CCCC} HMAC-SHA256 (expire 30j)
 ///
-/// Format clé Pro      : P-{XXXX}-{XXXX}                 X ∈ [A-Z0-9]  SHA-256 % 251
-/// Format clé Ultra    : ULT-{XXXX}-{XXXX}-{XXXX}-{CCCC} X ∈ [A-F0-9] HMAC-SHA256
-/// Format clé Bêta     : BETA-{XXXX}-{XXXX}-{XXXX}-{CCCC} X ∈ [A-F0-9] HMAC-SHA256
+///   2. Clés Lemon Squeezy (UUID) — validation en ligne :
+///        Format : xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx
+///        API    : POST https://api.lemonsqueezy.com/v1/licenses/validate
+///        Tier   : déduit de meta.product_name / meta.variant_name
 ///
-/// Clés de démonstration :
-///   Pro   : P-DEMO-0001
-///   Ultra : ULT-DEMO-DEMO-DEMO-9999
+/// Persistance : HKCU\Software\RAM-AI\License  →  Base64(DPAPI(clé))
 /// </summary>
 public sealed class LicenseService
 {
@@ -34,7 +37,16 @@ public sealed class LicenseService
 
     private const int BetaDurationDays = 30;
 
-    // Aucune clé demo — toute validation passe par HMAC/SHA-256.
+    private const string LsValidateUrl = "https://api.lemonsqueezy.com/v1/licenses/validate";
+
+    private static readonly Regex _uuidRegex = new(
+        @"^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$",
+        RegexOptions.IgnoreCase | RegexOptions.Compiled);
+
+    private static readonly HttpClient _http = new()
+    {
+        Timeout = TimeSpan.FromSeconds(12)
+    };
 
     // ── État courant ──────────────────────────────────────────────────────────
     public event Action<LicenseInfo>? LicenseChanged;
@@ -44,7 +56,12 @@ public sealed class LicenseService
 
     public DateTime? BetaExpiryDate { get; private set; }
 
-    // ── Validation ────────────────────────────────────────────────────────────
+    // ── Détection UUID ────────────────────────────────────────────────────────
+
+    public static bool IsUuidKey(string rawKey) =>
+        _uuidRegex.IsMatch(rawKey.Trim());
+
+    // ── Validation locale (offline) ───────────────────────────────────────────
 
     public LicenseTier Validate(string rawKey)
     {
@@ -70,9 +87,64 @@ public sealed class LicenseService
         return LicenseTier.Pro;
     }
 
+    // ── Validation Lemon Squeezy (online) ────────────────────────────────────
+
+    /// <summary>
+    /// Valide une clé UUID auprès de l'API Lemon Squeezy.
+    /// Retourne (None, null) si la clé n'est pas un UUID (ne lève pas d'exception).
+    /// </summary>
+    public async Task<LemonSqueezyResult> ValidateLemonSqueezyAsync(string rawKey)
+    {
+        string key = rawKey.Trim();
+
+        if (!_uuidRegex.IsMatch(key))
+            return new(LicenseTier.None, LsError.None);
+
+        try
+        {
+            var body = new FormUrlEncodedContent(
+            [
+                new KeyValuePair<string, string>("license_key", key)
+            ]);
+
+            using var response = await _http.PostAsync(LsValidateUrl, body)
+                                            .ConfigureAwait(false);
+
+            string json = await response.Content.ReadAsStringAsync().ConfigureAwait(false);
+            JsonNode? node = JsonNode.Parse(json);
+
+            bool   valid  = node?["valid"]?.GetValue<bool>()   ?? false;
+            string status = node?["license_key"]?["status"]?.GetValue<string>() ?? "";
+
+            if (!valid || !string.Equals(status, "active", StringComparison.OrdinalIgnoreCase))
+                return new(LicenseTier.None, LsError.None);
+
+            // Déterminer le tier depuis le nom produit / variante
+            string productName = node?["meta"]?["product_name"]?.GetValue<string>() ?? "";
+            string variantName = node?["meta"]?["variant_name"]?.GetValue<string>() ?? "";
+
+            bool isUltra = productName.Contains("Ultra", StringComparison.OrdinalIgnoreCase)
+                        || variantName.Contains("Ultra", StringComparison.OrdinalIgnoreCase);
+
+            return new(isUltra ? LicenseTier.Ultra : LicenseTier.Pro, LsError.None);
+        }
+        catch (HttpRequestException)
+        {
+            return new(LicenseTier.None, LsError.Network);
+        }
+        catch (TaskCanceledException)
+        {
+            // Timeout
+            return new(LicenseTier.None, LsError.Network);
+        }
+        catch
+        {
+            // JSON malformé ou autre — clé considérée invalide
+            return new(LicenseTier.None, LsError.None);
+        }
+    }
+
     // ── Validation BETA ───────────────────────────────────────────────────────
-    //  Format : BETA-XXXX-XXXX-XXXX-CCCC
-    //  CCCC = 2 premiers octets HMAC-SHA256(BetaSalt, XXXXXXXXXXXX)
 
     private static bool ValidateBetaKey(string key)
     {
@@ -91,8 +163,6 @@ public sealed class LicenseService
     }
 
     // ── Validation ULTRA ──────────────────────────────────────────────────────
-    //  Format : ULT-XXXX-XXXX-XXXX-CCCC
-    //  CCCC = 2 premiers octets HMAC-SHA256(UltSalt, XXXXXXXXXXXX)
 
     private static bool ValidateUltraKey(string key)
     {
@@ -101,7 +171,6 @@ public sealed class LicenseService
             return false;
 
         string[] parts    = key.Split('-');
-        // parts : ["ULT", g1, g2, g3, checksum]
         string   data     = parts[1] + parts[2] + parts[3];
         string   checksum = parts[4];
 
@@ -143,15 +212,7 @@ public sealed class LicenseService
         return activation;
     }
 
-    // ── Persistance registre (clé chiffrée via Windows DPAPI) ────────────────
-    //
-    // La valeur stockée est Base64(DPAPI.Protect(UTF8(key), CurrentUser)).
-    // Seul le compte Windows qui a chiffré peut déchiffrer — illisible pour
-    // tout autre utilisateur ou toute autre machine.
-    //
-    // Migration silencieuse : si la valeur n'est pas du Base64-DPAPI valide
-    // (ancienne installation), on tente de la valider comme clé brute, puis
-    // on la re-chiffre immédiatement.
+    // ── Persistance registre (DPAPI) ─────────────────────────────────────────
 
     private static string EncryptKey(string plainKey)
     {
@@ -181,7 +242,6 @@ public sealed class LicenseService
             string? stored = regKey.GetValue(RegValue) as string;
             if (string.IsNullOrWhiteSpace(stored)) return LicenseInfo.Empty;
 
-            // Tenter déchiffrement DPAPI
             string? plainKey = TryDecryptKey(stored);
 
             if (plainKey is null)
@@ -190,13 +250,24 @@ public sealed class LicenseService
                 plainKey = stored.Trim().ToUpperInvariant();
                 var migTier = Validate(plainKey);
                 if (migTier == LicenseTier.None) return LicenseInfo.Empty;
-                // Re-chiffrer silencieusement
                 SaveLicense(plainKey, migTier);
                 return _current;
             }
 
-            var tier = Validate(plainKey);
-            if (tier == LicenseTier.None) return LicenseInfo.Empty;
+            LicenseTier tier;
+            if (IsUuidKey(plainKey))
+            {
+                // Clé Lemon Squeezy : tier persisté séparément (pas de validation locale possible)
+                string? tierRaw = regKey.GetValue("Tier") as string;
+                if (!int.TryParse(tierRaw, out int tierInt) || tierInt <= 0)
+                    return LicenseInfo.Empty;
+                tier = (LicenseTier)tierInt;
+            }
+            else
+            {
+                tier = Validate(plainKey);
+                if (tier == LicenseTier.None) return LicenseInfo.Empty;
+            }
 
             _current = new LicenseInfo(tier, plainKey);
 
@@ -210,10 +281,14 @@ public sealed class LicenseService
 
     public void SaveLicense(string rawKey, LicenseTier tier)
     {
-        string plain = rawKey.Trim().ToUpperInvariant();
+        // Les clés locales sont normalisées en majuscules ; les UUID conservent leur casse d'origine
+        string plain = IsUuidKey(rawKey) ? rawKey.Trim() : rawKey.Trim().ToUpperInvariant();
 
         using var regKey = Registry.CurrentUser.CreateSubKey(RegPath, writable: true);
         regKey.SetValue(RegValue, EncryptKey(plain), RegistryValueKind.String);
+
+        // Stocker le tier numérique pour les clés UUID (pas de validation locale possible)
+        regKey.SetValue("Tier", ((int)tier).ToString(), RegistryValueKind.String);
 
         _current = new LicenseInfo(tier, plain);
 
@@ -228,7 +303,8 @@ public sealed class LicenseService
         try
         {
             using var key = Registry.CurrentUser.OpenSubKey(RegPath, writable: true);
-            key?.DeleteValue(RegValue, throwOnMissingValue: false);
+            key?.DeleteValue(RegValue,  throwOnMissingValue: false);
+            key?.DeleteValue("Tier",    throwOnMissingValue: false);
         }
         catch { }
 
@@ -237,3 +313,9 @@ public sealed class LicenseService
         LicenseChanged?.Invoke(_current);
     }
 }
+
+// ── Types résultat Lemon Squeezy ─────────────────────────────────────────────
+
+public enum LsError { None, Network }
+
+public readonly record struct LemonSqueezyResult(LicenseTier Tier, LsError Error);

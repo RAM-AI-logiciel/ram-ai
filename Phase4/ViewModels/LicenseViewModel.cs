@@ -12,6 +12,7 @@ public sealed partial class LicenseViewModel : ObservableObject
     [ObservableProperty] private string _keyInput          = string.Empty;
     [ObservableProperty] private string _validationMessage = string.Empty;
     [ObservableProperty] private bool   _isValid;
+    [ObservableProperty] private bool   _isBusy;
 
     // ── Paliers affichés dans la fenêtre ──────────────────────────────────────
     public TierRow[] Tiers { get; } =
@@ -34,26 +35,58 @@ public sealed partial class LicenseViewModel : ObservableObject
     }
 
     [RelayCommand]
-    private void ValidateKey()
+    private async Task ValidateKey()
     {
-        var tier = _licenseService.Validate(KeyInput);
+        string raw = KeyInput.Trim();
+
+        // ── Chemin Lemon Squeezy (UUID) ───────────────────────────────────────
+        if (LicenseService.IsUuidKey(raw))
+        {
+            IsBusy            = true;
+            ValidationMessage = "Vérification en cours…";
+
+            LemonSqueezyResult result = await _licenseService.ValidateLemonSqueezyAsync(raw);
+
+            IsBusy = false;
+
+            if (result.Tier != LicenseTier.None)
+            {
+                _licenseService.SaveLicense(raw, result.Tier);
+                ValidationMessage = $"✓  Licence {result.Tier} activée avec succès !";
+                IsValid           = true;
+                RequestClose?.Invoke();
+            }
+            else if (result.Error == LsError.Network)
+            {
+                ValidationMessage = "✗  Vérifiez votre connexion internet";
+                IsValid           = false;
+            }
+            else
+            {
+                ValidationMessage = "✗  Clé Lemon Squeezy invalide ou expirée";
+                IsValid           = false;
+            }
+            return;
+        }
+
+        // ── Chemin local HMAC (P- / ULT- / BETA-) ────────────────────────────
+        var tier = _licenseService.Validate(raw);
         if (tier != LicenseTier.None)
         {
-            _licenseService.SaveLicense(KeyInput, tier);
+            _licenseService.SaveLicense(raw, tier);
             ValidationMessage = $"✓  Licence {tier} activée avec succès !";
             IsValid           = true;
             RequestClose?.Invoke();
         }
         else
         {
-            string raw = KeyInput.Trim();
             ValidationMessage = string.IsNullOrEmpty(raw)
                 ? "✗  Clé invalide ou expirée"
                 : raw.StartsWith("BETA-", StringComparison.OrdinalIgnoreCase)
                     ? "✗  Clé BETA invalide ou expirée"
                     : raw.StartsWith("ULT-", StringComparison.OrdinalIgnoreCase)
                         ? "✗  Clé Ultra invalide — format : ULT-XXXX-XXXX-XXXX-XXXX"
-                        : "✗  Formats acceptés : P-XXXX-XXXX  |  ULT-XXXX-XXXX-XXXX-XXXX  |  BETA-…";
+                        : "✗  Formats acceptés : P-XXXX-XXXX  |  ULT-XXXX-XXXX-XXXX-XXXX  |  BETA-…  |  UUID Lemon Squeezy";
             IsValid = false;
         }
     }

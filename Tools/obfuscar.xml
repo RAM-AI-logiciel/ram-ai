@@ -58,6 +58,21 @@
   <SkipType name="LicenseViewModel" />
 
   <!--
+    Exclusions : modeles de donnees serialises / deserialises (EventLogger, cache, stats)
+    ======================================================================================
+    Ces types sont lus/ecrits par nom via JSON, BinaryWriter ou reflection.
+    Les renommer casserait la deserialisation des fichiers de cache et de log.
+  -->
+  <SkipType name="ColdProcessEntry"   />
+  <SkipType name="GamingProfile"      />
+  <SkipType name="EventEntry"         />
+  <SkipType name="MeasurePoint"       />
+  <SkipType name="StatsData"          />
+  <SkipType name="ServiceStartMarker" />
+  <SkipType name="FreeMarker"         />
+  <SkipType name="ServiceStopMarker"  />
+
+  <!--
     Exclusions : interop Windows (P/Invoke)
     ========================================
     Les types avec [DllImport] doivent garder leurs signatures exactes.

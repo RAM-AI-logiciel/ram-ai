@@ -66,6 +66,10 @@ public sealed partial class MainViewModel : ObservableObject
     // Volatile car lu depuis un thread pool, écrit depuis le dispatcher.
     private volatile string _currentActiveMode = "Standard";
 
+    // ── Fenêtre de grâce post-toggle Tournoi ─────────────────────────────────
+    // Évite qu'un tick Phase3 "en vol" au moment du clic écrase l'état local.
+    private DateTime _tournamentToggleTime = DateTime.MinValue;
+
     // ── Tracking des transitions de mode (pour compter les activations) ────────
     private bool _prevGaming;
     private bool _prevEco;
@@ -250,7 +254,10 @@ public sealed partial class MainViewModel : ObservableObject
             IsAntiSwapActive = entry.AntiSwapIntervention;
 
             // ── Ultra ──
-            IsTournamentModeActive = entry.IsTournamentMode;
+            // Fenêtre de grâce de 3s après un toggle : ignorer les EventEntry en retour
+            // de Phase3 qui reflètent encore l'ancien état (tick "en vol" au moment du clic).
+            if ((DateTime.Now - _tournamentToggleTime).TotalSeconds >= 3)
+                IsTournamentModeActive = entry.IsTournamentMode;
             VramInfoText = entry.VramMb > 0
                 ? $"VRAM : {entry.VramMb} Mo"
                 : string.Empty;
@@ -277,7 +284,8 @@ public sealed partial class MainViewModel : ObservableObject
     {
         if (!IsUltraModeActive) return;
 
-        IsTournamentModeActive = !IsTournamentModeActive;
+        IsTournamentModeActive  = !IsTournamentModeActive;
+        _tournamentToggleTime   = DateTime.Now;
         try
         {
             if (IsTournamentModeActive)

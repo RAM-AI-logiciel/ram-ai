@@ -99,6 +99,16 @@ internal sealed class MemoryOrchestrator : IDisposable
     // ── Optimisation prédictive — historique RAM disponible ──────────────────
     private readonly Queue<long> _availMbHistory = new();
 
+    // ── Détection précoce de chute availMb (observation seule) ───────────────
+    // Ring buffer de 4 slots : 3 deltas consécutifs suffisent pour confirmer la tendance.
+    // Aucune action — log [PRESSWAP-DBG] uniquement, pour valider l'hypothèse sur plusieurs jours.
+    private const long  PreSwapDropThresholdMb   = 800L;  // chute > 800 Mo/tick = signal
+    private const int   PreSwapConsecTicks        = 3;     // 3 ticks consécutifs requis
+    private const int   PreSwapCooldownTicks      = 5;     // ticks d'inhibition après HighRam/AntiSwap
+    private readonly long[] _availMbRing          = new long[4]; // [i%4] = availMb au tick i
+    private int         _availMbRingIdx;                   // index courant dans le ring
+    private int         _preSwapCooldownRemaining;         // ticks restants de cooldown
+
     // ── Profils gaming par jeu ────────────────────────────────────────────────
     private Dictionary<string, GamingProfile>? _gamingProfiles;
     private DateTime                            _profilesLastLoaded = DateTime.MinValue;
@@ -507,10 +517,23 @@ internal sealed class MemoryOrchestrator : IDisposable
         if (committedMb < 0) committedMb = 0;
         _vraiePressionPct = tickTotalMb > 0 ? (float)committedMb / tickTotalMb : 0f;
         UpdateInterval();
+
+        // ── Détection précoce chute availMb (observation seule) ──────────────
+        // Alimenter le ring buffer et décrémenter le cooldown chaque tick.
+        // Réarmer le cooldown si on vient de sortir d'un palier HighRam ou AntiSwap
+        // (pour éviter le faux positif de rebond post-éviction).
+        _availMbRing[_availMbRingIdx % 4] = tickAvailMb;
+        _availMbRingIdx++;
+        if (_highRamActive || AntiSwapActive)
+            _preSwapCooldownRemaining = PreSwapCooldownTicks;
+        else if (_preSwapCooldownRemaining > 0)
+            _preSwapCooldownRemaining--;
+        CheckPreSwapDrop(tickAvailMb);
+
         _foregroundPid = GetForegroundPid();
 
         // ── 3. Mode Tournoi (Ultra) — appliqué en priorité si gaming actif ────
-        bool tournamentMode = _gamingModeActive && File.Exists(TournamentFlagPath);
+        bool tournamentMode = File.Exists(TournamentFlagPath);
         if (tournamentMode != _tournamentModeActive)
         {
             _tournamentModeActive = tournamentMode;
@@ -952,6 +975,39 @@ internal sealed class MemoryOrchestrator : IDisposable
 
     /// <summary>
     /// Maintient un historique des Mo de RAM disponibles.
+    // ── Détection précoce chute availMb (observation seule, log [PRESSWAP-DBG]) ──
+
+    private void CheckPreSwapDrop(long currentAvailMb)
+    {
+        // Pas assez de ticks pour calculer 3 deltas consécutifs
+        if (_availMbRingIdx < PreSwapConsecTicks + 1) return;
+        // Cooldown actif : inhiber pendant K ticks après HighRam/AntiSwap
+        if (_preSwapCooldownRemaining > 0) return;
+
+        // Lire les 4 dernières valeurs dans l'ordre chronologique
+        int n = _availMbRing.Length; // 4
+        long v0 = _availMbRing[(_availMbRingIdx - 4) % n]; // tick i-3
+        long v1 = _availMbRing[(_availMbRingIdx - 3) % n]; // tick i-2
+        long v2 = _availMbRing[(_availMbRingIdx - 2) % n]; // tick i-1
+        long v3 = _availMbRing[(_availMbRingIdx - 1) % n]; // tick i (courant)
+
+        long d1 = v0 - v1; // positif = chute
+        long d2 = v1 - v2;
+        long d3 = v2 - v3;
+
+        bool allDropping = d1 > PreSwapDropThresholdMb
+                        && d2 > PreSwapDropThresholdMb
+                        && d3 > PreSwapDropThresholdMb;
+
+        if (!allDropping) return;
+
+        long totalDrop = v0 - v3;
+        _log.LogInformation(
+            "[PRESSWAP-DBG] Chute rapide : {D0}/{D1}/{D2} Mo/tick (3 ticks consécutifs > {S}Mo) | " +
+            "total={T}Mo | avail={A}Mo | highRam={H} | antiSwap={AS}",
+            d1, d2, d3, PreSwapDropThresholdMb, totalDrop, currentAvailMb, _highRamActive, AntiSwapActive);
+    }
+
     /// Si la RAM disponible chute de plus de 50 Mo/cycle sur les 5 derniers cycles,
     /// déclenche une éviction préventive des processus non-hot.
     /// </summary>

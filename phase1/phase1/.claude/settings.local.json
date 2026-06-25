@@ -33,7 +33,29 @@
       "Bash(Get-ChildItem -Path \"C:\\\\projettoto\\\\RAM-AI\\\\Phase3\\\\\" -Recurse -Filter \"*.cs\" | Select-Object -ExpandProperty FullName | head -50)",
       "Bash(taskkill /F /PID 17892)",
       "Bash(taskkill /F /PID 13360)",
-      "PowerShell(& \"C:\\\\projettoto\\\\RAM-AI\\\\Tools\\\\KeyGenerator.ps1\" -Count 3 -Tier Ultra)"
+      "PowerShell(& \"C:\\\\projettoto\\\\RAM-AI\\\\Tools\\\\KeyGenerator.ps1\" -Count 3 -Tier Ultra)",
+      "PowerShell(Select-String -Path \"C:\\\\projettoto\\\\RAM-AI\\\\Tools\\\\benchmark_comparaison.ps1\" -Pattern \"##[A-Z0-9_]+##\" -AllMatches | ForEach-Object { $_.Matches } | ForEach-Object { $_.Value } | Sort-Object -Unique)",
+      "PowerShell($env:PATH = \"C:\\\\Program Files\\\\dotnet;\" + $env:PATH; Set-Location \"C:\\\\projettoto\\\\RAM-AI\"; .\\\\build_protected.ps1 2>&1)",
+      "PowerShell($log = \"C:\\\\ProgramData\\\\RAM-AI\\\\logs\\\\events.log\"; if \\(Test-Path $log\\) { $info = Get-Item $log; $lines = \\(Get-Content $log | Measure-Object -Line\\).Lines; \"{0:N0} bytes \\({1:F2} Mo\\) — {2:N0} lignes\" -f $info.Length, \\($info.Length/1MB\\), $lines } else { \"Fichier introuvable : $log\" })",
+      "Bash(git fetch *)",
+      "Bash(gh release *)",
+      "PowerShell(gh release list --limit 5 2>&1)",
+      "PowerShell(\\(Get-Item \"C:\\\\projettoto\\\\RAM-AI\\\\installer\\\\RAM-AI-Setup-1.0.0.exe\"\\).Length | ForEach-Object { \"{0:N0} octets \\({1:N2} Mo\\)\" -f $_, \\($_ / 1MB\\) })",
+      "Bash(awk '{print $5, $NF}')",
+      "Bash(tail -5 /c/ProgramData/RAM-AI/actions.json 2>/dev/null || echo \"fichier inaccessible depuis bash\")",
+      "PowerShell($lines = [System.IO.File]::ReadAllLines\\(\"C:\\\\ProgramData\\\\RAM-AI\\\\actions.json\"\\); $last18 = $lines | Select-Object -Last 18; $sum = 0; foreach \\($l in $last18\\) { try { $sum += [double]\\(ConvertFrom-Json $l\\).RamFreedMb } catch {} }; \"Somme des 18 dernières lignes = $\\([math]::Round\\($sum, 0\\)\\) Mo\")",
+      "PowerShell($errors = $null; [System.Management.Automation.Language.Parser]::ParseFile\\(\"C:\\\\projettoto\\\\RAM-AI\\\\Tools\\\\benchmark_comparaison.ps1\", [ref]$null, [ref]$errors\\); if \\($errors.Count -eq 0\\) { \"Syntaxe OK\" } else { $errors | ForEach-Object { $_.Message } })",
+      "PowerShell($errors = $null; [System.Management.Automation.Language.Parser]::ParseFile\\(\"C:\\\\projettoto\\\\RAM-AI\\\\Tools\\\\benchmark_comparaison.ps1\", [ref]$null, [ref]$errors\\); \"Erreurs syntaxe : $\\($errors.Count\\)\")",
+      "Bash(powershell -NonInteractive -Command ' *)",
+      "Bash(powershell -NonInteractive -Command '$errors=$null; $null=[System.Management.Automation.Language.Parser]::ParseFile\\('\\\\''C:\\\\projettoto\\\\RAM-AI\\\\Tools\\\\benchmark_comparaison.ps1'\\\\'',[ref]$null,[ref]$errors\\); \"Syntaxe erreurs: $\\($errors.Count\\)\"')",
+      "Bash(/c/projettoto/RAM-AI/Phase3/bin/Debug/net10.0-windows/win-x64/RamAI.Phase3.exe)",
+      "Bash(echo \"PID=$!\")",
+      "Bash(python3 -)",
+      "Bash(wait)",
+      "Bash(powershell.exe -Command \"Get-Date; \\(Get-TimeZone\\).Id\")",
+      "Bash(awk -F: ' *)",
+      "Bash(powershell.exe -Command \"\\(Get-Item 'C:\\\\projettoto\\\\RAM-AI\\\\installer\\\\RAM-AI-Setup-1.0.0.exe'\\).LastWriteTime\")",
+      "Bash(powershell.exe -ExecutionPolicy Bypass -File \".\\\\build_protected.ps1\")"
     ]
   }
 }

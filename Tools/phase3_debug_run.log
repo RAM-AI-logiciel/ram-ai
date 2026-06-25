@@ -1,0 +1,1568 @@
+info: RamAI.Phase3.Service.RamAiService[0]
+      RAM-AI Phase 3 starting
+info: Microsoft.Hosting.Lifetime[0]
+      Application started. Press Ctrl+C to shut down.
+info: Microsoft.Hosting.Lifetime[0]
+      Hosting environment: Production
+info: RamAI.Phase3.Service.RamAiService[0]
+        SharedDir : C:\ProgramData\RAM-AI
+info: RamAI.Phase3.Service.RamAiService[0]
+        Model     : C:\projettoto\RAM-AI\Phase3\bin\Debug\Phase2\model\ram-ai.zip
+info: RamAI.Phase3.Service.RamAiService[0]
+        Cache     : C:\projettoto\RAM-AI\Phase3\bin\Debug\net10.0-windows\win-x64\cache\ram-ai.cache
+info: RamAI.Phase3.Service.RamAiService[0]
+        Log       : C:\ProgramData\RAM-AI\events.log
+info: Microsoft.Hosting.Lifetime[0]
+      Content root path: C:\Users\tiste
+[Phase3] events.log  C:\ProgramData\RAM-AI\events.log
+[ECO] DÇmarrage - vÇrification batterie : False
+info: RamAI.Phase3.Service.RamAiService[0]
+      [ECO] DÇmarrage - sur batterie : False
+warn: RamAI.Phase3.Service.RamAiService[0]
+      Modäle IA introuvable (C:\projettoto\RAM-AI\Phase3\bin\Debug\Phase2\model\ram-ai.zip). Phase3 dÇmarre en mode sans ML - toutes les fonctionnalitÇs (gaming, turbo, Çviction) restent actives.
+[Phase3] AVERTISSEMENT : modäle IA absent  dÇmarrage sans ML (C:\projettoto\RAM-AI\Phase3\bin\Debug\Phase2\model\ram-ai.zip)
+warn: RamAI.Phase3.Memory.MemoryOrchestrator[0]
+      Mode sans ML : prÇdiction dÇsactivÇe. Gaming, Turbo et Çviction restent opÇrationnels.
+[Phase3] Mode sans ML : tous les processus seront ÇvincÇs (prob=0).
+info: RamAI.Phase3.Memory.MemoryOrchestrator[0]
+      SharedFlagDir : C:\ProgramData\RAM-AI
+info: RamAI.Phase3.Memory.MemoryOrchestrator[0]
+      ForceFlagPath : C:\ProgramData\RAM-AI\gaming_mode.force
+info: RamAI.Phase3.Memory.MemoryOrchestrator[0]
+      TurboFlagPath : C:\ProgramData\RAM-AI\turbo_mode.force
+info: RamAI.Phase3.Memory.PageCacheManager[0]
+      PageCacheManager opened C:\projettoto\RAM-AI\Phase3\bin\Debug\net10.0-windows\win-x64\cache\ram-ai.cache (entries=229, size=1626 Ko)
+info: RamAI.Phase3.Memory.MemoryOrchestrator[0]
+      MemoryOrchestrator running (cold<20 % hot>65 %, intervalle=2000ms)
+info: RamAI.Phase3.Memory.MemoryOrchestrator[0]
+      MemoryOrchestrator pràt - dÇtection gaming active (intervalle=2000ms)
+[ECO] RefreshEcoMode - sur batterie : False | ÇcoMode courant : False
+info: RamAI.Phase3.Memory.MemoryOrchestrator[0]
+      [ECO] RefreshEcoMode - sur batterie : False | ÇcoMode courant : False
+info: RamAI.Phase3.Memory.MemoryOrchestrator[0]
+      [Ultra] VRAM adaptateur : 4095 Mo
+[RAM-AI] Scan gaming: 283 processus trouvÇs, recherche dans liste...
+info: RamAI.Phase3.Memory.MemoryOrchestrator[0]
+      Scan gaming: 283 processus en cours, recherche dans liste...
+[RAM-AI] Scan gaming: aucun jeu dÇtectÇ.
+info: RamAI.Phase3.Memory.MemoryOrchestrator[0]
+      [MEM-SIGNAL] Seuils HighRam calculÇs : entrÇe<2444Mo, sortie>3584Mo (total=16294Mo)
+info: RamAI.Phase3.Memory.MemoryOrchestrator[0]
+      [RAM] Processus LsaIso : WS avant=1Mo apräs=0Mo delta=1Mo
+info: RamAI.Phase3.Memory.MemoryOrchestrator[0]
+      [RAM] Processus WacomHost : WS avant=0Mo apräs=0Mo delta=0Mo
+info: RamAI.Phase3.Memory.MemoryOrchestrator[0]
+      [RAM] Processus BraveCrashHandler64 : WS avant=0Mo apräs=0Mo delta=0Mo
+info: RamAI.Phase3.Memory.MemoryOrchestrator[0]
+      [RAM] Processus NVDisplay.Container : WS avant=5Mo apräs=0Mo delta=5Mo
+info: RamAI.Phase3.Memory.MemoryOrchestrator[0]
+      [RAM] Processus chrome : WS avant=25Mo apräs=0Mo delta=25Mo
+info: RamAI.Phase3.Memory.MemoryOrchestrator[0]
+      [RAM] Processus chrome : WS avant=1Mo apräs=0Mo delta=1Mo
+info: RamAI.Phase3.Memory.MemoryOrchestrator[0]
+      [RAM] Processus vmcompute : WS avant=1Mo apräs=0Mo delta=1Mo
+info: RamAI.Phase3.Memory.MemoryOrchestrator[0]
+      [RAM] Processus escsvc64 : WS avant=0Mo apräs=0Mo delta=0Mo
+info: RamAI.Phase3.Memory.MemoryOrchestrator[0]
+      [RAM] Processus LsaIso : WS avant=0Mo apräs=0Mo delta=0Mo
+info: RamAI.Phase3.Memory.MemoryOrchestrator[0]
+      [RAM] Processus AggregatorHost : WS avant=3Mo apräs=0Mo delta=3Mo
+info: RamAI.Phase3.Memory.MemoryOrchestrator[0]
+      [RAM] Processus RtkAudUService64 : WS avant=2Mo apräs=0Mo delta=2Mo
+info: RamAI.Phase3.Memory.MemoryOrchestrator[0]
+      [RAM] Processus WTabletServicePro : WS avant=3Mo apräs=0Mo delta=3Mo
+info: RamAI.Phase3.Memory.MemoryOrchestrator[0]
+      [RAM] Processus olk : WS avant=73Mo apräs=0Mo delta=73Mo
+info: RamAI.Phase3.Memory.MemoryOrchestrator[0]
+      [RAM] Processus WUDFHost : WS avant=4Mo apräs=0Mo delta=4Mo
+info: RamAI.Phase3.Memory.MemoryOrchestrator[0]
+      [RAM] Processus brave : WS avant=165Mo apräs=0Mo delta=165Mo
+info: RamAI.Phase3.Memory.MemoryOrchestrator[0]
+      [RAM] Processus NVDisplay.Container : WS avant=8Mo apräs=0Mo delta=8Mo
+info: RamAI.Phase3.Memory.MemoryOrchestrator[0]
+      [RAM] Processus WmiPrvSE : WS avant=15Mo apräs=0Mo delta=15Mo
+info: RamAI.Phase3.Memory.MemoryOrchestrator[0]
+      [RAM] Processus msedgewebview2 : WS avant=5Mo apräs=0Mo delta=5Mo
+info: RamAI.Phase3.Memory.MemoryOrchestrator[0]
+      [RAM] Processus claude : WS avant=113Mo apräs=0Mo delta=113Mo
+info: RamAI.Phase3.Memory.MemoryOrchestrator[0]
+      [RAM] Processus brave : WS avant=230Mo apräs=0Mo delta=230Mo
+info: RamAI.Phase3.Memory.MemoryOrchestrator[0]
+      [RAM] Processus Wacom_Tablet : WS avant=9Mo apräs=0Mo delta=9Mo
+info: RamAI.Phase3.Memory.MemoryOrchestrator[0]
+      [RAM] Processus WidgetService : WS avant=3Mo apräs=0Mo delta=3Mo
+info: RamAI.Phase3.Memory.MemoryOrchestrator[0]
+      [RAM] Processus chrome : WS avant=4Mo apräs=0Mo delta=4Mo
+info: RamAI.Phase3.Memory.MemoryOrchestrator[0]
+      [RAM] Processus cowork-svc : WS avant=11Mo apräs=0Mo delta=11Mo
+info: RamAI.Phase3.Memory.MemoryOrchestrator[0]
+      [RAM] Processus Wacom_TouchUser : WS avant=3Mo apräs=0Mo delta=3Mo
+info: RamAI.Phase3.Memory.MemoryOrchestrator[0]
+      [RAM] Processus BraveCrashHandler : WS avant=0Mo apräs=0Mo delta=0Mo
+info: RamAI.Phase3.Memory.MemoryOrchestrator[0]
+      [RAM] Processus taskhostw : WS avant=6Mo apräs=0Mo delta=6Mo
+info: RamAI.Phase3.Memory.MemoryOrchestrator[0]
+      [RAM] Processus msedgewebview2 : WS avant=154Mo apräs=0Mo delta=154Mo
+info: RamAI.Phase3.Memory.MemoryOrchestrator[0]
+      [RAM] Processus brave : WS avant=64Mo apräs=0Mo delta=64Mo
+info: RamAI.Phase3.Memory.MemoryOrchestrator[0]
+      [RAM] Processus msedgewebview2 : WS avant=5Mo apräs=0Mo delta=5Mo
+info: RamAI.Phase3.Memory.MemoryOrchestrator[0]
+      [RAM] Processus conhost : WS avant=0Mo apräs=0Mo delta=0Mo
+info: RamAI.Phase3.Memory.MemoryOrchestrator[0]
+      [RAM] Processus brave : WS avant=171Mo apräs=0Mo delta=171Mo
+info: RamAI.Phase3.Memory.MemoryOrchestrator[0]
+      [RAM] Processus chrome : WS avant=9Mo apräs=0Mo delta=9Mo
+info: RamAI.Phase3.Memory.MemoryOrchestrator[0]
+      [RAM] Processus brave : WS avant=109Mo apräs=0Mo delta=109Mo
+info: RamAI.Phase3.Memory.MemoryOrchestrator[0]
+      [RAM] Processus claude : WS avant=6Mo apräs=0Mo delta=6Mo
+info: RamAI.Phase3.Memory.MemoryOrchestrator[0]
+      [RAM] Processus CLIPStudioPaint : WS avant=16Mo apräs=0Mo delta=16Mo
+info: RamAI.Phase3.Memory.MemoryOrchestrator[0]
+      [RAM] Processus msedgewebview2 : WS avant=19Mo apräs=0Mo delta=19Mo
+info: RamAI.Phase3.Memory.MemoryOrchestrator[0]
+      [RAM] Processus chrome : WS avant=2Mo apräs=0Mo delta=2Mo
+info: RamAI.Phase3.Memory.MemoryOrchestrator[0]
+      [RAM] Processus bash : WS avant=0Mo apräs=0Mo delta=0Mo
+info: RamAI.Phase3.Memory.MemoryOrchestrator[0]
+      [RAM] Processus CrossDeviceResume : WS avant=4Mo apräs=0Mo delta=4Mo
+info: RamAI.Phase3.Memory.MemoryOrchestrator[0]
+      [RAM] Processus msedgewebview2 : WS avant=34Mo apräs=0Mo delta=34Mo
+info: RamAI.Phase3.Memory.MemoryOrchestrator[0]
+      [RAM] Processus msedgewebview2 : WS avant=18Mo apräs=0Mo delta=18Mo
+info: RamAI.Phase3.Memory.MemoryOrchestrator[0]
+      [RAM] Processus msedgewebview2 : WS avant=2Mo apräs=0Mo delta=2Mo
+info: RamAI.Phase3.Memory.MemoryOrchestrator[0]
+      [RAM] Processus claude : WS avant=15Mo apräs=0Mo delta=15Mo
+info: RamAI.Phase3.Memory.MemoryOrchestrator[0]
+      [RAM] Processus brave : WS avant=23Mo apräs=0Mo delta=23Mo
+info: RamAI.Phase3.Memory.MemoryOrchestrator[0]
+      [RAM] Processus msedgewebview2 : WS avant=0Mo apräs=0Mo delta=0Mo
+info: RamAI.Phase3.Memory.MemoryOrchestrator[0]
+      [RAM] Processus chrome : WS avant=1Mo apräs=0Mo delta=1Mo
+info: RamAI.Phase3.Memory.MemoryOrchestrator[0]
+      [RAM] Processus WidgetBoard : WS avant=4Mo apräs=0Mo delta=4Mo
+info: RamAI.Phase3.Memory.MemoryOrchestrator[0]
+      [RAM] Processus chrome : WS avant=7Mo apräs=0Mo delta=7Mo
+info: RamAI.Phase3.Memory.MemoryOrchestrator[0]
+      [RAM] Processus CLIPStudio : WS avant=181Mo apräs=0Mo delta=181Mo
+info: RamAI.Phase3.Memory.MemoryOrchestrator[0]
+      [RAM] Processus claude : WS avant=39Mo apräs=0Mo delta=39Mo
+info: RamAI.Phase3.Memory.MemoryOrchestrator[0]
+      [RAM] Processus brave : WS avant=84Mo apräs=0Mo delta=84Mo
+info: RamAI.Phase3.Memory.MemoryOrchestrator[0]
+      [RAM] Processus brave : WS avant=231Mo apräs=0Mo delta=231Mo
+info: RamAI.Phase3.Memory.MemoryOrchestrator[0]
+      [RAM] Processus bash : WS avant=2Mo apräs=0Mo delta=2Mo
+info: RamAI.Phase3.Memory.MemoryOrchestrator[0]
+      [RAM] Processus brave : WS avant=67Mo apräs=0Mo delta=67Mo
+info: RamAI.Phase3.Memory.MemoryOrchestrator[0]
+      [RAM] Processus NgcIso : WS avant=4Mo apräs=0Mo delta=4Mo
+info: RamAI.Phase3.Memory.MemoryOrchestrator[0]
+      [RAM] Processus msedgewebview2 : WS avant=3Mo apräs=0Mo delta=3Mo
+info: RamAI.Phase3.Memory.MemoryOrchestrator[0]
+      [RAM] Processus claude : WS avant=1Mo apräs=0Mo delta=1Mo
+info: RamAI.Phase3.Memory.MemoryOrchestrator[0]
+      [RAM] Processus brave : WS avant=258Mo apräs=0Mo delta=258Mo
+info: RamAI.Phase3.Memory.MemoryOrchestrator[0]
+      [RAM] Processus brave : WS avant=52Mo apräs=0Mo delta=52Mo
+info: RamAI.Phase3.Memory.MemoryOrchestrator[0]
+      [RAM] Processus msedgewebview2 : WS avant=6Mo apräs=0Mo delta=6Mo
+info: RamAI.Phase3.Memory.MemoryOrchestrator[0]
+      [RAM] Processus brave : WS avant=85Mo apräs=0Mo delta=85Mo
+info: RamAI.Phase3.Memory.MemoryOrchestrator[0]
+      [RAM] Processus msedgewebview2 : WS avant=163Mo apräs=0Mo delta=163Mo
+info: RamAI.Phase3.Memory.MemoryOrchestrator[0]
+      [RAM] Processus brave : WS avant=265Mo apräs=0Mo delta=265Mo
+info: RamAI.Phase3.Memory.MemoryOrchestrator[0]
+      [RAM] Processus brave : WS avant=123Mo apräs=1Mo delta=122Mo
+info: RamAI.Phase3.Memory.MemoryOrchestrator[0]
+      [RAM] Processus msedgewebview2 : WS avant=18Mo apräs=0Mo delta=18Mo
+info: RamAI.Phase3.Memory.MemoryOrchestrator[0]
+      [RAM] Processus chrome : WS avant=2Mo apräs=0Mo delta=2Mo
+info: RamAI.Phase3.Memory.MemoryOrchestrator[0]
+      [RAM] Processus msedgewebview2 : WS avant=94Mo apräs=0Mo delta=94Mo
+info: RamAI.Phase3.Memory.MemoryOrchestrator[0]
+      [RAM] Processus msedgewebview2 : WS avant=18Mo apräs=0Mo delta=18Mo
+info: RamAI.Phase3.Memory.MemoryOrchestrator[0]
+      [RAM] Processus cmd : WS avant=0Mo apräs=0Mo delta=0Mo
+info: RamAI.Phase3.Memory.MemoryOrchestrator[0]
+      [RAM] Processus conhost : WS avant=0Mo apräs=0Mo delta=0Mo
+info: RamAI.Phase3.Memory.MemoryOrchestrator[0]
+      [RAM] Processus chrome-native-host : WS avant=0Mo apräs=0Mo delta=0Mo
+info: RamAI.Phase3.Memory.MemoryOrchestrator[0]
+      [RAM] Processus brave : WS avant=229Mo apräs=0Mo delta=229Mo
+info: RamAI.Phase3.Memory.MemoryOrchestrator[0]
+      [RAM] Processus msedgewebview2 : WS avant=70Mo apräs=0Mo delta=70Mo
+info: RamAI.Phase3.Memory.MemoryOrchestrator[0]
+      [RAM] Processus claude : WS avant=0Mo apräs=0Mo delta=0Mo
+info: RamAI.Phase3.Memory.MemoryOrchestrator[0]
+      [RAM] Processus conhost : WS avant=0Mo apräs=0Mo delta=0Mo
+info: RamAI.Phase3.Memory.MemoryOrchestrator[0]
+      [RAM] Processus brave : WS avant=64Mo apräs=0Mo delta=64Mo
+info: RamAI.Phase3.Memory.MemoryOrchestrator[0]
+      [RAM] Processus ShellHost : WS avant=5Mo apräs=0Mo delta=5Mo
+info: RamAI.Phase3.Memory.MemoryOrchestrator[0]
+      [RAM] Processus smartscreen : WS avant=5Mo apräs=0Mo delta=5Mo
+info: RamAI.Phase3.Memory.MemoryOrchestrator[0]
+      [RAM] Processus msedgewebview2 : WS avant=5Mo apräs=0Mo delta=5Mo
+info: RamAI.Phase3.Memory.MemoryOrchestrator[0]
+      [RAM] Processus brave : WS avant=268Mo apräs=0Mo delta=268Mo
+info: RamAI.Phase3.Memory.MemoryOrchestrator[0]
+      [RAM] Processus brave : WS avant=231Mo apräs=0Mo delta=231Mo
+info: RamAI.Phase3.Memory.MemoryOrchestrator[0]
+      [RAM] Processus claude : WS avant=1Mo apräs=0Mo delta=1Mo
+info: RamAI.Phase3.Memory.MemoryOrchestrator[0]
+      [RAM] Processus brave : WS avant=32Mo apräs=0Mo delta=32Mo
+info: RamAI.Phase3.Memory.MemoryOrchestrator[0]
+      [RAM] Processus msedgewebview2 : WS avant=3Mo apräs=0Mo delta=3Mo
+info: RamAI.Phase3.Memory.MemoryOrchestrator[0]
+      [RAM] Processus msedgewebview2 : WS avant=43Mo apräs=0Mo delta=43Mo
+info: RamAI.Phase3.Memory.MemoryOrchestrator[0]
+      [RAM] Processus RamAI.Phase3 : WS avant=66Mo apräs=0Mo delta=66Mo
+info: RamAI.Phase3.Memory.MemoryOrchestrator[0]
+      [RAM] Processus msedgewebview2 : WS avant=89Mo apräs=0Mo delta=89Mo
+info: RamAI.Phase3.Memory.MemoryOrchestrator[0]
+      [RAM] Processus brave : WS avant=253Mo apräs=0Mo delta=253Mo
+info: RamAI.Phase3.Memory.MemoryOrchestrator[0]
+      [RAM] Processus msedgewebview2 : WS avant=96Mo apräs=0Mo delta=96Mo
+info: RamAI.Phase3.Memory.MemoryOrchestrator[0]
+      [RAM] Processus WhatsApp.Root : WS avant=19Mo apräs=0Mo delta=19Mo
+info: RamAI.Phase3.Memory.MemoryOrchestrator[0]
+      [RAM] Processus brave : WS avant=94Mo apräs=0Mo delta=94Mo
+info: RamAI.Phase3.Memory.MemoryOrchestrator[0]
+      [RAM] Processus msedgewebview2 : WS avant=45Mo apräs=0Mo delta=45Mo
+info: RamAI.Phase3.Memory.MemoryOrchestrator[0]
+      [RAM] Processus brave : WS avant=234Mo apräs=0Mo delta=234Mo
+info: RamAI.Phase3.Memory.MemoryOrchestrator[0]
+      [RAM] Processus OpenConsole : WS avant=1Mo apräs=0Mo delta=1Mo
+info: RamAI.Phase3.Memory.MemoryOrchestrator[0]
+      [RAM] Processus msedgewebview2 : WS avant=1Mo apräs=0Mo delta=1Mo
+info: RamAI.Phase3.Memory.MemoryOrchestrator[0]
+      [RAM] Processus powershell : WS avant=42Mo apräs=0Mo delta=42Mo
+info: RamAI.Phase3.Memory.MemoryOrchestrator[0]
+      [RAM] Processus msedgewebview2 : WS avant=46Mo apräs=0Mo delta=46Mo
+info: RamAI.Phase3.Memory.MemoryOrchestrator[0]
+      [RAM] Processus blender : WS avant=828Mo apräs=0Mo delta=828Mo
+info: RamAI.Phase3.Memory.MemoryOrchestrator[0]
+      [RAM] Processus claude : WS avant=1Mo apräs=0Mo delta=1Mo
+info: RamAI.Phase3.Memory.MemoryOrchestrator[0]
+      [RAM] Processus claude : WS avant=17Mo apräs=0Mo delta=17Mo
+info: RamAI.Phase3.Memory.MemoryOrchestrator[0]
+      [RAM] Processus brave : WS avant=93Mo apräs=0Mo delta=93Mo
+info: RamAI.Phase3.Memory.MemoryOrchestrator[0]
+      [RAM] Processus msedgewebview2 : WS avant=20Mo apräs=0Mo delta=20Mo
+info: RamAI.Phase3.Memory.MemoryOrchestrator[0]
+      [RAM] Processus msedgewebview2 : WS avant=42Mo apräs=0Mo delta=42Mo
+info: RamAI.Phase3.Memory.MemoryOrchestrator[0]
+      [RAM] Processus brave : WS avant=204Mo apräs=0Mo delta=204Mo
+info: RamAI.Phase3.Memory.MemoryOrchestrator[0]
+      [RAM] Processus msedgewebview2 : WS avant=47Mo apräs=0Mo delta=47Mo
+info: RamAI.Phase3.Memory.MemoryOrchestrator[0]
+      [RAM] Processus msedgewebview2 : WS avant=40Mo apräs=0Mo delta=40Mo
+info: RamAI.Phase3.Memory.MemoryOrchestrator[0]
+      [RAM] Processus msedgewebview2 : WS avant=53Mo apräs=0Mo delta=53Mo
+info: RamAI.Phase3.Memory.MemoryOrchestrator[0]
+      [RAM] Processus brave : WS avant=234Mo apräs=0Mo delta=234Mo
+info: RamAI.Phase3.Memory.MemoryOrchestrator[0]
+      [RAM] Processus msedgewebview2 : WS avant=3Mo apräs=0Mo delta=3Mo
+info: RamAI.Phase3.Memory.MemoryOrchestrator[0]
+      [RAM] Processus brave : WS avant=24Mo apräs=0Mo delta=24Mo
+info: RamAI.Phase3.Memory.MemoryOrchestrator[0]
+      [RAM] Processus WmiPrvSE : WS avant=2Mo apräs=0Mo delta=2Mo
+info: RamAI.Phase3.Memory.MemoryOrchestrator[0]
+      [RAM] Processus msedgewebview2 : WS avant=106Mo apräs=0Mo delta=106Mo
+info: RamAI.Phase3.Memory.MemoryOrchestrator[0]
+      [RAM] Processus conhost : WS avant=10Mo apräs=0Mo delta=10Mo
+info: RamAI.Phase3.Memory.MemoryOrchestrator[0]
+      [RAM] Processus taskhostw : WS avant=3Mo apräs=0Mo delta=3Mo
+info: RamAI.Phase3.Memory.MemoryOrchestrator[0]
+      [RAM] Processus msedgewebview2 : WS avant=19Mo apräs=0Mo delta=19Mo
+info: RamAI.Phase3.Memory.MemoryOrchestrator[0]
+      [RAM] Processus claude : WS avant=4Mo apräs=0Mo delta=4Mo
+info: RamAI.Phase3.Memory.MemoryOrchestrator[0]
+      [RAM] Processus brave : WS avant=110Mo apräs=0Mo delta=110Mo
+info: RamAI.Phase3.Memory.MemoryOrchestrator[0]
+      [RAM] Processus msedgewebview2 : WS avant=0Mo apräs=0Mo delta=0Mo
+info: RamAI.Phase3.Memory.MemoryOrchestrator[0]
+      [RAM] Processus brave : WS avant=155Mo apräs=0Mo delta=155Mo
+info: RamAI.Phase3.Memory.MemoryOrchestrator[0]
+      [RAM] Processus msedgewebview2 : WS avant=19Mo apräs=0Mo delta=19Mo
+info: RamAI.Phase3.Memory.MemoryOrchestrator[0]
+      [RAM] Processus msedgewebview2 : WS avant=55Mo apräs=0Mo delta=55Mo
+info: RamAI.Phase3.Memory.MemoryOrchestrator[0]
+      [RAM] Processus claude : WS avant=3Mo apräs=0Mo delta=3Mo
+info: RamAI.Phase3.Memory.MemoryOrchestrator[0]
+      [RAM] Processus msedgewebview2 : WS avant=389Mo apräs=0Mo delta=389Mo
+info: RamAI.Phase3.Memory.MemoryOrchestrator[0]
+      [RAM] Processus brave : WS avant=85Mo apräs=0Mo delta=85Mo
+info: RamAI.Phase3.Memory.MemoryOrchestrator[0]
+      [RAM] Processus msedgewebview2 : WS avant=134Mo apräs=0Mo delta=134Mo
+info: RamAI.Phase3.Memory.MemoryOrchestrator[0]
+      [RAM] Processus brave : WS avant=96Mo apräs=0Mo delta=96Mo
+info: RamAI.Phase3.Memory.MemoryOrchestrator[0]
+      [RAM] Processus MicrosoftStartFeedProvider : WS avant=6Mo apräs=0Mo delta=6Mo
+info: RamAI.Phase3.Memory.MemoryOrchestrator[0]
+      [RAM] Processus CalculatorApp : WS avant=0Mo apräs=0Mo delta=0Mo
+info: RamAI.Phase3.Memory.MemoryOrchestrator[0]
+      [RAM] Processus brave : WS avant=354Mo apräs=0Mo delta=354Mo
+info: RamAI.Phase3.Memory.MemoryOrchestrator[0]
+      [RAM] Processus SecurityHealthSystray : WS avant=0Mo apräs=0Mo delta=0Mo
+info: RamAI.Phase3.Memory.MemoryOrchestrator[0]
+      [RAM] Processus conhost : WS avant=0Mo apräs=0Mo delta=0Mo
+info: RamAI.Phase3.Memory.MemoryOrchestrator[0]
+      [RAM] Processus EPPCCMON : WS avant=2Mo apräs=0Mo delta=2Mo
+info: RamAI.Phase3.Memory.MemoryOrchestrator[0]
+      [RAM] Processus powershell : WS avant=0Mo apräs=0Mo delta=0Mo
+info: RamAI.Phase3.Memory.MemoryOrchestrator[0]
+      [RAM] Processus ctfmon : WS avant=12Mo apräs=0Mo delta=12Mo
+info: RamAI.Phase3.Memory.MemoryOrchestrator[0]
+      [RAM] Processus TabTip : WS avant=13Mo apräs=0Mo delta=13Mo
+info: RamAI.Phase3.Memory.MemoryOrchestrator[0]
+      [RAM] Processus msedgewebview2 : WS avant=45Mo apräs=0Mo delta=45Mo
+info: RamAI.Phase3.Memory.MemoryOrchestrator[0]
+      [RAM] Processus brave : WS avant=9Mo apräs=0Mo delta=9Mo
+info: RamAI.Phase3.Memory.MemoryOrchestrator[0]
+      [RAM] Processus brave : WS avant=86Mo apräs=0Mo delta=86Mo
+info: RamAI.Phase3.Memory.MemoryOrchestrator[0]
+      [RAM] Processus brave : WS avant=94Mo apräs=0Mo delta=94Mo
+info: RamAI.Phase3.Memory.MemoryOrchestrator[0]
+      [RAM] Processus chrome : WS avant=2Mo apräs=0Mo delta=2Mo
+info: RamAI.Phase3.Memory.MemoryOrchestrator[0]
+      [RAM] Processus splwow64 : WS avant=0Mo apräs=0Mo delta=0Mo
+info: RamAI.Phase3.Memory.MemoryOrchestrator[0]
+      [RAM] Processus msedgewebview2 : WS avant=45Mo apräs=0Mo delta=45Mo
+info: RamAI.Phase3.Memory.MemoryOrchestrator[0]
+      [RAM] Processus brave : WS avant=93Mo apräs=0Mo delta=93Mo
+info: RamAI.Phase3.Memory.MemoryOrchestrator[0]
+      [RAM] Processus CrealityPrint : WS avant=425Mo apräs=0Mo delta=425Mo
+info: RamAI.Phase3.Memory.MemoryOrchestrator[0]
+      [RAM] Processus chrome : WS avant=1Mo apräs=0Mo delta=1Mo
+info: RamAI.Phase3.Memory.MemoryOrchestrator[0]
+      [RAM] Processus TextInputHost : WS avant=46Mo apräs=0Mo delta=46Mo
+info: RamAI.Phase3.Memory.MemoryOrchestrator[0]
+      [RAM] Processus olkexthost : WS avant=16Mo apräs=0Mo delta=16Mo
+info: RamAI.Phase3.Memory.MemoryOrchestrator[0]
+      [RAM] Processus Wacom_TabletUser : WS avant=0Mo apräs=0Mo delta=0Mo
+info: RamAI.Phase3.Memory.MemoryOrchestrator[0]
+      [RAM] Processus Wacom_UpdateUtil : WS avant=0Mo apräs=0Mo delta=0Mo
+info: RamAI.Phase3.Memory.MemoryOrchestrator[0]
+      [RAM] Processus msedgewebview2 : WS avant=133Mo apräs=0Mo delta=133Mo
+info: RamAI.Phase3.Memory.MemoryOrchestrator[0]
+      [RAM] Processus brave : WS avant=196Mo apräs=0Mo delta=196Mo
+info: RamAI.Phase3.Memory.MemoryOrchestrator[0]
+      [RAM] Processus msedgewebview2 : WS avant=245Mo apräs=1Mo delta=243Mo
+info: RamAI.Phase3.Memory.MemoryOrchestrator[0]
+      [RAM] Processus brave : WS avant=161Mo apräs=0Mo delta=161Mo
+info: RamAI.Phase3.Memory.MemoryOrchestrator[0]
+      [RAM] Processus msedgewebview2 : WS avant=51Mo apräs=0Mo delta=51Mo
+info: RamAI.Phase3.Memory.MemoryOrchestrator[0]
+      [RAM] Processus brave : WS avant=181Mo apräs=0Mo delta=181Mo
+info: RamAI.Phase3.Memory.MemoryOrchestrator[0]
+      [RAM] Processus WacomHost : WS avant=0Mo apräs=0Mo delta=0Mo
+info: RamAI.Phase3.Memory.MemoryOrchestrator[0]
+      [RAM] Processus msedgewebview2 : WS avant=0Mo apräs=0Mo delta=0Mo
+info: RamAI.Phase3.Memory.MemoryOrchestrator[0]
+      [RAM] Processus BraveCrashHandler64 : WS avant=0Mo apräs=0Mo delta=0Mo
+info: RamAI.Phase3.Memory.MemoryOrchestrator[0]
+      [RAM] Processus NVDisplay.Container : WS avant=0Mo apräs=0Mo delta=0Mo
+info: RamAI.Phase3.Memory.MemoryOrchestrator[0]
+      [RAM] Processus msedgewebview2 : WS avant=0Mo apräs=0Mo delta=0Mo
+info: RamAI.Phase3.Memory.MemoryOrchestrator[0]
+      [RAM] Processus conhost : WS avant=0Mo apräs=0Mo delta=0Mo
+info: RamAI.Phase3.Memory.MemoryOrchestrator[0]
+      [RAM] Processus WidgetService : WS avant=0Mo apräs=0Mo delta=0Mo
+info: RamAI.Phase3.Memory.MemoryOrchestrator[0]
+      [RAM] Processus Wacom_TouchUser : WS avant=0Mo apräs=0Mo delta=0Mo
+info: RamAI.Phase3.Memory.MemoryOrchestrator[0]
+      [RAM] Processus msedgewebview2 : WS avant=0Mo apräs=0Mo delta=0Mo
+info: RamAI.Phase3.Memory.MemoryOrchestrator[0]
+      [RAM] Processus chrome : WS avant=0Mo apräs=0Mo delta=0Mo
+info: RamAI.Phase3.Memory.MemoryOrchestrator[0]
+      [RAM] Processus msedgewebview2 : WS avant=0Mo apräs=0Mo delta=0Mo
+info: RamAI.Phase3.Memory.MemoryOrchestrator[0]
+      [RAM] Processus bash : WS avant=0Mo apräs=0Mo delta=0Mo
+info: RamAI.Phase3.Memory.MemoryOrchestrator[0]
+      [RAM] Processus msedgewebview2 : WS avant=1Mo apräs=0Mo delta=1Mo
+info: RamAI.Phase3.Memory.MemoryOrchestrator[0]
+      [RAM] Processus chrome : WS avant=0Mo apräs=0Mo delta=0Mo
+info: RamAI.Phase3.Memory.MemoryOrchestrator[0]
+      [RAM] Processus bash : WS avant=2Mo apräs=0Mo delta=2Mo
+info: RamAI.Phase3.Memory.MemoryOrchestrator[0]
+      [RAM] Processus msedgewebview2 : WS avant=0Mo apräs=0Mo delta=0Mo
+info: RamAI.Phase3.Memory.MemoryOrchestrator[0]
+      [RAM] Processus conhost : WS avant=0Mo apräs=0Mo delta=0Mo
+info: RamAI.Phase3.Memory.MemoryOrchestrator[0]
+      [RAM] Processus chrome : WS avant=0Mo apräs=0Mo delta=0Mo
+info: RamAI.Phase3.Memory.MemoryOrchestrator[0]
+      [RAM] Processus msedgewebview2 : WS avant=0Mo apräs=0Mo delta=0Mo
+info: RamAI.Phase3.Memory.MemoryOrchestrator[0]
+      [RAM] Processus escsvc64 : WS avant=0Mo apräs=0Mo delta=0Mo
+info: RamAI.Phase3.Memory.MemoryOrchestrator[0]
+      [RAM] Processus claude : WS avant=0Mo apräs=0Mo delta=0Mo
+info: RamAI.Phase3.Memory.MemoryOrchestrator[0]
+      [RAM] Processus NgcIso : WS avant=0Mo apräs=0Mo delta=0Mo
+info: RamAI.Phase3.Memory.MemoryOrchestrator[0]
+      [RAM] Processus ShellHost : WS avant=0Mo apräs=0Mo delta=0Mo
+info: RamAI.Phase3.Memory.MemoryOrchestrator[0]
+      [RAM] Processus chrome : WS avant=0Mo apräs=0Mo delta=0Mo
+info: RamAI.Phase3.Memory.MemoryOrchestrator[0]
+      [RAM] Processus msedgewebview2 : WS avant=0Mo apräs=0Mo delta=0Mo
+info: RamAI.Phase3.Memory.MemoryOrchestrator[0]
+      [RAM] Processus vmcompute : WS avant=0Mo apräs=0Mo delta=0Mo
+info: RamAI.Phase3.Memory.MemoryOrchestrator[0]
+      [RAM] Processus claude : WS avant=1Mo apräs=0Mo delta=1Mo
+info: RamAI.Phase3.Memory.MemoryOrchestrator[0]
+      [RAM] Processus LsaIso : WS avant=0Mo apräs=0Mo delta=0Mo
+info: RamAI.Phase3.Memory.MemoryOrchestrator[0]
+      [RAM] Processus AggregatorHost : WS avant=2Mo apräs=0Mo delta=2Mo
+info: RamAI.Phase3.Memory.MemoryOrchestrator[0]
+      [RAM] Processus smartscreen : WS avant=0Mo apräs=0Mo delta=0Mo
+info: RamAI.Phase3.Memory.MemoryOrchestrator[0]
+      [RAM] Processus claude : WS avant=0Mo apräs=0Mo delta=0Mo
+info: RamAI.Phase3.Memory.MemoryOrchestrator[0]
+      [RAM] Processus SecurityHealthSystray : WS avant=0Mo apräs=0Mo delta=0Mo
+info: RamAI.Phase3.Memory.MemoryOrchestrator[0]
+      [RAM] Processus RtkAudUService64 : WS avant=0Mo apräs=0Mo delta=0Mo
+info: RamAI.Phase3.Memory.MemoryOrchestrator[0]
+      [RAM] Processus chrome : WS avant=0Mo apräs=0Mo delta=0Mo
+info: RamAI.Phase3.Memory.MemoryOrchestrator[0]
+      [RAM] Processus msedgewebview2 : WS avant=0Mo apräs=0Mo delta=0Mo
+info: RamAI.Phase3.Memory.MemoryOrchestrator[0]
+      [RAM] Processus claude : WS avant=0Mo apräs=0Mo delta=0Mo
+info: RamAI.Phase3.Memory.MemoryOrchestrator[0]
+      [RAM] Processus cmd : WS avant=0Mo apräs=0Mo delta=0Mo
+info: RamAI.Phase3.Memory.MemoryOrchestrator[0]
+      [RAM] Processus WTabletServicePro : WS avant=2Mo apräs=0Mo delta=2Mo
+info: RamAI.Phase3.Memory.MemoryOrchestrator[0]
+      [RAM] Processus claude : WS avant=0Mo apräs=0Mo delta=0Mo
+info: RamAI.Phase3.Memory.MemoryOrchestrator[0]
+      [RAM] Processus EPPCCMON : WS avant=0Mo apräs=0Mo delta=0Mo
+info: RamAI.Phase3.Memory.MemoryOrchestrator[0]
+      [RAM] Processus OpenConsole : WS avant=0Mo apräs=0Mo delta=0Mo
+info: RamAI.Phase3.Memory.MemoryOrchestrator[0]
+      [RAM] Processus CrossDeviceResume : WS avant=0Mo apräs=0Mo delta=0Mo
+info: RamAI.Phase3.Memory.MemoryOrchestrator[0]
+      [RAM] Processus taskhostw : WS avant=0Mo apräs=0Mo delta=0Mo
+info: RamAI.Phase3.Memory.MemoryOrchestrator[0]
+      [RAM] Processus claude : WS avant=0Mo apräs=0Mo delta=0Mo
+info: RamAI.Phase3.Memory.MemoryOrchestrator[0]
+      [RAM] Processus conhost : WS avant=0Mo apräs=0Mo delta=0Mo
+info: RamAI.Phase3.Memory.MemoryOrchestrator[0]
+      [RAM] Processus WUDFHost : WS avant=0Mo apräs=0Mo delta=0Mo
+info: RamAI.Phase3.Memory.MemoryOrchestrator[0]
+      [RAM] Processus claude : WS avant=0Mo apräs=0Mo delta=0Mo
+info: RamAI.Phase3.Memory.MemoryOrchestrator[0]
+      [RAM] Processus CalculatorApp : WS avant=0Mo apräs=0Mo delta=0Mo
+info: RamAI.Phase3.Memory.MemoryOrchestrator[0]
+      [RAM] Processus WmiPrvSE : WS avant=0Mo apräs=0Mo delta=0Mo
+info: RamAI.Phase3.Memory.MemoryOrchestrator[0]
+      [RAM] Processus chrome-native-host : WS avant=0Mo apräs=0Mo delta=0Mo
+info: RamAI.Phase3.Memory.MemoryOrchestrator[0]
+      [RAM] Processus splwow64 : WS avant=0Mo apräs=0Mo delta=0Mo
+info: RamAI.Phase3.Memory.MemoryOrchestrator[0]
+      [RAM] Processus conhost : WS avant=0Mo apräs=0Mo delta=0Mo
+info: RamAI.Phase3.Memory.MemoryOrchestrator[0]
+      [RAM] Processus chrome : WS avant=0Mo apräs=0Mo delta=0Mo
+info: RamAI.Phase3.Memory.MemoryOrchestrator[0]
+      [RAM] Processus chrome : WS avant=0Mo apräs=0Mo delta=0Mo
+info: RamAI.Phase3.Memory.MemoryOrchestrator[0]
+      [RAM] Processus powershell : WS avant=0Mo apräs=0Mo delta=0Mo
+info: RamAI.Phase3.Memory.MemoryOrchestrator[0]
+      [RAM] Processus BraveCrashHandler : WS avant=0Mo apräs=0Mo delta=0Mo
+info: RamAI.Phase3.Memory.MemoryOrchestrator[0]
+      [RAM] Processus Wacom_TabletUser : WS avant=0Mo apräs=0Mo delta=0Mo
+info: RamAI.Phase3.Memory.MemoryOrchestrator[0]
+      [RAM] Processus WidgetBoard : WS avant=0Mo apräs=0Mo delta=0Mo
+info: RamAI.Phase3.Memory.MemoryOrchestrator[0]
+      [RAM] Processus msedgewebview2 : WS avant=0Mo apräs=0Mo delta=0Mo
+info: RamAI.Phase3.Memory.MemoryOrchestrator[0]
+      [RAM] Processus Wacom_UpdateUtil : WS avant=0Mo apräs=0Mo delta=0Mo
+info: RamAI.Phase3.Memory.MemoryOrchestrator[0]
+      [RAM] Processus sleep : WS avant=5Mo apräs=0Mo delta=5Mo
+info: RamAI.Phase3.Memory.MemoryOrchestrator[0]
+      [RAM] Processus LsaIso : WS avant=0Mo apräs=0Mo delta=0Mo
+info: RamAI.Phase3.Memory.MemoryOrchestrator[0]
+      [RAM] Processus LsaIso : WS avant=0Mo apräs=0Mo delta=0Mo
+info: RamAI.Phase3.Memory.MemoryOrchestrator[0]
+      [RAM] Processus WacomHost : WS avant=0Mo apräs=0Mo delta=0Mo
+info: RamAI.Phase3.Memory.MemoryOrchestrator[0]
+      [RAM] Processus BraveCrashHandler64 : WS avant=0Mo apräs=0Mo delta=0Mo
+info: RamAI.Phase3.Memory.MemoryOrchestrator[0]
+      [RAM] Processus msedgewebview2 : WS avant=1Mo apräs=0Mo delta=1Mo
+info: RamAI.Phase3.Memory.MemoryOrchestrator[0]
+      [RAM] Processus conhost : WS avant=0Mo apräs=0Mo delta=0Mo
+info: RamAI.Phase3.Memory.MemoryOrchestrator[0]
+      [RAM] Processus NVDisplay.Container : WS avant=0Mo apräs=0Mo delta=0Mo
+info: RamAI.Phase3.Memory.MemoryOrchestrator[0]
+      [RAM] Processus WidgetService : WS avant=0Mo apräs=0Mo delta=0Mo
+info: RamAI.Phase3.Memory.MemoryOrchestrator[0]
+      [RAM] Processus msedgewebview2 : WS avant=1Mo apräs=0Mo delta=1Mo
+info: RamAI.Phase3.Memory.MemoryOrchestrator[0]
+      [RAM] Processus Wacom_TouchUser : WS avant=0Mo apräs=0Mo delta=0Mo
+info: RamAI.Phase3.Memory.MemoryOrchestrator[0]
+      [RAM] Processus msedgewebview2 : WS avant=0Mo apräs=0Mo delta=0Mo
+info: RamAI.Phase3.Memory.MemoryOrchestrator[0]
+      [RAM] Processus bash : WS avant=0Mo apräs=0Mo delta=0Mo
+info: RamAI.Phase3.Memory.MemoryOrchestrator[0]
+      [RAM] Processus msedgewebview2 : WS avant=1Mo apräs=0Mo delta=1Mo
+info: RamAI.Phase3.Memory.MemoryOrchestrator[0]
+      [RAM] Processus chrome : WS avant=0Mo apräs=0Mo delta=0Mo
+info: RamAI.Phase3.Memory.MemoryOrchestrator[0]
+      [RAM] Processus bash : WS avant=2Mo apräs=0Mo delta=2Mo
+info: RamAI.Phase3.Memory.MemoryOrchestrator[0]
+      [RAM] Processus msedgewebview2 : WS avant=1Mo apräs=0Mo delta=1Mo
+info: RamAI.Phase3.Memory.MemoryOrchestrator[0]
+      [RAM] Processus msedgewebview2 : WS avant=0Mo apräs=0Mo delta=0Mo
+info: RamAI.Phase3.Memory.MemoryOrchestrator[0]
+      [RAM] Processus chrome : WS avant=0Mo apräs=0Mo delta=0Mo
+info: RamAI.Phase3.Memory.MemoryOrchestrator[0]
+      [RAM] Processus conhost : WS avant=0Mo apräs=0Mo delta=0Mo
+info: RamAI.Phase3.Memory.MemoryOrchestrator[0]
+      [RAM] Processus ShellHost : WS avant=0Mo apräs=0Mo delta=0Mo
+info: RamAI.Phase3.Memory.MemoryOrchestrator[0]
+      [RAM] Processus msedgewebview2 : WS avant=0Mo apräs=0Mo delta=0Mo
+info: RamAI.Phase3.Memory.MemoryOrchestrator[0]
+      [RAM] Processus escsvc64 : WS avant=0Mo apräs=0Mo delta=0Mo
+info: RamAI.Phase3.Memory.MemoryOrchestrator[0]
+      [RAM] Processus NgcIso : WS avant=0Mo apräs=0Mo delta=0Mo
+info: RamAI.Phase3.Memory.MemoryOrchestrator[0]
+      [RAM] Processus chrome : WS avant=0Mo apräs=0Mo delta=0Mo
+info: RamAI.Phase3.Memory.MemoryOrchestrator[0]
+      [RAM] Processus claude : WS avant=0Mo apräs=0Mo delta=0Mo
+info: RamAI.Phase3.Memory.MemoryOrchestrator[0]
+      [RAM] Processus msedgewebview2 : WS avant=1Mo apräs=0Mo delta=1Mo
+info: RamAI.Phase3.Memory.MemoryOrchestrator[0]
+      [RAM] Processus vmcompute : WS avant=0Mo apräs=0Mo delta=0Mo
+info: RamAI.Phase3.Memory.MemoryOrchestrator[0]
+      [RAM] Processus claude : WS avant=1Mo apräs=0Mo delta=1Mo
+info: RamAI.Phase3.Memory.MemoryOrchestrator[0]
+      [RAM] Processus msedgewebview2 : WS avant=1Mo apräs=0Mo delta=1Mo
+info: RamAI.Phase3.Memory.MemoryOrchestrator[0]
+      [RAM] Processus smartscreen : WS avant=2Mo apräs=0Mo delta=2Mo
+info: RamAI.Phase3.Memory.MemoryOrchestrator[0]
+      [RAM] Processus RtkAudUService64 : WS avant=0Mo apräs=0Mo delta=0Mo
+info: RamAI.Phase3.Memory.MemoryOrchestrator[0]
+      [RAM] Processus AggregatorHost : WS avant=0Mo apräs=0Mo delta=0Mo
+info: RamAI.Phase3.Memory.MemoryOrchestrator[0]
+      [RAM] Processus chrome : WS avant=0Mo apräs=0Mo delta=0Mo
+info: RamAI.Phase3.Memory.MemoryOrchestrator[0]
+      [RAM] Processus LsaIso : WS avant=0Mo apräs=0Mo delta=0Mo
+info: RamAI.Phase3.Memory.MemoryOrchestrator[0]
+      [RAM] Processus WTabletServicePro : WS avant=2Mo apräs=0Mo delta=2Mo
+info: RamAI.Phase3.Memory.MemoryOrchestrator[0]
+      [RAM] Processus chrome : WS avant=4Mo apräs=0Mo delta=4Mo
+info: RamAI.Phase3.Memory.MemoryOrchestrator[0]
+      [RAM] Processus SecurityHealthSystray : WS avant=0Mo apräs=0Mo delta=0Mo
+info: RamAI.Phase3.Memory.MemoryOrchestrator[0]
+      [RAM] Processus claude : WS avant=0Mo apräs=0Mo delta=0Mo
+info: RamAI.Phase3.Memory.MemoryOrchestrator[0]
+      [RAM] Processus msedgewebview2 : WS avant=0Mo apräs=0Mo delta=0Mo
+info: RamAI.Phase3.Memory.MemoryOrchestrator[0]
+      [RAM] Processus chrome : WS avant=0Mo apräs=0Mo delta=0Mo
+info: RamAI.Phase3.Memory.MemoryOrchestrator[0]
+      [RAM] Processus CrossDeviceResume : WS avant=0Mo apräs=0Mo delta=0Mo
+info: RamAI.Phase3.Memory.MemoryOrchestrator[0]
+      [RAM] Processus EPPCCMON : WS avant=0Mo apräs=0Mo delta=0Mo
+info: RamAI.Phase3.Memory.MemoryOrchestrator[0]
+      [RAM] Processus claude : WS avant=0Mo apräs=0Mo delta=0Mo
+info: RamAI.Phase3.Memory.MemoryOrchestrator[0]
+      [RAM] Processus OpenConsole : WS avant=0Mo apräs=0Mo delta=0Mo
+info: RamAI.Phase3.Memory.MemoryOrchestrator[0]
+      [RAM] Processus WUDFHost : WS avant=0Mo apräs=0Mo delta=0Mo
+info: RamAI.Phase3.Memory.MemoryOrchestrator[0]
+      [RAM] Processus cmd : WS avant=0Mo apräs=0Mo delta=0Mo
+info: RamAI.Phase3.Memory.MemoryOrchestrator[0]
+      [RAM] Processus claude : WS avant=1Mo apräs=0Mo delta=1Mo
+info: RamAI.Phase3.Memory.MemoryOrchestrator[0]
+      [RAM] Processus taskhostw : WS avant=0Mo apräs=0Mo delta=0Mo
+info: RamAI.Phase3.Memory.MemoryOrchestrator[0]
+      [RAM] Processus conhost : WS avant=0Mo apräs=0Mo delta=0Mo
+info: RamAI.Phase3.Memory.MemoryOrchestrator[0]
+      [RAM] Processus claude : WS avant=0Mo apräs=0Mo delta=0Mo
+info: RamAI.Phase3.Memory.MemoryOrchestrator[0]
+      [RAM] Processus CalculatorApp : WS avant=0Mo apräs=0Mo delta=0Mo
+info: RamAI.Phase3.Memory.MemoryOrchestrator[0]
+      [RAM] Processus chrome-native-host : WS avant=0Mo apräs=0Mo delta=0Mo
+info: RamAI.Phase3.Memory.MemoryOrchestrator[0]
+      [RAM] Processus splwow64 : WS avant=0Mo apräs=0Mo delta=0Mo
+info: RamAI.Phase3.Memory.MemoryOrchestrator[0]
+      [RAM] Processus WmiPrvSE : WS avant=0Mo apräs=0Mo delta=0Mo
+info: RamAI.Phase3.Memory.MemoryOrchestrator[0]
+      [RAM] Processus claude : WS avant=0Mo apräs=0Mo delta=0Mo
+info: RamAI.Phase3.Memory.MemoryOrchestrator[0]
+      [RAM] Processus Wacom_TabletUser : WS avant=0Mo apräs=0Mo delta=0Mo
+info: RamAI.Phase3.Memory.MemoryOrchestrator[0]
+      [RAM] Processus conhost : WS avant=0Mo apräs=0Mo delta=0Mo
+info: RamAI.Phase3.Memory.MemoryOrchestrator[0]
+      [RAM] Processus chrome : WS avant=0Mo apräs=0Mo delta=0Mo
+info: RamAI.Phase3.Memory.MemoryOrchestrator[0]
+      [RAM] Processus WidgetBoard : WS avant=0Mo apräs=0Mo delta=0Mo
+info: RamAI.Phase3.Memory.MemoryOrchestrator[0]
+      [RAM] Processus chrome : WS avant=0Mo apräs=0Mo delta=0Mo
+info: RamAI.Phase3.Memory.MemoryOrchestrator[0]
+      [RAM] Processus powershell : WS avant=0Mo apräs=0Mo delta=0Mo
+info: RamAI.Phase3.Memory.MemoryOrchestrator[0]
+      [RAM] Processus BraveCrashHandler : WS avant=0Mo apräs=0Mo delta=0Mo
+info: RamAI.Phase3.Memory.MemoryOrchestrator[0]
+      [RAM] Processus Wacom_UpdateUtil : WS avant=0Mo apräs=0Mo delta=0Mo
+info: RamAI.Phase3.Memory.MemoryOrchestrator[0]
+      [RAM] Processus msedgewebview2 : WS avant=0Mo apräs=0Mo delta=0Mo
+info: RamAI.Phase3.Memory.MemoryOrchestrator[0]
+      [RAM] Processus sleep : WS avant=5Mo apräs=0Mo delta=5Mo
+info: RamAI.Phase3.Memory.MemoryOrchestrator[0]
+      [RAM] Processus LsaIso : WS avant=0Mo apräs=0Mo delta=0Mo
+info: RamAI.Phase3.Memory.MemoryOrchestrator[0]
+      [RAM] Processus LsaIso : WS avant=0Mo apräs=0Mo delta=0Mo
+info: RamAI.Phase3.Memory.MemoryOrchestrator[0]
+      [RAM] Processus LsaIso : WS avant=0Mo apräs=0Mo delta=0Mo
+info: RamAI.Phase3.Memory.MemoryOrchestrator[0]
+      [RAM] Processus LsaIso : WS avant=0Mo apräs=0Mo delta=0Mo
+info: RamAI.Phase3.Memory.MemoryOrchestrator[0]
+      [MEM-SIGNAL] avail=8707Mo (seuil<2444 >sortie3584) | highRam=False | ramUsedPct=46.6 % | standby=8700Mo | total=16294Mo
+[RAM-AI] Scan gaming: 282 processus trouvÇs, recherche dans liste...
+info: RamAI.Phase3.Memory.MemoryOrchestrator[0]
+      Scan gaming: 282 processus en cours, recherche dans liste...
+[RAM-AI] Scan gaming: aucun jeu dÇtectÇ.
+info: RamAI.Phase3.Memory.MemoryOrchestrator[0]
+      [RAM] Processus LsaIso : WS avant=0Mo apräs=0Mo delta=0Mo
+info: RamAI.Phase3.Memory.MemoryOrchestrator[0]
+      [RAM] Processus WacomHost : WS avant=0Mo apräs=0Mo delta=0Mo
+info: RamAI.Phase3.Memory.MemoryOrchestrator[0]
+      [RAM] Processus BraveCrashHandler64 : WS avant=0Mo apräs=0Mo delta=0Mo
+info: RamAI.Phase3.Memory.MemoryOrchestrator[0]
+      [RAM] Processus NVDisplay.Container : WS avant=0Mo apräs=0Mo delta=0Mo
+info: RamAI.Phase3.Memory.MemoryOrchestrator[0]
+      [RAM] Processus brave : WS avant=6Mo apräs=0Mo delta=6Mo
+info: RamAI.Phase3.Memory.MemoryOrchestrator[0]
+      [RAM] Processus brave : WS avant=5Mo apräs=0Mo delta=5Mo
+info: RamAI.Phase3.Memory.MemoryOrchestrator[0]
+      [RAM] Processus msedgewebview2 : WS avant=0Mo apräs=0Mo delta=0Mo
+info: RamAI.Phase3.Memory.MemoryOrchestrator[0]
+      [RAM] Processus chrome : WS avant=20Mo apräs=0Mo delta=20Mo
+info: RamAI.Phase3.Memory.MemoryOrchestrator[0]
+      [RAM] Processus msedgewebview2 : WS avant=43Mo apräs=0Mo delta=43Mo
+info: RamAI.Phase3.Memory.MemoryOrchestrator[0]
+      [RAM] Processus chrome : WS avant=1Mo apräs=0Mo delta=1Mo
+info: RamAI.Phase3.Memory.MemoryOrchestrator[0]
+      [RAM] Processus claude : WS avant=37Mo apräs=0Mo delta=37Mo
+info: RamAI.Phase3.Memory.MemoryOrchestrator[0]
+      [RAM] Processus WidgetService : WS avant=0Mo apräs=0Mo delta=0Mo
+info: RamAI.Phase3.Memory.MemoryOrchestrator[0]
+      [RAM] Processus Wacom_Tablet : WS avant=1Mo apräs=0Mo delta=1Mo
+info: RamAI.Phase3.Memory.MemoryOrchestrator[0]
+      [RAM] Processus brave : WS avant=4Mo apräs=0Mo delta=4Mo
+info: RamAI.Phase3.Memory.MemoryOrchestrator[0]
+      [RAM] Processus brave : WS avant=21Mo apräs=0Mo delta=21Mo
+info: RamAI.Phase3.Memory.MemoryOrchestrator[0]
+      [RAM] Processus brave : WS avant=25Mo apräs=0Mo delta=25Mo
+info: RamAI.Phase3.Memory.MemoryOrchestrator[0]
+      [RAM] Processus msedgewebview2 : WS avant=2Mo apräs=0Mo delta=2Mo
+info: RamAI.Phase3.Memory.MemoryOrchestrator[0]
+      [RAM] Processus msedgewebview2 : WS avant=3Mo apräs=0Mo delta=3Mo
+info: RamAI.Phase3.Memory.MemoryOrchestrator[0]
+      [RAM] Processus chrome : WS avant=1Mo apräs=0Mo delta=1Mo
+info: RamAI.Phase3.Memory.MemoryOrchestrator[0]
+      [RAM] Processus cowork-svc : WS avant=2Mo apräs=0Mo delta=2Mo
+info: RamAI.Phase3.Memory.MemoryOrchestrator[0]
+      [RAM] Processus Wacom_TouchUser : WS avant=0Mo apräs=0Mo delta=0Mo
+info: RamAI.Phase3.Memory.MemoryOrchestrator[0]
+      [RAM] Processus brave : WS avant=3Mo apräs=0Mo delta=3Mo
+info: RamAI.Phase3.Memory.MemoryOrchestrator[0]
+      [RAM] Processus msedgewebview2 : WS avant=1Mo apräs=0Mo delta=1Mo
+info: RamAI.Phase3.Memory.MemoryOrchestrator[0]
+      [RAM] Processus msedgewebview2 : WS avant=3Mo apräs=0Mo delta=3Mo
+info: RamAI.Phase3.Memory.MemoryOrchestrator[0]
+      [RAM] Processus CLIPStudio : WS avant=1Mo apräs=0Mo delta=1Mo
+info: RamAI.Phase3.Memory.MemoryOrchestrator[0]
+      [RAM] Processus conhost : WS avant=0Mo apräs=0Mo delta=0Mo
+info: RamAI.Phase3.Memory.MemoryOrchestrator[0]
+      [RAM] Processus brave : WS avant=4Mo apräs=0Mo delta=4Mo
+info: RamAI.Phase3.Memory.MemoryOrchestrator[0]
+      [RAM] Processus brave : WS avant=17Mo apräs=0Mo delta=17Mo
+info: RamAI.Phase3.Memory.MemoryOrchestrator[0]
+      [RAM] Processus escsvc64 : WS avant=0Mo apräs=0Mo delta=0Mo
+info: RamAI.Phase3.Memory.MemoryOrchestrator[0]
+      [RAM] Processus vmcompute : WS avant=0Mo apräs=0Mo delta=0Mo
+info: RamAI.Phase3.Memory.MemoryOrchestrator[0]
+      [RAM] Processus chrome : WS avant=8Mo apräs=0Mo delta=8Mo
+info: RamAI.Phase3.Memory.MemoryOrchestrator[0]
+      [RAM] Processus AggregatorHost : WS avant=0Mo apräs=0Mo delta=0Mo
+info: RamAI.Phase3.Memory.MemoryOrchestrator[0]
+      [RAM] Processus LsaIso : WS avant=0Mo apräs=0Mo delta=0Mo
+info: RamAI.Phase3.Memory.MemoryOrchestrator[0]
+      [RAM] Processus msedgewebview2 : WS avant=17Mo apräs=0Mo delta=17Mo
+info: RamAI.Phase3.Memory.MemoryOrchestrator[0]
+      [RAM] Processus msedgewebview2 : WS avant=0Mo apräs=0Mo delta=0Mo
+info: RamAI.Phase3.Memory.MemoryOrchestrator[0]
+      [RAM] Processus brave : WS avant=32Mo apräs=0Mo delta=32Mo
+info: RamAI.Phase3.Memory.MemoryOrchestrator[0]
+      [RAM] Processus msedgewebview2 : WS avant=4Mo apräs=0Mo delta=4Mo
+info: RamAI.Phase3.Memory.MemoryOrchestrator[0]
+      [RAM] Processus CLIPStudioPaint : WS avant=1Mo apräs=0Mo delta=0Mo
+info: RamAI.Phase3.Memory.MemoryOrchestrator[0]
+      [RAM] Processus brave : WS avant=14Mo apräs=0Mo delta=14Mo
+info: RamAI.Phase3.Memory.MemoryOrchestrator[0]
+      [RAM] Processus brave : WS avant=1Mo apräs=0Mo delta=1Mo
+info: RamAI.Phase3.Memory.MemoryOrchestrator[0]
+      [RAM] Processus bash : WS avant=0Mo apräs=0Mo delta=0Mo
+info: RamAI.Phase3.Memory.MemoryOrchestrator[0]
+      [RAM] Processus taskhostw : WS avant=0Mo apräs=0Mo delta=0Mo
+info: RamAI.Phase3.Memory.MemoryOrchestrator[0]
+      [RAM] Processus chrome : WS avant=0Mo apräs=0Mo delta=0Mo
+info: RamAI.Phase3.Memory.MemoryOrchestrator[0]
+      [RAM] Processus msedgewebview2 : WS avant=0Mo apräs=0Mo delta=0Mo
+info: RamAI.Phase3.Memory.MemoryOrchestrator[0]
+      [RAM] Processus msedgewebview2 : WS avant=0Mo apräs=0Mo delta=0Mo
+info: RamAI.Phase3.Memory.MemoryOrchestrator[0]
+      [RAM] Processus chrome : WS avant=0Mo apräs=0Mo delta=0Mo
+info: RamAI.Phase3.Memory.MemoryOrchestrator[0]
+      [RAM] Processus RtkAudUService64 : WS avant=0Mo apräs=0Mo delta=0Mo
+info: RamAI.Phase3.Memory.MemoryOrchestrator[0]
+      [RAM] Processus msedgewebview2 : WS avant=19Mo apräs=0Mo delta=19Mo
+info: RamAI.Phase3.Memory.MemoryOrchestrator[0]
+      [RAM] Processus NgcIso : WS avant=0Mo apräs=0Mo delta=0Mo
+info: RamAI.Phase3.Memory.MemoryOrchestrator[0]
+      [RAM] Processus bash : WS avant=2Mo apräs=0Mo delta=2Mo
+info: RamAI.Phase3.Memory.MemoryOrchestrator[0]
+      [RAM] Processus brave : WS avant=3Mo apräs=0Mo delta=3Mo
+info: RamAI.Phase3.Memory.MemoryOrchestrator[0]
+      [RAM] Processus claude : WS avant=13Mo apräs=0Mo delta=13Mo
+info: RamAI.Phase3.Memory.MemoryOrchestrator[0]
+      [RAM] Processus blender : WS avant=1Mo apräs=0Mo delta=1Mo
+info: RamAI.Phase3.Memory.MemoryOrchestrator[0]
+      [RAM] Processus msedgewebview2 : WS avant=0Mo apräs=0Mo delta=0Mo
+info: RamAI.Phase3.Memory.MemoryOrchestrator[0]
+      [RAM] Processus WTabletServicePro : WS avant=2Mo apräs=0Mo delta=2Mo
+info: RamAI.Phase3.Memory.MemoryOrchestrator[0]
+      [RAM] Processus CrossDeviceResume : WS avant=0Mo apräs=0Mo delta=0Mo
+info: RamAI.Phase3.Memory.MemoryOrchestrator[0]
+      [RAM] Processus chrome : WS avant=6Mo apräs=0Mo delta=6Mo
+info: RamAI.Phase3.Memory.MemoryOrchestrator[0]
+      [RAM] Processus conhost : WS avant=0Mo apräs=0Mo delta=0Mo
+info: RamAI.Phase3.Memory.MemoryOrchestrator[0]
+      [RAM] Processus WUDFHost : WS avant=0Mo apräs=0Mo delta=0Mo
+info: RamAI.Phase3.Memory.MemoryOrchestrator[0]
+      [RAM] Processus NVDisplay.Container : WS avant=2Mo apräs=0Mo delta=2Mo
+info: RamAI.Phase3.Memory.MemoryOrchestrator[0]
+      [RAM] Processus brave : WS avant=15Mo apräs=0Mo delta=15Mo
+info: RamAI.Phase3.Memory.MemoryOrchestrator[0]
+      [RAM] Processus msedgewebview2 : WS avant=3Mo apräs=0Mo delta=3Mo
+info: RamAI.Phase3.Memory.MemoryOrchestrator[0]
+      [RAM] Processus msedgewebview2 : WS avant=0Mo apräs=0Mo delta=0Mo
+info: RamAI.Phase3.Memory.MemoryOrchestrator[0]
+      [RAM] Processus brave : WS avant=38Mo apräs=0Mo delta=38Mo
+info: RamAI.Phase3.Memory.MemoryOrchestrator[0]
+      [RAM] Processus chrome : WS avant=0Mo apräs=0Mo delta=0Mo
+info: RamAI.Phase3.Memory.MemoryOrchestrator[0]
+      [RAM] Processus conhost : WS avant=0Mo apräs=0Mo delta=0Mo
+info: RamAI.Phase3.Memory.MemoryOrchestrator[0]
+      [RAM] Processus brave : WS avant=8Mo apräs=0Mo delta=8Mo
+info: RamAI.Phase3.Memory.MemoryOrchestrator[0]
+      [RAM] Processus claude : WS avant=0Mo apräs=0Mo delta=0Mo
+info: RamAI.Phase3.Memory.MemoryOrchestrator[0]
+      [RAM] Processus msedgewebview2 : WS avant=2Mo apräs=0Mo delta=2Mo
+info: RamAI.Phase3.Memory.MemoryOrchestrator[0]
+      [RAM] Processus brave : WS avant=1Mo apräs=0Mo delta=1Mo
+info: RamAI.Phase3.Memory.MemoryOrchestrator[0]
+      [RAM] Processus msedgewebview2 : WS avant=9Mo apräs=0Mo delta=9Mo
+info: RamAI.Phase3.Memory.MemoryOrchestrator[0]
+      [RAM] Processus cmd : WS avant=0Mo apräs=0Mo delta=0Mo
+info: RamAI.Phase3.Memory.MemoryOrchestrator[0]
+      [RAM] Processus ShellHost : WS avant=0Mo apräs=0Mo delta=0Mo
+info: RamAI.Phase3.Memory.MemoryOrchestrator[0]
+      [RAM] Processus BraveCrashHandler : WS avant=0Mo apräs=0Mo delta=0Mo
+info: RamAI.Phase3.Memory.MemoryOrchestrator[0]
+      [RAM] Processus brave : WS avant=39Mo apräs=0Mo delta=39Mo
+info: RamAI.Phase3.Memory.MemoryOrchestrator[0]
+      [RAM] Processus WidgetBoard : WS avant=0Mo apräs=0Mo delta=0Mo
+info: RamAI.Phase3.Memory.MemoryOrchestrator[0]
+      [RAM] Processus conhost : WS avant=0Mo apräs=0Mo delta=0Mo
+info: RamAI.Phase3.Memory.MemoryOrchestrator[0]
+      [RAM] Processus brave : WS avant=8Mo apräs=0Mo delta=8Mo
+info: RamAI.Phase3.Memory.MemoryOrchestrator[0]
+      [RAM] Processus claude : WS avant=3Mo apräs=0Mo delta=3Mo
+info: RamAI.Phase3.Memory.MemoryOrchestrator[0]
+      [RAM] Processus msedgewebview2 : WS avant=3Mo apräs=0Mo delta=3Mo
+info: RamAI.Phase3.Memory.MemoryOrchestrator[0]
+      [RAM] Processus MicrosoftStartFeedProvider : WS avant=0Mo apräs=0Mo delta=0Mo
+info: RamAI.Phase3.Memory.MemoryOrchestrator[0]
+      [RAM] Processus Wacom_TabletUser : WS avant=0Mo apräs=0Mo delta=0Mo
+info: RamAI.Phase3.Memory.MemoryOrchestrator[0]
+      [RAM] Processus conhost : WS avant=0Mo apräs=0Mo delta=0Mo
+info: RamAI.Phase3.Memory.MemoryOrchestrator[0]
+      [RAM] Processus msedgewebview2 : WS avant=6Mo apräs=0Mo delta=6Mo
+info: RamAI.Phase3.Memory.MemoryOrchestrator[0]
+      [RAM] Processus SecurityHealthSystray : WS avant=0Mo apräs=0Mo delta=0Mo
+info: RamAI.Phase3.Memory.MemoryOrchestrator[0]
+      [RAM] Processus chrome-native-host : WS avant=0Mo apräs=0Mo delta=0Mo
+info: RamAI.Phase3.Memory.MemoryOrchestrator[0]
+      [RAM] Processus powershell : WS avant=0Mo apräs=0Mo delta=0Mo
+info: RamAI.Phase3.Memory.MemoryOrchestrator[0]
+      [RAM] Processus Wacom_UpdateUtil : WS avant=0Mo apräs=0Mo delta=0Mo
+info: RamAI.Phase3.Memory.MemoryOrchestrator[0]
+      [RAM] Processus smartscreen : WS avant=0Mo apräs=0Mo delta=0Mo
+info: RamAI.Phase3.Memory.MemoryOrchestrator[0]
+      [RAM] Processus EPPCCMON : WS avant=0Mo apräs=0Mo delta=0Mo
+info: RamAI.Phase3.Memory.MemoryOrchestrator[0]
+      [RAM] Processus ctfmon : WS avant=0Mo apräs=0Mo delta=0Mo
+info: RamAI.Phase3.Memory.MemoryOrchestrator[0]
+      [RAM] Processus TabTip : WS avant=0Mo apräs=0Mo delta=0Mo
+info: RamAI.Phase3.Memory.MemoryOrchestrator[0]
+      [RAM] Processus splwow64 : WS avant=0Mo apräs=0Mo delta=0Mo
+info: RamAI.Phase3.Memory.MemoryOrchestrator[0]
+      [RAM] Processus brave : WS avant=37Mo apräs=0Mo delta=37Mo
+info: RamAI.Phase3.Memory.MemoryOrchestrator[0]
+      [RAM] Processus chrome : WS avant=0Mo apräs=0Mo delta=0Mo
+info: RamAI.Phase3.Memory.MemoryOrchestrator[0]
+      [RAM] Processus msedgewebview2 : WS avant=9Mo apräs=0Mo delta=9Mo
+info: RamAI.Phase3.Memory.MemoryOrchestrator[0]
+      [RAM] Processus msedgewebview2 : WS avant=3Mo apräs=0Mo delta=3Mo
+info: RamAI.Phase3.Memory.MemoryOrchestrator[0]
+      [RAM] Processus brave : WS avant=13Mo apräs=0Mo delta=13Mo
+info: RamAI.Phase3.Memory.MemoryOrchestrator[0]
+      [RAM] Processus brave : WS avant=31Mo apräs=0Mo delta=31Mo
+info: RamAI.Phase3.Memory.MemoryOrchestrator[0]
+      [RAM] Processus brave : WS avant=32Mo apräs=0Mo delta=32Mo
+info: RamAI.Phase3.Memory.MemoryOrchestrator[0]
+      [RAM] Processus claude : WS avant=0Mo apräs=0Mo delta=0Mo
+info: RamAI.Phase3.Memory.MemoryOrchestrator[0]
+      [RAM] Processus msedgewebview2 : WS avant=12Mo apräs=0Mo delta=12Mo
+info: RamAI.Phase3.Memory.MemoryOrchestrator[0]
+      [RAM] Processus CrealityPrint : WS avant=7Mo apräs=0Mo delta=7Mo
+info: RamAI.Phase3.Memory.MemoryOrchestrator[0]
+      [RAM] Processus claude : WS avant=0Mo apräs=0Mo delta=0Mo
+info: RamAI.Phase3.Memory.MemoryOrchestrator[0]
+      [RAM] Processus brave : WS avant=76Mo apräs=0Mo delta=76Mo
+info: RamAI.Phase3.Memory.MemoryOrchestrator[0]
+      [RAM] Processus olk : WS avant=16Mo apräs=0Mo delta=16Mo
+info: RamAI.Phase3.Memory.MemoryOrchestrator[0]
+      [RAM] Processus OpenConsole : WS avant=1Mo apräs=0Mo delta=1Mo
+info: RamAI.Phase3.Memory.MemoryOrchestrator[0]
+      [RAM] Processus TextInputHost : WS avant=2Mo apräs=0Mo delta=2Mo
+info: RamAI.Phase3.Memory.MemoryOrchestrator[0]
+      [RAM] Processus powershell : WS avant=4Mo apräs=0Mo delta=4Mo
+info: RamAI.Phase3.Memory.MemoryOrchestrator[0]
+      [RAM] Processus chrome : WS avant=0Mo apräs=0Mo delta=0Mo
+info: RamAI.Phase3.Memory.MemoryOrchestrator[0]
+      [RAM] Processus brave : WS avant=15Mo apräs=0Mo delta=15Mo
+info: RamAI.Phase3.Memory.MemoryOrchestrator[0]
+      [RAM] Processus WhatsApp.Root : WS avant=13Mo apräs=0Mo delta=13Mo
+info: RamAI.Phase3.Memory.MemoryOrchestrator[0]
+      [RAM] Processus msedgewebview2 : WS avant=6Mo apräs=0Mo delta=6Mo
+info: RamAI.Phase3.Memory.MemoryOrchestrator[0]
+      [RAM] Processus WmiPrvSE : WS avant=8Mo apräs=0Mo delta=8Mo
+info: RamAI.Phase3.Memory.MemoryOrchestrator[0]
+      [RAM] Processus brave : WS avant=117Mo apräs=0Mo delta=117Mo
+info: RamAI.Phase3.Memory.MemoryOrchestrator[0]
+      [RAM] Processus brave : WS avant=3Mo apräs=0Mo delta=3Mo
+info: RamAI.Phase3.Memory.MemoryOrchestrator[0]
+      [RAM] Processus msedgewebview2 : WS avant=0Mo apräs=0Mo delta=0Mo
+info: RamAI.Phase3.Memory.MemoryOrchestrator[0]
+      [RAM] Processus msedgewebview2 : WS avant=99Mo apräs=0Mo delta=99Mo
+info: RamAI.Phase3.Memory.MemoryOrchestrator[0]
+      [RAM] Processus taskhostw : WS avant=1Mo apräs=0Mo delta=1Mo
+info: RamAI.Phase3.Memory.MemoryOrchestrator[0]
+      [RAM] Processus brave : WS avant=0Mo apräs=0Mo delta=0Mo
+info: RamAI.Phase3.Memory.MemoryOrchestrator[0]
+      [RAM] Processus msedgewebview2 : WS avant=28Mo apräs=0Mo delta=28Mo
+info: RamAI.Phase3.Memory.MemoryOrchestrator[0]
+      [RAM] Processus claude : WS avant=0Mo apräs=0Mo delta=0Mo
+info: RamAI.Phase3.Memory.MemoryOrchestrator[0]
+      [RAM] Processus msedgewebview2 : WS avant=7Mo apräs=0Mo delta=7Mo
+info: RamAI.Phase3.Memory.MemoryOrchestrator[0]
+      [RAM] Processus brave : WS avant=144Mo apräs=0Mo delta=144Mo
+info: RamAI.Phase3.Memory.MemoryOrchestrator[0]
+      [RAM] Processus WmiPrvSE : WS avant=0Mo apräs=0Mo delta=0Mo
+info: RamAI.Phase3.Memory.MemoryOrchestrator[0]
+      [RAM] Processus brave : WS avant=33Mo apräs=0Mo delta=33Mo
+info: RamAI.Phase3.Memory.MemoryOrchestrator[0]
+      [RAM] Processus msedgewebview2 : WS avant=3Mo apräs=0Mo delta=3Mo
+info: RamAI.Phase3.Memory.MemoryOrchestrator[0]
+      [RAM] Processus msedgewebview2 : WS avant=7Mo apräs=0Mo delta=7Mo
+info: RamAI.Phase3.Memory.MemoryOrchestrator[0]
+      [RAM] Processus claude : WS avant=0Mo apräs=0Mo delta=0Mo
+info: RamAI.Phase3.Memory.MemoryOrchestrator[0]
+      [RAM] Processus CalculatorApp : WS avant=0Mo apräs=0Mo delta=0Mo
+info: RamAI.Phase3.Memory.MemoryOrchestrator[0]
+      [RAM] Processus msedgewebview2 : WS avant=31Mo apräs=0Mo delta=31Mo
+info: RamAI.Phase3.Memory.MemoryOrchestrator[0]
+      [RAM] Processus msedgewebview2 : WS avant=3Mo apräs=0Mo delta=3Mo
+info: RamAI.Phase3.Memory.MemoryOrchestrator[0]
+      [RAM] Processus brave : WS avant=35Mo apräs=0Mo delta=35Mo
+info: RamAI.Phase3.Memory.MemoryOrchestrator[0]
+      [RAM] Processus brave : WS avant=2Mo apräs=0Mo delta=2Mo
+info: RamAI.Phase3.Memory.MemoryOrchestrator[0]
+      [RAM] Processus msedgewebview2 : WS avant=5Mo apräs=0Mo delta=5Mo
+info: RamAI.Phase3.Memory.MemoryOrchestrator[0]
+      [RAM] Processus claude : WS avant=11Mo apräs=0Mo delta=11Mo
+info: RamAI.Phase3.Memory.MemoryOrchestrator[0]
+      [RAM] Processus msedgewebview2 : WS avant=6Mo apräs=0Mo delta=6Mo
+info: RamAI.Phase3.Memory.MemoryOrchestrator[0]
+      [RAM] Processus claude : WS avant=0Mo apräs=0Mo delta=0Mo
+info: RamAI.Phase3.Memory.MemoryOrchestrator[0]
+      [RAM] Processus msedgewebview2 : WS avant=14Mo apräs=0Mo delta=14Mo
+info: RamAI.Phase3.Memory.MemoryOrchestrator[0]
+      [RAM] Processus brave : WS avant=0Mo apräs=0Mo delta=0Mo
+info: RamAI.Phase3.Memory.MemoryOrchestrator[0]
+      [RAM] Processus msedgewebview2 : WS avant=6Mo apräs=0Mo delta=6Mo
+info: RamAI.Phase3.Memory.MemoryOrchestrator[0]
+      [RAM] Processus msedgewebview2 : WS avant=6Mo apräs=0Mo delta=6Mo
+info: RamAI.Phase3.Memory.MemoryOrchestrator[0]
+      [RAM] Processus brave : WS avant=2Mo apräs=0Mo delta=2Mo
+info: RamAI.Phase3.Memory.MemoryOrchestrator[0]
+      [RAM] Processus claude : WS avant=0Mo apräs=0Mo delta=0Mo
+info: RamAI.Phase3.Memory.MemoryOrchestrator[0]
+      [RAM] Processus brave : WS avant=3Mo apräs=0Mo delta=3Mo
+info: RamAI.Phase3.Memory.MemoryOrchestrator[0]
+      [RAM] Processus msedgewebview2 : WS avant=17Mo apräs=0Mo delta=17Mo
+info: RamAI.Phase3.Memory.MemoryOrchestrator[0]
+      [RAM] Processus brave : WS avant=0Mo apräs=0Mo delta=0Mo
+info: RamAI.Phase3.Memory.MemoryOrchestrator[0]
+      [RAM] Processus olkexthost : WS avant=1Mo apräs=0Mo delta=1Mo
+info: RamAI.Phase3.Memory.MemoryOrchestrator[0]
+      [RAM] Processus msedgewebview2 : WS avant=3Mo apräs=0Mo delta=3Mo
+info: RamAI.Phase3.Memory.MemoryOrchestrator[0]
+      [RAM] Processus msedgewebview2 : WS avant=96Mo apräs=0Mo delta=96Mo
+info: RamAI.Phase3.Memory.MemoryOrchestrator[0]
+      [RAM] Processus brave : WS avant=101Mo apräs=0Mo delta=101Mo
+info: RamAI.Phase3.Memory.MemoryOrchestrator[0]
+      [RAM] Processus msedgewebview2 : WS avant=13Mo apräs=0Mo delta=13Mo
+info: RamAI.Phase3.Memory.MemoryOrchestrator[0]
+      [RAM] Processus msedgewebview2 : WS avant=1Mo apräs=0Mo delta=1Mo
+info: RamAI.Phase3.Memory.MemoryOrchestrator[0]
+      [RAM] Processus brave : WS avant=2Mo apräs=0Mo delta=2Mo
+info: RamAI.Phase3.Memory.MemoryOrchestrator[0]
+      [RAM] Processus RamAI.Phase3 : WS avant=36Mo apräs=0Mo delta=36Mo
+info: RamAI.Phase3.Memory.MemoryOrchestrator[0]
+      [RAM] Processus LsaIso : WS avant=0Mo apräs=0Mo delta=0Mo
+info: RamAI.Phase3.Memory.MemoryOrchestrator[0]
+      [RAM] Processus LsaIso : WS avant=0Mo apräs=0Mo delta=0Mo
+info: RamAI.Phase3.Memory.MemoryOrchestrator[0]
+      [RAM] Processus LsaIso : WS avant=0Mo apräs=0Mo delta=0Mo
+info: RamAI.Phase3.Memory.MemoryOrchestrator[0]
+      [RAM] Processus BraveCrashHandler64 : WS avant=0Mo apräs=0Mo delta=0Mo
+info: RamAI.Phase3.Memory.MemoryOrchestrator[0]
+      [RAM] Processus WacomHost : WS avant=0Mo apräs=0Mo delta=0Mo
+info: RamAI.Phase3.Memory.MemoryOrchestrator[0]
+      [RAM] Processus NVDisplay.Container : WS avant=1Mo apräs=0Mo delta=1Mo
+info: RamAI.Phase3.Memory.MemoryOrchestrator[0]
+      [RAM] Processus brave : WS avant=6Mo apräs=0Mo delta=6Mo
+info: RamAI.Phase3.Memory.MemoryOrchestrator[0]
+      [RAM] Processus brave : WS avant=4Mo apräs=0Mo delta=4Mo
+info: RamAI.Phase3.Memory.MemoryOrchestrator[0]
+      [RAM] Processus msedgewebview2 : WS avant=0Mo apräs=0Mo delta=0Mo
+info: RamAI.Phase3.Memory.MemoryOrchestrator[0]
+      [RAM] Processus claude : WS avant=33Mo apräs=0Mo delta=33Mo
+info: RamAI.Phase3.Memory.MemoryOrchestrator[0]
+      [RAM] Processus brave : WS avant=2Mo apräs=0Mo delta=2Mo
+info: RamAI.Phase3.Memory.MemoryOrchestrator[0]
+      [RAM] Processus WidgetService : WS avant=0Mo apräs=0Mo delta=0Mo
+info: RamAI.Phase3.Memory.MemoryOrchestrator[0]
+      [RAM] Processus Wacom_Tablet : WS avant=1Mo apräs=0Mo delta=1Mo
+info: RamAI.Phase3.Memory.MemoryOrchestrator[0]
+      [RAM] Processus msedgewebview2 : WS avant=0Mo apräs=0Mo delta=0Mo
+info: RamAI.Phase3.Memory.MemoryOrchestrator[0]
+      [RAM] Processus msedgewebview2 : WS avant=2Mo apräs=0Mo delta=2Mo
+info: RamAI.Phase3.Memory.MemoryOrchestrator[0]
+      [RAM] Processus Wacom_TouchUser : WS avant=0Mo apräs=0Mo delta=0Mo
+info: RamAI.Phase3.Memory.MemoryOrchestrator[0]
+      [RAM] Processus chrome : WS avant=0Mo apräs=0Mo delta=0Mo
+info: RamAI.Phase3.Memory.MemoryOrchestrator[0]
+      [RAM] Processus CLIPStudio : WS avant=1Mo apräs=0Mo delta=1Mo
+info: RamAI.Phase3.Memory.MemoryOrchestrator[0]
+      [RAM] Processus msedgewebview2 : WS avant=7Mo apräs=0Mo delta=7Mo
+info: RamAI.Phase3.Memory.MemoryOrchestrator[0]
+      [RAM] Processus conhost : WS avant=0Mo apräs=0Mo delta=0Mo
+info: RamAI.Phase3.Memory.MemoryOrchestrator[0]
+      [RAM] Processus chrome : WS avant=1Mo apräs=0Mo delta=1Mo
+info: RamAI.Phase3.Memory.MemoryOrchestrator[0]
+      [RAM] Processus brave : WS avant=31Mo apräs=0Mo delta=31Mo
+info: RamAI.Phase3.Memory.MemoryOrchestrator[0]
+      [RAM] Processus msedgewebview2 : WS avant=0Mo apräs=0Mo delta=0Mo
+info: RamAI.Phase3.Memory.MemoryOrchestrator[0]
+      [RAM] Processus msedgewebview2 : WS avant=0Mo apräs=0Mo delta=0Mo
+info: RamAI.Phase3.Memory.MemoryOrchestrator[0]
+      [RAM] Processus msedgewebview2 : WS avant=2Mo apräs=0Mo delta=2Mo
+info: RamAI.Phase3.Memory.MemoryOrchestrator[0]
+      [RAM] Processus brave : WS avant=1Mo apräs=0Mo delta=1Mo
+info: RamAI.Phase3.Memory.MemoryOrchestrator[0]
+      [RAM] Processus brave : WS avant=1Mo apräs=0Mo delta=1Mo
+info: RamAI.Phase3.Memory.MemoryOrchestrator[0]
+      [RAM] Processus bash : WS avant=0Mo apräs=0Mo delta=0Mo
+info: RamAI.Phase3.Memory.MemoryOrchestrator[0]
+      [RAM] Processus msedgewebview2 : WS avant=1Mo apräs=0Mo delta=1Mo
+info: RamAI.Phase3.Memory.MemoryOrchestrator[0]
+      [RAM] Processus brave : WS avant=2Mo apräs=0Mo delta=2Mo
+info: RamAI.Phase3.Memory.MemoryOrchestrator[0]
+      [RAM] Processus bash : WS avant=2Mo apräs=0Mo delta=2Mo
+info: RamAI.Phase3.Memory.MemoryOrchestrator[0]
+      [RAM] Processus claude : WS avant=8Mo apräs=0Mo delta=8Mo
+info: RamAI.Phase3.Memory.MemoryOrchestrator[0]
+      [RAM] Processus blender : WS avant=1Mo apräs=0Mo delta=1Mo
+info: RamAI.Phase3.Memory.MemoryOrchestrator[0]
+      [RAM] Processus chrome : WS avant=0Mo apräs=0Mo delta=0Mo
+info: RamAI.Phase3.Memory.MemoryOrchestrator[0]
+      [RAM] Processus msedgewebview2 : WS avant=1Mo apräs=0Mo delta=1Mo
+info: RamAI.Phase3.Memory.MemoryOrchestrator[0]
+      [RAM] Processus vmcompute : WS avant=0Mo apräs=0Mo delta=0Mo
+info: RamAI.Phase3.Memory.MemoryOrchestrator[0]
+      [RAM] Processus msedgewebview2 : WS avant=1Mo apräs=0Mo delta=1Mo
+info: RamAI.Phase3.Memory.MemoryOrchestrator[0]
+      [RAM] Processus msedgewebview2 : WS avant=2Mo apräs=0Mo delta=2Mo
+info: RamAI.Phase3.Memory.MemoryOrchestrator[0]
+      [RAM] Processus escsvc64 : WS avant=0Mo apräs=0Mo delta=0Mo
+info: RamAI.Phase3.Memory.MemoryOrchestrator[0]
+      [RAM] Processus conhost : WS avant=0Mo apräs=0Mo delta=0Mo
+info: RamAI.Phase3.Memory.MemoryOrchestrator[0]
+      [RAM] Processus claude : WS avant=0Mo apräs=0Mo delta=0Mo
+info: RamAI.Phase3.Memory.MemoryOrchestrator[0]
+      [RAM] Processus conhost : WS avant=0Mo apräs=0Mo delta=0Mo
+info: RamAI.Phase3.Memory.MemoryOrchestrator[0]
+      [RAM] Processus chrome : WS avant=0Mo apräs=0Mo delta=0Mo
+info: RamAI.Phase3.Memory.MemoryOrchestrator[0]
+      [RAM] Processus LsaIso : WS avant=0Mo apräs=0Mo delta=0Mo
+info: RamAI.Phase3.Memory.MemoryOrchestrator[0]
+      [RAM] Processus msedgewebview2 : WS avant=1Mo apräs=0Mo delta=1Mo
+info: RamAI.Phase3.Memory.MemoryOrchestrator[0]
+      [RAM] Processus AggregatorHost : WS avant=1Mo apräs=0Mo delta=1Mo
+info: RamAI.Phase3.Memory.MemoryOrchestrator[0]
+      [RAM] Processus NgcIso : WS avant=0Mo apräs=0Mo delta=0Mo
+info: RamAI.Phase3.Memory.MemoryOrchestrator[0]
+      [RAM] Processus ShellHost : WS avant=2Mo apräs=0Mo delta=2Mo
+info: RamAI.Phase3.Memory.MemoryOrchestrator[0]
+      [RAM] Processus claude : WS avant=2Mo apräs=0Mo delta=2Mo
+info: RamAI.Phase3.Memory.MemoryOrchestrator[0]
+      [RAM] Processus brave : WS avant=29Mo apräs=0Mo delta=29Mo
+info: RamAI.Phase3.Memory.MemoryOrchestrator[0]
+      [RAM] Processus chrome : WS avant=5Mo apräs=0Mo delta=5Mo
+info: RamAI.Phase3.Memory.MemoryOrchestrator[0]
+      [RAM] Processus RtkAudUService64 : WS avant=1Mo apräs=0Mo delta=1Mo
+info: RamAI.Phase3.Memory.MemoryOrchestrator[0]
+      [RAM] Processus taskhostw : WS avant=0Mo apräs=0Mo delta=0Mo
+info: RamAI.Phase3.Memory.MemoryOrchestrator[0]
+      [RAM] Processus msedgewebview2 : WS avant=2Mo apräs=0Mo delta=2Mo
+info: RamAI.Phase3.Memory.MemoryOrchestrator[0]
+      [RAM] Processus brave : WS avant=10Mo apräs=0Mo delta=10Mo
+info: RamAI.Phase3.Memory.MemoryOrchestrator[0]
+      [RAM] Processus CrealityPrint : WS avant=7Mo apräs=0Mo delta=7Mo
+info: RamAI.Phase3.Memory.MemoryOrchestrator[0]
+      [RAM] Processus claude : WS avant=1Mo apräs=0Mo delta=1Mo
+info: RamAI.Phase3.Memory.MemoryOrchestrator[0]
+      [RAM] Processus chrome : WS avant=0Mo apräs=0Mo delta=0Mo
+info: RamAI.Phase3.Memory.MemoryOrchestrator[0]
+      [RAM] Processus brave : WS avant=2Mo apräs=0Mo delta=2Mo
+info: RamAI.Phase3.Memory.MemoryOrchestrator[0]
+      [RAM] Processus MicrosoftStartFeedProvider : WS avant=0Mo apräs=0Mo delta=0Mo
+info: RamAI.Phase3.Memory.MemoryOrchestrator[0]
+      [RAM] Processus WTabletServicePro : WS avant=2Mo apräs=0Mo delta=2Mo
+info: RamAI.Phase3.Memory.MemoryOrchestrator[0]
+      [RAM] Processus brave : WS avant=2Mo apräs=0Mo delta=2Mo
+info: RamAI.Phase3.Memory.MemoryOrchestrator[0]
+      [RAM] Processus smartscreen : WS avant=0Mo apräs=0Mo delta=0Mo
+info: RamAI.Phase3.Memory.MemoryOrchestrator[0]
+      [RAM] Processus cmd : WS avant=0Mo apräs=0Mo delta=0Mo
+info: RamAI.Phase3.Memory.MemoryOrchestrator[0]
+      [RAM] Processus claude : WS avant=1Mo apräs=0Mo delta=1Mo
+info: RamAI.Phase3.Memory.MemoryOrchestrator[0]
+      [RAM] Processus SecurityHealthSystray : WS avant=0Mo apräs=0Mo delta=0Mo
+info: RamAI.Phase3.Memory.MemoryOrchestrator[0]
+      [RAM] Processus CrossDeviceResume : WS avant=0Mo apräs=0Mo delta=0Mo
+info: RamAI.Phase3.Memory.MemoryOrchestrator[0]
+      [RAM] Processus WUDFHost : WS avant=0Mo apräs=0Mo delta=0Mo
+info: RamAI.Phase3.Memory.MemoryOrchestrator[0]
+      [RAM] Processus brave : WS avant=28Mo apräs=0Mo delta=28Mo
+info: RamAI.Phase3.Memory.MemoryOrchestrator[0]
+      [RAM] Processus conhost : WS avant=0Mo apräs=0Mo delta=0Mo
+info: RamAI.Phase3.Memory.MemoryOrchestrator[0]
+      [RAM] Processus EPPCCMON : WS avant=0Mo apräs=0Mo delta=0Mo
+info: RamAI.Phase3.Memory.MemoryOrchestrator[0]
+      [RAM] Processus msedgewebview2 : WS avant=1Mo apräs=0Mo delta=1Mo
+info: RamAI.Phase3.Memory.MemoryOrchestrator[0]
+      [RAM] Processus msedgewebview2 : WS avant=0Mo apräs=0Mo delta=0Mo
+info: RamAI.Phase3.Memory.MemoryOrchestrator[0]
+      [RAM] Processus claude : WS avant=1Mo apräs=0Mo delta=1Mo
+info: RamAI.Phase3.Memory.MemoryOrchestrator[0]
+      [RAM] Processus NVDisplay.Container : WS avant=7Mo apräs=0Mo delta=7Mo
+info: RamAI.Phase3.Memory.MemoryOrchestrator[0]
+      [RAM] Processus msedgewebview2 : WS avant=0Mo apräs=0Mo delta=0Mo
+info: RamAI.Phase3.Memory.MemoryOrchestrator[0]
+      [RAM] Processus ctfmon : WS avant=0Mo apräs=0Mo delta=0Mo
+info: RamAI.Phase3.Memory.MemoryOrchestrator[0]
+      [RAM] Processus claude : WS avant=0Mo apräs=0Mo delta=0Mo
+info: RamAI.Phase3.Memory.MemoryOrchestrator[0]
+      [RAM] Processus chrome-native-host : WS avant=0Mo apräs=0Mo delta=0Mo
+info: RamAI.Phase3.Memory.MemoryOrchestrator[0]
+      [RAM] Processus brave : WS avant=2Mo apräs=0Mo delta=2Mo
+info: RamAI.Phase3.Memory.MemoryOrchestrator[0]
+      [RAM] Processus msedgewebview2 : WS avant=0Mo apräs=0Mo delta=0Mo
+info: RamAI.Phase3.Memory.MemoryOrchestrator[0]
+      [RAM] Processus OpenConsole : WS avant=0Mo apräs=0Mo delta=0Mo
+info: RamAI.Phase3.Memory.MemoryOrchestrator[0]
+      [RAM] Processus taskhostw : WS avant=0Mo apräs=0Mo delta=0Mo
+info: RamAI.Phase3.Memory.MemoryOrchestrator[0]
+      [RAM] Processus TabTip : WS avant=0Mo apräs=0Mo delta=0Mo
+info: RamAI.Phase3.Memory.MemoryOrchestrator[0]
+      [RAM] Processus powershell : WS avant=0Mo apräs=0Mo delta=0Mo
+info: RamAI.Phase3.Memory.MemoryOrchestrator[0]
+      [RAM] Processus msedgewebview2 : WS avant=4Mo apräs=0Mo delta=4Mo
+info: RamAI.Phase3.Memory.MemoryOrchestrator[0]
+      [RAM] Processus brave : WS avant=2Mo apräs=0Mo delta=2Mo
+info: RamAI.Phase3.Memory.MemoryOrchestrator[0]
+      [RAM] Processus claude : WS avant=1Mo apräs=0Mo delta=1Mo
+info: RamAI.Phase3.Memory.MemoryOrchestrator[0]
+      [RAM] Processus splwow64 : WS avant=0Mo apräs=0Mo delta=0Mo
+info: RamAI.Phase3.Memory.MemoryOrchestrator[0]
+      [RAM] Processus brave : WS avant=1Mo apräs=0Mo delta=1Mo
+info: RamAI.Phase3.Memory.MemoryOrchestrator[0]
+      [RAM] Processus claude : WS avant=0Mo apräs=0Mo delta=0Mo
+info: RamAI.Phase3.Memory.MemoryOrchestrator[0]
+      [RAM] Processus BraveCrashHandler : WS avant=0Mo apräs=0Mo delta=0Mo
+info: RamAI.Phase3.Memory.MemoryOrchestrator[0]
+      [RAM] Processus Wacom_TabletUser : WS avant=0Mo apräs=0Mo delta=0Mo
+info: RamAI.Phase3.Memory.MemoryOrchestrator[0]
+      [RAM] Processus brave : WS avant=2Mo apräs=0Mo delta=2Mo
+info: RamAI.Phase3.Memory.MemoryOrchestrator[0]
+      [RAM] Processus WidgetBoard : WS avant=0Mo apräs=0Mo delta=0Mo
+info: RamAI.Phase3.Memory.MemoryOrchestrator[0]
+      [RAM] Processus CalculatorApp : WS avant=0Mo apräs=0Mo delta=0Mo
+info: RamAI.Phase3.Memory.MemoryOrchestrator[0]
+      [RAM] Processus WmiPrvSE : WS avant=1Mo apräs=0Mo delta=1Mo
+info: RamAI.Phase3.Memory.MemoryOrchestrator[0]
+      [RAM] Processus msedgewebview2 : WS avant=0Mo apräs=0Mo delta=0Mo
+info: RamAI.Phase3.Memory.MemoryOrchestrator[0]
+      [RAM] Processus conhost : WS avant=0Mo apräs=0Mo delta=0Mo
+info: RamAI.Phase3.Memory.MemoryOrchestrator[0]
+      [RAM] Processus Wacom_UpdateUtil : WS avant=0Mo apräs=0Mo delta=0Mo
+info: RamAI.Phase3.Memory.MemoryOrchestrator[0]
+      [RAM] Processus msedgewebview2 : WS avant=1Mo apräs=0Mo delta=1Mo
+info: RamAI.Phase3.Memory.MemoryOrchestrator[0]
+      [RAM] Processus powershell : WS avant=0Mo apräs=0Mo delta=0Mo
+info: RamAI.Phase3.Memory.MemoryOrchestrator[0]
+      [RAM] Processus msedgewebview2 : WS avant=12Mo apräs=0Mo delta=12Mo
+info: RamAI.Phase3.Memory.MemoryOrchestrator[0]
+      [RAM] Processus chrome : WS avant=0Mo apräs=0Mo delta=0Mo
+info: RamAI.Phase3.Memory.MemoryOrchestrator[0]
+      [RAM] Processus brave : WS avant=14Mo apräs=0Mo delta=14Mo
+info: RamAI.Phase3.Memory.MemoryOrchestrator[0]
+      [RAM] Processus TextInputHost : WS avant=0Mo apräs=0Mo delta=0Mo
+info: RamAI.Phase3.Memory.MemoryOrchestrator[0]
+      [RAM] Processus brave : WS avant=1Mo apräs=0Mo delta=1Mo
+info: RamAI.Phase3.Memory.MemoryOrchestrator[0]
+      [RAM] Processus brave : WS avant=2Mo apräs=0Mo delta=2Mo
+info: RamAI.Phase3.Memory.MemoryOrchestrator[0]
+      [RAM] Processus msedgewebview2 : WS avant=1Mo apräs=0Mo delta=1Mo
+info: RamAI.Phase3.Memory.MemoryOrchestrator[0]
+      [RAM] Processus brave : WS avant=0Mo apräs=0Mo delta=0Mo
+info: RamAI.Phase3.Memory.MemoryOrchestrator[0]
+      [RAM] Processus msedgewebview2 : WS avant=0Mo apräs=0Mo delta=0Mo
+info: RamAI.Phase3.Memory.MemoryOrchestrator[0]
+      [RAM] Processus msedgewebview2 : WS avant=1Mo apräs=0Mo delta=1Mo
+info: RamAI.Phase3.Memory.MemoryOrchestrator[0]
+      [RAM] Processus chrome : WS avant=0Mo apräs=0Mo delta=0Mo
+info: RamAI.Phase3.Memory.MemoryOrchestrator[0]
+      [RAM] Processus msedgewebview2 : WS avant=1Mo apräs=0Mo delta=1Mo
+info: RamAI.Phase3.Memory.MemoryOrchestrator[0]
+      [RAM] Processus olkexthost : WS avant=0Mo apräs=0Mo delta=0Mo
+info: RamAI.Phase3.Memory.MemoryOrchestrator[0]
+      [RAM] Processus msedgewebview2 : WS avant=1Mo apräs=0Mo delta=1Mo
+info: RamAI.Phase3.Memory.MemoryOrchestrator[0]
+      [RAM] Processus sleep : WS avant=5Mo apräs=0Mo delta=5Mo
+info: RamAI.Phase3.Memory.MemoryOrchestrator[0]
+      [RAM] Processus LsaIso : WS avant=0Mo apräs=0Mo delta=0Mo
+info: RamAI.Phase3.Memory.MemoryOrchestrator[0]
+      [RAM] Processus LsaIso : WS avant=0Mo apräs=0Mo delta=0Mo
+info: RamAI.Phase3.Memory.MemoryOrchestrator[0]
+      [RAM] Processus LsaIso : WS avant=0Mo apräs=0Mo delta=0Mo
+info: RamAI.Phase3.Memory.MemoryOrchestrator[0]
+      [RAM] Processus LsaIso : WS avant=0Mo apräs=0Mo delta=0Mo
+info: RamAI.Phase3.Memory.MemoryOrchestrator[0]
+      [MEM-SIGNAL] avail=8892Mo (seuil<2444 >sortie3584) | highRam=False | ramUsedPct=45.4 % | standby=8871Mo | total=16294Mo
+[ECO] RefreshEcoMode - sur batterie : False | ÇcoMode courant : False
+info: RamAI.Phase3.Memory.MemoryOrchestrator[0]
+      [ECO] RefreshEcoMode - sur batterie : False | ÇcoMode courant : False
+[RAM-AI] Scan gaming: 281 processus trouvÇs, recherche dans liste...
+info: RamAI.Phase3.Memory.MemoryOrchestrator[0]
+      Scan gaming: 281 processus en cours, recherche dans liste...
+[RAM-AI] Scan gaming: aucun jeu dÇtectÇ.
+info: RamAI.Phase3.Memory.MemoryOrchestrator[0]
+      [RAM] Processus LsaIso : WS avant=0Mo apräs=0Mo delta=0Mo
+info: RamAI.Phase3.Memory.MemoryOrchestrator[0]
+      [RAM] Processus LsaIso : WS avant=0Mo apräs=0Mo delta=0Mo
+info: RamAI.Phase3.Memory.MemoryOrchestrator[0]
+      [RAM] Processus LsaIso : WS avant=0Mo apräs=0Mo delta=0Mo
+info: RamAI.Phase3.Memory.MemoryOrchestrator[0]
+      [RAM] Processus LsaIso : WS avant=0Mo apräs=0Mo delta=0Mo
+info: RamAI.Phase3.Memory.MemoryOrchestrator[0]
+      [PRêDICTIF] Tendance RAM Ö la baisse dÇtectÇe : 51 Mo/cycle  optimisation prÇventive
+[RAM-AI] ?? PRêDICTIF : RAM en baisse 51 Mo/cycle  Çviction prÇventive
+info: RamAI.Phase3.Memory.MemoryOrchestrator[0]
+      [RAM] Processus LsaIso : WS avant=0Mo apräs=0Mo delta=0Mo
+info: RamAI.Phase3.Memory.MemoryOrchestrator[0]
+      [RAM] Processus NVDisplay.Container : WS avant=2Mo apräs=0Mo delta=2Mo
+info: RamAI.Phase3.Memory.MemoryOrchestrator[0]
+      [RAM] Processus WUDFHost : WS avant=0Mo apräs=0Mo delta=0Mo
+info: RamAI.Phase3.Memory.MemoryOrchestrator[0]
+      [RAM] Processus escsvc64 : WS avant=0Mo apräs=0Mo delta=0Mo
+info: RamAI.Phase3.Memory.MemoryOrchestrator[0]
+      [RAM] Processus RtkAudUService64 : WS avant=0Mo apräs=0Mo delta=0Mo
+info: RamAI.Phase3.Memory.MemoryOrchestrator[0]
+      [RAM] Processus WTabletServicePro : WS avant=2Mo apräs=0Mo delta=2Mo
+info: RamAI.Phase3.Memory.MemoryOrchestrator[0]
+      [RAM] Processus vmcompute : WS avant=0Mo apräs=0Mo delta=0Mo
+info: RamAI.Phase3.Memory.MemoryOrchestrator[0]
+      [RAM] Processus AggregatorHost : WS avant=0Mo apräs=0Mo delta=0Mo
+info: RamAI.Phase3.Memory.MemoryOrchestrator[0]
+      [RAM] Processus BraveCrashHandler : WS avant=0Mo apräs=0Mo delta=0Mo
+info: RamAI.Phase3.Memory.MemoryOrchestrator[0]
+      [RAM] Processus BraveCrashHandler64 : WS avant=0Mo apräs=0Mo delta=0Mo
+info: RamAI.Phase3.Memory.MemoryOrchestrator[0]
+      [RAM] Processus cowork-svc : WS avant=9Mo apräs=0Mo delta=9Mo
+info: RamAI.Phase3.Memory.MemoryOrchestrator[0]
+      [RAM] Processus NVDisplay.Container : WS avant=0Mo apräs=0Mo delta=0Mo
+info: RamAI.Phase3.Memory.MemoryOrchestrator[0]
+      [RAM] Processus taskhostw : WS avant=1Mo apräs=0Mo delta=1Mo
+info: RamAI.Phase3.Memory.MemoryOrchestrator[0]
+      [RAM] Processus CrossDeviceResume : WS avant=0Mo apräs=0Mo delta=0Mo
+info: RamAI.Phase3.Memory.MemoryOrchestrator[0]
+      [RAM] Processus WidgetBoard : WS avant=2Mo apräs=0Mo delta=2Mo
+info: RamAI.Phase3.Memory.MemoryOrchestrator[0]
+      [RAM] Processus WidgetService : WS avant=2Mo apräs=0Mo delta=2Mo
+info: RamAI.Phase3.Memory.MemoryOrchestrator[0]
+      [RAM] Processus msedgewebview2 : WS avant=11Mo apräs=0Mo delta=11Mo
+info: RamAI.Phase3.Memory.MemoryOrchestrator[0]
+      [RAM] Processus msedgewebview2 : WS avant=0Mo apräs=0Mo delta=0Mo
+info: RamAI.Phase3.Memory.MemoryOrchestrator[0]
+      [RAM] Processus msedgewebview2 : WS avant=2Mo apräs=0Mo delta=2Mo
+info: RamAI.Phase3.Memory.MemoryOrchestrator[0]
+      [RAM] Processus msedgewebview2 : WS avant=2Mo apräs=0Mo delta=2Mo
+info: RamAI.Phase3.Memory.MemoryOrchestrator[0]
+      [RAM] Processus msedgewebview2 : WS avant=0Mo apräs=0Mo delta=0Mo
+info: RamAI.Phase3.Memory.MemoryOrchestrator[0]
+      [RAM] Processus msedgewebview2 : WS avant=2Mo apräs=0Mo delta=2Mo
+info: RamAI.Phase3.Memory.MemoryOrchestrator[0]
+      [RAM] Processus MicrosoftStartFeedProvider : WS avant=4Mo apräs=0Mo delta=4Mo
+info: RamAI.Phase3.Memory.MemoryOrchestrator[0]
+      [RAM] Processus SecurityHealthSystray : WS avant=0Mo apräs=0Mo delta=0Mo
+info: RamAI.Phase3.Memory.MemoryOrchestrator[0]
+      [RAM] Processus EPPCCMON : WS avant=0Mo apräs=0Mo delta=0Mo
+info: RamAI.Phase3.Memory.MemoryOrchestrator[0]
+      [RAM] Processus ctfmon : WS avant=0Mo apräs=0Mo delta=0Mo
+info: RamAI.Phase3.Memory.MemoryOrchestrator[0]
+      [RAM] Processus TabTip : WS avant=7Mo apräs=0Mo delta=7Mo
+info: RamAI.Phase3.Memory.MemoryOrchestrator[0]
+      [RAM] Processus splwow64 : WS avant=0Mo apräs=0Mo delta=0Mo
+info: RamAI.Phase3.Memory.MemoryOrchestrator[0]
+      [RAM] Processus TextInputHost : WS avant=3Mo apräs=0Mo delta=3Mo
+info: RamAI.Phase3.Memory.MemoryOrchestrator[0]
+      [RAM] Processus Wacom_TabletUser : WS avant=0Mo apräs=0Mo delta=0Mo
+info: RamAI.Phase3.Memory.MemoryOrchestrator[0]
+      [RAM] Processus Wacom_UpdateUtil : WS avant=0Mo apräs=0Mo delta=0Mo
+info: RamAI.Phase3.Memory.MemoryOrchestrator[0]
+      [RAM] Processus WacomHost : WS avant=0Mo apräs=0Mo delta=0Mo
+info: RamAI.Phase3.Memory.MemoryOrchestrator[0]
+      [RAM] Processus Wacom_Tablet : WS avant=1Mo apräs=0Mo delta=1Mo
+info: RamAI.Phase3.Memory.MemoryOrchestrator[0]
+      [RAM] Processus Wacom_TouchUser : WS avant=0Mo apräs=0Mo delta=0Mo
+info: RamAI.Phase3.Memory.MemoryOrchestrator[0]
+      [RAM] Processus CLIPStudioPaint : WS avant=7Mo apräs=0Mo delta=7Mo
+info: RamAI.Phase3.Memory.MemoryOrchestrator[0]
+      [RAM] Processus claude : WS avant=21Mo apräs=0Mo delta=21Mo
+info: RamAI.Phase3.Memory.MemoryOrchestrator[0]
+      [RAM] Processus claude : WS avant=0Mo apräs=0Mo delta=0Mo
+info: RamAI.Phase3.Memory.MemoryOrchestrator[0]
+      [RAM] Processus claude : WS avant=1Mo apräs=0Mo delta=1Mo
+info: RamAI.Phase3.Memory.MemoryOrchestrator[0]
+      [RAM] Processus claude : WS avant=10Mo apräs=0Mo delta=10Mo
+info: RamAI.Phase3.Memory.MemoryOrchestrator[0]
+      [RAM] Processus claude : WS avant=0Mo apräs=0Mo delta=0Mo
+info: RamAI.Phase3.Memory.MemoryOrchestrator[0]
+      [RAM] Processus claude : WS avant=0Mo apräs=0Mo delta=0Mo
+info: RamAI.Phase3.Memory.MemoryOrchestrator[0]
+      [RAM] Processus claude : WS avant=14Mo apräs=0Mo delta=14Mo
+info: RamAI.Phase3.Memory.MemoryOrchestrator[0]
+      [RAM] Processus claude : WS avant=0Mo apräs=0Mo delta=0Mo
+info: RamAI.Phase3.Memory.MemoryOrchestrator[0]
+      [RAM] Processus claude : WS avant=1Mo apräs=0Mo delta=1Mo
+info: RamAI.Phase3.Memory.MemoryOrchestrator[0]
+      [RAM] Processus conhost : WS avant=0Mo apräs=0Mo delta=0Mo
+info: RamAI.Phase3.Memory.MemoryOrchestrator[0]
+      [RAM] Processus powershell : WS avant=0Mo apräs=0Mo delta=0Mo
+info: RamAI.Phase3.Memory.MemoryOrchestrator[0]
+      [RAM] Processus chrome : WS avant=14Mo apräs=0Mo delta=14Mo
+info: RamAI.Phase3.Memory.MemoryOrchestrator[0]
+      [RAM] Processus chrome : WS avant=0Mo apräs=0Mo delta=0Mo
+info: RamAI.Phase3.Memory.MemoryOrchestrator[0]
+      [RAM] Processus chrome : WS avant=3Mo apräs=0Mo delta=3Mo
+info: RamAI.Phase3.Memory.MemoryOrchestrator[0]
+      [RAM] Processus chrome : WS avant=4Mo apräs=0Mo delta=4Mo
+info: RamAI.Phase3.Memory.MemoryOrchestrator[0]
+      [RAM] Processus chrome : WS avant=1Mo apräs=0Mo delta=1Mo
+info: RamAI.Phase3.Memory.MemoryOrchestrator[0]
+      [RAM] Processus chrome : WS avant=2Mo apräs=0Mo delta=2Mo
+info: RamAI.Phase3.Memory.MemoryOrchestrator[0]
+      [RAM] Processus chrome : WS avant=7Mo apräs=0Mo delta=7Mo
+info: RamAI.Phase3.Memory.MemoryOrchestrator[0]
+      [RAM] Processus chrome : WS avant=2Mo apräs=0Mo delta=2Mo
+info: RamAI.Phase3.Memory.MemoryOrchestrator[0]
+      [RAM] Processus cmd : WS avant=0Mo apräs=0Mo delta=0Mo
+info: RamAI.Phase3.Memory.MemoryOrchestrator[0]
+      [RAM] Processus conhost : WS avant=0Mo apräs=0Mo delta=0Mo
+info: RamAI.Phase3.Memory.MemoryOrchestrator[0]
+      [RAM] Processus chrome-native-host : WS avant=0Mo apräs=0Mo delta=0Mo
+info: RamAI.Phase3.Memory.MemoryOrchestrator[0]
+      [RAM] Processus WhatsApp.Root : WS avant=11Mo apräs=0Mo delta=11Mo
+info: RamAI.Phase3.Memory.MemoryOrchestrator[0]
+      [RAM] Processus msedgewebview2 : WS avant=2Mo apräs=0Mo delta=2Mo
+info: RamAI.Phase3.Memory.MemoryOrchestrator[0]
+      [RAM] Processus msedgewebview2 : WS avant=0Mo apräs=0Mo delta=0Mo
+info: RamAI.Phase3.Memory.MemoryOrchestrator[0]
+      [RAM] Processus msedgewebview2 : WS avant=4Mo apräs=0Mo delta=4Mo
+info: RamAI.Phase3.Memory.MemoryOrchestrator[0]
+      [RAM] Processus msedgewebview2 : WS avant=5Mo apräs=0Mo delta=5Mo
+info: RamAI.Phase3.Memory.MemoryOrchestrator[0]
+      [RAM] Processus msedgewebview2 : WS avant=0Mo apräs=0Mo delta=0Mo
+info: RamAI.Phase3.Memory.MemoryOrchestrator[0]
+      [RAM] Processus msedgewebview2 : WS avant=17Mo apräs=0Mo delta=17Mo
+info: RamAI.Phase3.Memory.MemoryOrchestrator[0]
+      [RAM] Processus msedgewebview2 : WS avant=0Mo apräs=0Mo delta=0Mo
+info: RamAI.Phase3.Memory.MemoryOrchestrator[0]
+      [RAM] Processus msedgewebview2 : WS avant=2Mo apräs=0Mo delta=2Mo
+info: RamAI.Phase3.Memory.MemoryOrchestrator[0]
+      [RAM] Processus claude : WS avant=0Mo apräs=0Mo delta=0Mo
+info: RamAI.Phase3.Memory.MemoryOrchestrator[0]
+      [RAM] Processus taskhostw : WS avant=0Mo apräs=0Mo delta=0Mo
+info: RamAI.Phase3.Memory.MemoryOrchestrator[0]
+      [RAM] Processus CalculatorApp : WS avant=0Mo apräs=0Mo delta=0Mo
+info: RamAI.Phase3.Memory.MemoryOrchestrator[0]
+      [RAM] Processus chrome : WS avant=2Mo apräs=0Mo delta=2Mo
+info: RamAI.Phase3.Memory.MemoryOrchestrator[0]
+      [RAM] Processus chrome : WS avant=1Mo apräs=0Mo delta=1Mo
+info: RamAI.Phase3.Memory.MemoryOrchestrator[0]
+      [RAM] Processus claude : WS avant=34Mo apräs=0Mo delta=34Mo
+info: RamAI.Phase3.Memory.MemoryOrchestrator[0]
+      [RAM] Processus conhost : WS avant=0Mo apräs=0Mo delta=0Mo
+info: RamAI.Phase3.Memory.MemoryOrchestrator[0]
+      [RAM] Processus bash : WS avant=0Mo apräs=0Mo delta=0Mo
+info: RamAI.Phase3.Memory.MemoryOrchestrator[0]
+      [RAM] Processus bash : WS avant=2Mo apräs=0Mo delta=2Mo
+info: RamAI.Phase3.Memory.MemoryOrchestrator[0]
+      [RAM] Processus conhost : WS avant=0Mo apräs=0Mo delta=0Mo
+info: RamAI.Phase3.Memory.MemoryOrchestrator[0]
+      [RAM] Processus ShellHost : WS avant=0Mo apräs=0Mo delta=0Mo
+info: RamAI.Phase3.Memory.MemoryOrchestrator[0]
+      [RAM] Processus smartscreen : WS avant=0Mo apräs=0Mo delta=0Mo
+info: RamAI.Phase3.Memory.MemoryOrchestrator[0]
+      [RAM] Processus OpenConsole : WS avant=0Mo apräs=0Mo delta=0Mo
+info: RamAI.Phase3.Memory.MemoryOrchestrator[0]
+      [RAM] Processus powershell : WS avant=0Mo apräs=0Mo delta=0Mo
+info: RamAI.Phase3.Memory.MemoryOrchestrator[0]
+      [RAM] Processus WmiPrvSE : WS avant=0Mo apräs=0Mo delta=0Mo
+info: RamAI.Phase3.Memory.MemoryOrchestrator[0]
+      [RAM] Processus brave : WS avant=79Mo apräs=0Mo delta=79Mo
+info: RamAI.Phase3.Memory.MemoryOrchestrator[0]
+      [RAM] Processus brave : WS avant=0Mo apräs=0Mo delta=0Mo
+info: RamAI.Phase3.Memory.MemoryOrchestrator[0]
+      [RAM] Processus brave : WS avant=10Mo apräs=0Mo delta=10Mo
+info: RamAI.Phase3.Memory.MemoryOrchestrator[0]
+      [RAM] Processus brave : WS avant=27Mo apräs=0Mo delta=27Mo
+info: RamAI.Phase3.Memory.MemoryOrchestrator[0]
+      [RAM] Processus brave : WS avant=2Mo apräs=0Mo delta=2Mo
+info: RamAI.Phase3.Memory.MemoryOrchestrator[0]
+      [RAM] Processus NgcIso : WS avant=0Mo apräs=0Mo delta=0Mo
+info: RamAI.Phase3.Memory.MemoryOrchestrator[0]
+      [RAM] Processus brave : WS avant=48Mo apräs=0Mo delta=48Mo
+info: RamAI.Phase3.Memory.MemoryOrchestrator[0]
+      [RAM] Processus brave : WS avant=5Mo apräs=0Mo delta=5Mo
+info: RamAI.Phase3.Memory.MemoryOrchestrator[0]
+      [RAM] Processus brave : WS avant=6Mo apräs=0Mo delta=6Mo
+info: RamAI.Phase3.Memory.MemoryOrchestrator[0]
+      [RAM] Processus brave : WS avant=16Mo apräs=0Mo delta=16Mo
+info: RamAI.Phase3.Memory.MemoryOrchestrator[0]
+      [RAM] Processus brave : WS avant=53Mo apräs=0Mo delta=53Mo
+info: RamAI.Phase3.Memory.MemoryOrchestrator[0]
+      [RAM] Processus brave : WS avant=56Mo apräs=0Mo delta=56Mo
+info: RamAI.Phase3.Memory.MemoryOrchestrator[0]
+      [RAM] Processus brave : WS avant=3Mo apräs=0Mo delta=3Mo
+info: RamAI.Phase3.Memory.MemoryOrchestrator[0]
+      [RAM] Processus brave : WS avant=4Mo apräs=0Mo delta=4Mo
+info: RamAI.Phase3.Memory.MemoryOrchestrator[0]
+      [RAM] Processus brave : WS avant=55Mo apräs=0Mo delta=55Mo
+info: RamAI.Phase3.Memory.MemoryOrchestrator[0]
+      [RAM] Processus WmiPrvSE : WS avant=1Mo apräs=0Mo delta=1Mo
+info: RamAI.Phase3.Memory.MemoryOrchestrator[0]
+      [RAM] Processus brave : WS avant=2Mo apräs=0Mo delta=2Mo
+info: RamAI.Phase3.Memory.MemoryOrchestrator[0]
+      [RAM] Processus brave : WS avant=24Mo apräs=0Mo delta=24Mo
+info: RamAI.Phase3.Memory.MemoryOrchestrator[0]
+      [RAM] Processus brave : WS avant=52Mo apräs=0Mo delta=52Mo
+info: RamAI.Phase3.Memory.MemoryOrchestrator[0]
+      [RAM] Processus brave : WS avant=2Mo apräs=0Mo delta=2Mo
+info: RamAI.Phase3.Memory.MemoryOrchestrator[0]
+      [RAM] Processus brave : WS avant=3Mo apräs=0Mo delta=3Mo
+info: RamAI.Phase3.Memory.MemoryOrchestrator[0]
+      [RAM] Processus brave : WS avant=116Mo apräs=0Mo delta=116Mo
+info: RamAI.Phase3.Memory.MemoryOrchestrator[0]
+      [RAM] Processus brave : WS avant=121Mo apräs=0Mo delta=121Mo
+info: RamAI.Phase3.Memory.MemoryOrchestrator[0]
+      [RAM] Processus brave : WS avant=2Mo apräs=0Mo delta=2Mo
+info: RamAI.Phase3.Memory.MemoryOrchestrator[0]
+      [RAM] Processus brave : WS avant=113Mo apräs=0Mo delta=113Mo
+info: RamAI.Phase3.Memory.MemoryOrchestrator[0]
+      [RAM] Processus brave : WS avant=2Mo apräs=0Mo delta=2Mo
+info: RamAI.Phase3.Memory.MemoryOrchestrator[0]
+      [RAM] Processus brave : WS avant=2Mo apräs=0Mo delta=2Mo
+info: RamAI.Phase3.Memory.MemoryOrchestrator[0]
+      [RAM] Processus brave : WS avant=2Mo apräs=0Mo delta=2Mo
+info: RamAI.Phase3.Memory.MemoryOrchestrator[0]
+      [RAM] Processus brave : WS avant=51Mo apräs=0Mo delta=51Mo
+info: RamAI.Phase3.Memory.MemoryOrchestrator[0]
+      [RAM] Processus brave : WS avant=1Mo apräs=0Mo delta=1Mo
+info: RamAI.Phase3.Memory.MemoryOrchestrator[0]
+      [RAM] Processus brave : WS avant=80Mo apräs=0Mo delta=80Mo
+info: RamAI.Phase3.Memory.MemoryOrchestrator[0]
+      [RAM] Processus brave : WS avant=9Mo apräs=0Mo delta=9Mo
+info: RamAI.Phase3.Memory.MemoryOrchestrator[0]
+      [RAM] Processus brave : WS avant=79Mo apräs=0Mo delta=79Mo
+info: RamAI.Phase3.Memory.MemoryOrchestrator[0]
+      [RAM] Processus brave : WS avant=2Mo apräs=0Mo delta=2Mo
+info: RamAI.Phase3.Memory.MemoryOrchestrator[0]
+      [RAM] Processus brave : WS avant=5Mo apräs=0Mo delta=5Mo
+info: RamAI.Phase3.Memory.MemoryOrchestrator[0]
+      [RAM] Processus brave : WS avant=0Mo apräs=0Mo delta=0Mo
+info: RamAI.Phase3.Memory.MemoryOrchestrator[0]
+      [RAM] Processus blender : WS avant=1Mo apräs=0Mo delta=1Mo
+info: RamAI.Phase3.Memory.MemoryOrchestrator[0]
+      [RAM] Processus conhost : WS avant=0Mo apräs=0Mo delta=0Mo
+info: RamAI.Phase3.Memory.MemoryOrchestrator[0]
+      [RAM] Processus brave : WS avant=22Mo apräs=0Mo delta=22Mo
+info: RamAI.Phase3.Memory.MemoryOrchestrator[0]
+      [RAM] Processus brave : WS avant=3Mo apräs=0Mo delta=3Mo
+info: RamAI.Phase3.Memory.MemoryOrchestrator[0]
+      [RAM] Processus CrealityPrint : WS avant=7Mo apräs=0Mo delta=7Mo
+info: RamAI.Phase3.Memory.MemoryOrchestrator[0]
+      [RAM] Processus msedgewebview2 : WS avant=25Mo apräs=0Mo delta=25Mo
+info: RamAI.Phase3.Memory.MemoryOrchestrator[0]
+      [RAM] Processus msedgewebview2 : WS avant=0Mo apräs=0Mo delta=0Mo
+info: RamAI.Phase3.Memory.MemoryOrchestrator[0]
+      [RAM] Processus msedgewebview2 : WS avant=0Mo apräs=0Mo delta=0Mo
+info: RamAI.Phase3.Memory.MemoryOrchestrator[0]
+      [RAM] Processus msedgewebview2 : WS avant=9Mo apräs=0Mo delta=9Mo
+info: RamAI.Phase3.Memory.MemoryOrchestrator[0]
+      [RAM] Processus msedgewebview2 : WS avant=0Mo apräs=0Mo delta=0Mo
+info: RamAI.Phase3.Memory.MemoryOrchestrator[0]
+      [RAM] Processus msedgewebview2 : WS avant=8Mo apräs=0Mo delta=8Mo
+info: RamAI.Phase3.Memory.MemoryOrchestrator[0]
+      [RAM] Processus olk : WS avant=3Mo apräs=0Mo delta=3Mo
+info: RamAI.Phase3.Memory.MemoryOrchestrator[0]
+      [RAM] Processus msedgewebview2 : WS avant=25Mo apräs=0Mo delta=25Mo
+info: RamAI.Phase3.Memory.MemoryOrchestrator[0]
+      [RAM] Processus msedgewebview2 : WS avant=0Mo apräs=0Mo delta=0Mo
+info: RamAI.Phase3.Memory.MemoryOrchestrator[0]
+      [RAM] Processus CLIPStudio : WS avant=2Mo apräs=0Mo delta=2Mo
+info: RamAI.Phase3.Memory.MemoryOrchestrator[0]
+      [RAM] Processus msedgewebview2 : WS avant=1Mo apräs=0Mo delta=1Mo
+info: RamAI.Phase3.Memory.MemoryOrchestrator[0]
+      [RAM] Processus msedgewebview2 : WS avant=8Mo apräs=0Mo delta=8Mo
+info: RamAI.Phase3.Memory.MemoryOrchestrator[0]
+      [RAM] Processus msedgewebview2 : WS avant=2Mo apräs=0Mo delta=2Mo
+info: RamAI.Phase3.Memory.MemoryOrchestrator[0]
+      [RAM] Processus msedgewebview2 : WS avant=6Mo apräs=0Mo delta=6Mo
+info: RamAI.Phase3.Memory.MemoryOrchestrator[0]
+      [RAM] Processus msedgewebview2 : WS avant=1Mo apräs=0Mo delta=1Mo
+info: RamAI.Phase3.Memory.MemoryOrchestrator[0]
+      [RAM] Processus msedgewebview2 : WS avant=5Mo apräs=0Mo delta=5Mo
+info: RamAI.Phase3.Memory.MemoryOrchestrator[0]
+      [RAM] Processus msedgewebview2 : WS avant=49Mo apräs=0Mo delta=49Mo
+info: RamAI.Phase3.Memory.MemoryOrchestrator[0]
+      [RAM] Processus msedgewebview2 : WS avant=25Mo apräs=0Mo delta=25Mo
+info: RamAI.Phase3.Memory.MemoryOrchestrator[0]
+      [RAM] Processus msedgewebview2 : WS avant=0Mo apräs=0Mo delta=0Mo
+info: RamAI.Phase3.Memory.MemoryOrchestrator[0]
+      [RAM] Processus msedgewebview2 : WS avant=5Mo apräs=0Mo delta=5Mo
+info: RamAI.Phase3.Memory.MemoryOrchestrator[0]
+      [RAM] Processus msedgewebview2 : WS avant=18Mo apräs=0Mo delta=18Mo
+info: RamAI.Phase3.Memory.MemoryOrchestrator[0]
+      [RAM] Processus msedgewebview2 : WS avant=0Mo apräs=0Mo delta=0Mo
+info: RamAI.Phase3.Memory.MemoryOrchestrator[0]
+      [RAM] Processus msedgewebview2 : WS avant=1Mo apräs=0Mo delta=1Mo
+info: RamAI.Phase3.Memory.MemoryOrchestrator[0]
+      [RAM] Processus msedgewebview2 : WS avant=2Mo apräs=0Mo delta=2Mo
+info: RamAI.Phase3.Memory.MemoryOrchestrator[0]
+      [RAM] Processus msedgewebview2 : WS avant=2Mo apräs=0Mo delta=2Mo
+info: RamAI.Phase3.Memory.MemoryOrchestrator[0]
+      [RAM] Processus msedgewebview2 : WS avant=1Mo apräs=0Mo delta=1Mo
+info: RamAI.Phase3.Memory.MemoryOrchestrator[0]
+      [RAM] Processus msedgewebview2 : WS avant=1Mo apräs=0Mo delta=1Mo
+info: RamAI.Phase3.Memory.MemoryOrchestrator[0]
+      [RAM] Processus olkexthost : WS avant=0Mo apräs=0Mo delta=0Mo
+info: RamAI.Phase3.Memory.MemoryOrchestrator[0]
+      [RAM] Processus msedgewebview2 : WS avant=99Mo apräs=1Mo delta=97Mo
+info: RamAI.Phase3.Memory.MemoryOrchestrator[0]
+      [RAM] Processus msedgewebview2 : WS avant=2Mo apräs=0Mo delta=2Mo
+info: RamAI.Phase3.Memory.MemoryOrchestrator[0]
+      [RAM] Processus RamAI.Phase3 : WS avant=25Mo apräs=0Mo delta=25Mo
+info: RamAI.Phase3.Memory.MemoryOrchestrator[0]
+      [RAM] Processus sleep : WS avant=5Mo apräs=0Mo delta=5Mo
+info: RamAI.Phase3.Memory.MemoryOrchestrator[0]
+      [RAM] Processus LsaIso : WS avant=0Mo apräs=0Mo delta=0Mo
+info: RamAI.Phase3.Memory.MemoryOrchestrator[0]
+      [RAM] Processus LsaIso : WS avant=0Mo apräs=0Mo delta=0Mo
+info: RamAI.Phase3.Memory.MemoryOrchestrator[0]
+      [RAM] Processus LsaIso : WS avant=0Mo apräs=0Mo delta=0Mo
+info: RamAI.Phase3.Memory.MemoryOrchestrator[0]
+      [RAM] Processus LsaIso : WS avant=0Mo apräs=0Mo delta=0Mo
+info: RamAI.Phase3.Memory.MemoryOrchestrator[0]
+      [RAM] Processus LsaIso : WS avant=0Mo apräs=0Mo delta=0Mo
+info: RamAI.Phase3.Memory.MemoryOrchestrator[0]
+      [RAM] Processus LsaIso : WS avant=0Mo apräs=0Mo delta=0Mo
+info: RamAI.Phase3.Memory.MemoryOrchestrator[0]
+      [MEM-SIGNAL] avail=8893Mo (seuil<2444 >sortie3584) | highRam=False | ramUsedPct=45.4 % | standby=8821Mo | total=16294Mo
+info: RamAI.Phase3.Memory.MemoryOrchestrator[0]
+      Scan gaming: 280 processus en cours, recherche dans liste...
+[RAM-AI] Scan gaming: 280 processus trouvÇs, recherche dans liste...
+[RAM-AI] Scan gaming: aucun jeu dÇtectÇ.
+info: RamAI.Phase3.Memory.MemoryOrchestrator[0]
+      [RAM] Processus LsaIso : WS avant=0Mo apräs=0Mo delta=0Mo
+info: RamAI.Phase3.Memory.MemoryOrchestrator[0]
+      [RAM] Processus LsaIso : WS avant=0Mo apräs=0Mo delta=0Mo
+info: RamAI.Phase3.Memory.MemoryOrchestrator[0]
+      [RAM] Processus LsaIso : WS avant=0Mo apräs=0Mo delta=0Mo
+info: RamAI.Phase3.Memory.MemoryOrchestrator[0]
+      [RAM] Processus LsaIso : WS avant=0Mo apräs=0Mo delta=0Mo
+info: RamAI.Phase3.Memory.MemoryOrchestrator[0]
+      [RAM] Processus LsaIso : WS avant=0Mo apräs=0Mo delta=0Mo
+info: RamAI.Phase3.Memory.MemoryOrchestrator[0]
+      [RAM] Processus LsaIso : WS avant=0Mo apräs=0Mo delta=0Mo
+info: RamAI.Phase3.Memory.MemoryOrchestrator[0]
+      [RAM] Processus LsaIso : WS avant=0Mo apräs=0Mo delta=0Mo
+info: RamAI.Phase3.Memory.MemoryOrchestrator[0]
+      [RAM] Processus LsaIso : WS avant=0Mo apräs=0Mo delta=0Mo
+info: RamAI.Phase3.Memory.MemoryOrchestrator[0]
+      [RAM] Processus LsaIso : WS avant=0Mo apräs=0Mo delta=0Mo
+info: RamAI.Phase3.Memory.MemoryOrchestrator[0]
+      [RAM] Processus LsaIso : WS avant=0Mo apräs=0Mo delta=0Mo
+info: RamAI.Phase3.Memory.MemoryOrchestrator[0]
+      [MEM-SIGNAL] avail=8586Mo (seuil<2444 >sortie3584) | highRam=False | ramUsedPct=47.3 % | standby=8406Mo | total=16294Mo
+[ECO] RefreshEcoMode - sur batterie : False | ÇcoMode courant : False
+info: RamAI.Phase3.Memory.MemoryOrchestrator[0]
+      [ECO] RefreshEcoMode - sur batterie : False | ÇcoMode courant : False
+[RAM-AI] Scan gaming: 279 processus trouvÇs, recherche dans liste...
+info: RamAI.Phase3.Memory.MemoryOrchestrator[0]
+      Scan gaming: 279 processus en cours, recherche dans liste...
+[RAM-AI] Scan gaming: aucun jeu dÇtectÇ.
+info: RamAI.Phase3.Memory.MemoryOrchestrator[0]
+      [RAM] Processus LsaIso : WS avant=0Mo apräs=0Mo delta=0Mo
+info: RamAI.Phase3.Memory.MemoryOrchestrator[0]
+      [RAM] Processus LsaIso : WS avant=0Mo apräs=0Mo delta=0Mo
+info: RamAI.Phase3.Memory.MemoryOrchestrator[0]
+      [RAM] Processus LsaIso : WS avant=0Mo apräs=0Mo delta=0Mo
+info: RamAI.Phase3.Memory.MemoryOrchestrator[0]
+      [RAM] Processus LsaIso : WS avant=0Mo apräs=0Mo delta=0Mo
+info: RamAI.Phase3.Memory.MemoryOrchestrator[0]
+      [RAM] Processus LsaIso : WS avant=0Mo apräs=0Mo delta=0Mo
+info: RamAI.Phase3.Memory.MemoryOrchestrator[0]
+      [RAM] Processus LsaIso : WS avant=0Mo apräs=0Mo delta=0Mo
+info: RamAI.Phase3.Memory.MemoryOrchestrator[0]
+      [RAM] Processus LsaIso : WS avant=0Mo apräs=0Mo delta=0Mo

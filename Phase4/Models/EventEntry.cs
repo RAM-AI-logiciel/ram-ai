@@ -21,4 +21,5 @@ public sealed class EventEntry
     [JsonPropertyName("vramMb")]                public long     VramMb               { get; init; }
     [JsonPropertyName("swapPagesPerSec")]       public float    SwapPagesPerSec      { get; init; }
     [JsonPropertyName("antiSwapIntervention")]  public bool     AntiSwapIntervention { get; init; }
+    [JsonPropertyName("intervalMs")]            public int      IntervalMs           { get; init; }
 }

@@ -41,6 +41,23 @@ internal sealed class EventLogger : IDisposable
         };
 
         AppendLine(new ServiceStartMarker { Marker = "SERVICE_START", Timestamp = DateTime.UtcNow });
+
+        // Écrire baseline.json : RAM utilisée au démarrage du service.
+        // Phase4 lit ce fichier pour ancrer le % d'amélioration sur le vrai démarrage
+        // du service, pas sur l'ouverture du dashboard.
+        // Écrasé à chaque SERVICE_START → toujours cohérent avec le dernier lancement.
+        if (!string.IsNullOrEmpty(dir))
+        {
+            try
+            {
+                long totalMb = RamAI.Phase3.Memory.NativeMemory.GetTotalPhysicalMb();
+                long availMb = RamAI.Phase3.Memory.NativeMemory.GetAvailablePhysicalMb();
+                long usedMb  = totalMb - availMb;
+                string baselineJson = $"{{\"ramUsedMb\":{usedMb},\"timestamp\":\"{DateTime.UtcNow:O}\"}}";
+                File.WriteAllText(Path.Combine(dir, "baseline.json"), baselineJson, Encoding.UTF8);
+            }
+            catch { /* ne jamais bloquer le démarrage du service pour ça */ }
+        }
     }
 
     /// <summary>Écrit une entrée de tick dans le log.</summary>
@@ -150,4 +167,6 @@ internal sealed class EventEntry
     public float    SwapPagesPerSec      { get; init; }
     [System.Text.Json.Serialization.JsonPropertyName("antiSwapIntervention")]
     public bool     AntiSwapIntervention { get; init; }
+    [System.Text.Json.Serialization.JsonPropertyName("intervalMs")]
+    public int      IntervalMs           { get; init; }
 }

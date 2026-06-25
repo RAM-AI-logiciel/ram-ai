@@ -52,6 +52,10 @@ public sealed partial class MainViewModel : ObservableObject
     [ObservableProperty] private bool   _isTournamentModeActive;
     [ObservableProperty] private string _vramInfoText       = string.Empty;
 
+    // ── Palier actif (affiché dans la status bar) ─────────────────────────────
+    [ObservableProperty] private string _palierLabel = "En attente…";
+    [ObservableProperty] private string _palierDetail = string.Empty;
+
     // ── RAM au démarrage ─────────────────────────────────────────────────────
     private long _baselineRamUsedMb;
     private long _totalRamMb;
@@ -145,9 +149,11 @@ public sealed partial class MainViewModel : ObservableObject
         }
 
         var (totalMb, usedMb) = SystemMemory.GetPhysicalMemoryMb();
-        _baselineRamUsedMb = usedMb;
-        _totalRamMb        = totalMb;
-        CurrentRamUsedGb   = usedMb / 1024.0;
+        _totalRamMb      = totalMb;
+        CurrentRamUsedGb = usedMb / 1024.0;
+        // Baseline depuis baseline.json (écrit par Phase3 au SERVICE_START).
+        // Si le fichier n'existe pas encore, fallback sur la RAM actuelle.
+        _baselineRamUsedMb = ReadBaselineFromPhase3() ?? usedMb;
 
         // Charger les stats et réinitialiser les compteurs du jour si nécessaire
         _stats = _statsService.Load();
@@ -262,6 +268,18 @@ public sealed partial class MainViewModel : ObservableObject
                 ? $"VRAM : {entry.VramMb} Mo"
                 : string.Empty;
 
+            // ── Palier actif ──
+            (PalierLabel, PalierDetail) = entry switch
+            {
+                { IsTournamentMode: true }   => ("Tournoi",   "500 ms — performances gaming maximales"),
+                { IsEcoMode: true }          => ("Éco",       "Batterie détectée — activité réduite"),
+                { IsGamingMode: true }       => ("Gaming",    $"Jeu : {entry.GameName}"),
+                { AntiSwapIntervention: true }=> ("Anti-Swap", $"Swap élevé : {entry.SwapPagesPerSec:F0} pages/s"),
+                { IntervalMs: <= 1200 }      => ("HighRam",   "RAM disponible faible — optimisation active"),
+                { IntervalMs: >= 3000 }      => ("Repos",     "RAM disponible confortable — aucune optimisation nécessaire"),
+                _                            => ("Normal",    "Optimisation en cours"),
+            };
+
             // ── Mettre à jour le mode courant (lu par MeasureLoop) ──
             _currentActiveMode =
                 entry.IsTournamentMode                  ? "Tournoi" :
@@ -318,7 +336,7 @@ public sealed partial class MainViewModel : ObservableObject
 
             // Rafraîchir le statut service max toutes les 10 s pour éviter
             // de spawner sc.exe à chaque tick (cause de micro-spikes CPU en jeu).
-            if ((DateTime.UtcNow - _lastServiceRefresh).TotalSeconds >= 10)
+            if ((DateTime.UtcNow - _lastServiceRefresh).TotalSeconds >= 3)
             {
                 _cachedServiceStatus = GetServiceStatus();
                 _lastServiceRefresh  = DateTime.UtcNow;
@@ -501,6 +519,21 @@ public sealed partial class MainViewModel : ObservableObject
             })?.WaitForExit(5000);
         }
         catch { }
+    }
+
+    private static long? ReadBaselineFromPhase3()
+    {
+        try
+        {
+            string path = Path.Combine(SharedFlagDir, "baseline.json");
+            if (!File.Exists(path)) return null;
+            using var fs  = new FileStream(path, FileMode.Open, FileAccess.Read, FileShare.ReadWrite);
+            using var doc = System.Text.Json.JsonDocument.Parse(fs);
+            if (doc.RootElement.TryGetProperty("ramUsedMb", out var el) && el.TryGetInt64(out long mb) && mb > 0)
+                return mb;
+            return null;
+        }
+        catch { return null; }
     }
 
     private static string GetServiceStatus()

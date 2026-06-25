@@ -852,6 +852,7 @@ internal sealed class MemoryOrchestrator : IDisposable
             VramMb                 = _vramMb,
             SwapPagesPerSec        = SwapPagesPerSec,
             AntiSwapIntervention   = AntiSwapActive,
+            IntervalMs             = _intervalMs,
         });
 
         _log.LogDebug(

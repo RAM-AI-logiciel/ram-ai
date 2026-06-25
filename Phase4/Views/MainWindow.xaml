@@ -579,6 +579,15 @@
                     </TextBlock>
                 </StackPanel>
 
+                <!-- Palier actif — centré -->
+                <StackPanel Grid.Column="1" Orientation="Horizontal"
+                            HorizontalAlignment="Center" VerticalAlignment="Center">
+                    <TextBlock FontSize="11" FontWeight="SemiBold" Foreground="#8B949E"
+                               Text="{Binding PalierLabel}"/>
+                    <TextBlock FontSize="11" Foreground="#6E7681" Margin="5,0,0,0"
+                               Text="{Binding PalierDetail}"/>
+                </StackPanel>
+
                 <TextBlock Grid.Column="2" FontSize="11" Foreground="#8B949E"
                            VerticalAlignment="Center">
                     <Run Text="Mis à jour : "/>

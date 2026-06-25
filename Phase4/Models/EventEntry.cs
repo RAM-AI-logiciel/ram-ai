@@ -14,12 +14,6 @@ public sealed class EventEntry
     [JsonPropertyName("cacheByteSaved")] public long     CacheByteSaved { get; init; }
     [JsonPropertyName("isGamingMode")]         public bool     IsGamingMode         { get; init; }
     [JsonPropertyName("gameName")]             public string   GameName             { get; init; } = string.Empty;
-    [JsonPropertyName("isBrowserMode")]        public bool     IsBrowserMode        { get; init; }
-    [JsonPropertyName("browserName")]          public string   BrowserName          { get; init; } = string.Empty;
-    [JsonPropertyName("browserTabsOptimized")] public int      BrowserTabsOptimized { get; init; }
-    [JsonPropertyName("isAiMode")]             public bool     IsAiMode             { get; init; }
-    [JsonPropertyName("aiName")]               public string   AiName               { get; init; } = string.Empty;
-    [JsonPropertyName("aiProcessesOptimized")] public int      AiProcessesOptimized { get; init; }
     /// <summary>RAM physique effectivement libérée ce cycle (mesurée avant/après par Phase3).</summary>
     [JsonPropertyName("physicalMbFreed")]       public long     PhysicalMbFreed      { get; init; }
     [JsonPropertyName("isEcoMode")]             public bool     IsEcoMode            { get; init; }

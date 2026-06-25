@@ -80,13 +80,11 @@
         <Grid.RowDefinitions>
             <RowDefinition Height="56"/>   <!-- Row 0 : Header -->
             <RowDefinition Height="Auto"/> <!-- Row 1 : Bannière Gaming -->
-            <RowDefinition Height="Auto"/> <!-- Row 2 : Bannière Navigateur -->
-            <RowDefinition Height="Auto"/> <!-- Row 3 : Bannière IA -->
-            <RowDefinition Height="Auto"/> <!-- Row 4 : Bannière Mode Éco -->
-            <RowDefinition Height="Auto"/> <!-- Row 5 : Bannière Anti-Swap -->
-            <RowDefinition Height="*"/>    <!-- Row 6 : Contenu principal centré -->
-            <RowDefinition Height="30"/>   <!-- Row 7 : Status bar -->
-            <RowDefinition Height="Auto"/> <!-- Row 8 : Bandeau bêta (masqué si pas bêta) -->
+            <RowDefinition Height="Auto"/> <!-- Row 2 : Bannière Anti-Swap -->
+            <RowDefinition Height="Auto"/> <!-- Row 3 : Bannière Mode Éco -->
+            <RowDefinition Height="*"/>    <!-- Row 4 : Contenu principal centré -->
+            <RowDefinition Height="30"/>   <!-- Row 5 : Status bar -->
+            <RowDefinition Height="Auto"/> <!-- Row 6 : Bandeau bêta (masqué si pas bêta) -->
         </Grid.RowDefinitions>
 
         <!-- ── Row 0 : Header ────────────────────────────────────────────── -->
@@ -169,7 +167,7 @@
                         </StackPanel>
                     </Border>
 
-                    <!-- 3. Licence -->
+                    <!-- 2. Licence -->
                     <Button Content="🔑 Licence"
                             Style="{StaticResource ToolBtn}"
                             Command="{Binding OpenLicenseCommand}"
@@ -226,7 +224,8 @@
                     <!-- 9. Forcer Gaming -->
                     <Button Style="{StaticResource GamingBtn}"
                             Command="{Binding ToggleForceGamingModeCommand}"
-                            ToolTip="Forcer / désactiver le Mode Gaming manuellement">
+                            ToolTip="Forcer / désactiver le Mode Gaming manuellement"
+                            Margin="0,0,4,0">
                         <Button.Content>
                             <StackPanel Orientation="Horizontal">
                                 <TextBlock Text="🎮 " FontSize="11"/>
@@ -237,6 +236,39 @@
                                             <Style.Triggers>
                                                 <DataTrigger Binding="{Binding ForceGamingMode}" Value="True">
                                                     <Setter Property="Text" Value="Gaming ✓"/>
+                                                </DataTrigger>
+                                            </Style.Triggers>
+                                        </Style>
+                                    </TextBlock.Style>
+                                </TextBlock>
+                            </StackPanel>
+                        </Button.Content>
+                    </Button>
+
+                    <!-- 10. Forcer Éco -->
+                    <Button Command="{Binding ToggleForceEcoModeCommand}"
+                            ToolTip="Forcer / désactiver le Mode Éco manuellement">
+                        <Button.Style>
+                            <Style TargetType="Button" BasedOn="{StaticResource ToolBtn}">
+                                <Setter Property="Foreground" Value="#4ADE80"/>
+                                <Style.Triggers>
+                                    <DataTrigger Binding="{Binding ForceEcoMode}" Value="True">
+                                        <Setter Property="Background" Value="#0A2A0A"/>
+                                        <Setter Property="Foreground" Value="#86EFAC"/>
+                                    </DataTrigger>
+                                </Style.Triggers>
+                            </Style>
+                        </Button.Style>
+                        <Button.Content>
+                            <StackPanel Orientation="Horizontal">
+                                <TextBlock Text="🔋 " FontSize="11"/>
+                                <TextBlock FontSize="11">
+                                    <TextBlock.Style>
+                                        <Style TargetType="TextBlock">
+                                            <Setter Property="Text" Value="Éco"/>
+                                            <Style.Triggers>
+                                                <DataTrigger Binding="{Binding ForceEcoMode}" Value="True">
+                                                    <Setter Property="Text" Value="Éco ✓"/>
                                                 </DataTrigger>
                                             </Style.Triggers>
                                         </Style>
@@ -335,71 +367,19 @@
             </StackPanel>
         </Border>
 
-        <!-- ── Row 2 : Bannière Mode Navigateur ─────────────────────────── -->
-        <Border Grid.Row="2" Background="#0D2137" Padding="0,8"
-                Visibility="{Binding IsBrowserModeActive, Converter={StaticResource BoolToVis}}">
-            <StackPanel Orientation="Horizontal" HorizontalAlignment="Center">
-                <TextBlock Text="🌐 " FontSize="13" VerticalAlignment="Center"/>
-                <TextBlock Text="MODE NAVIGATEUR ACTIF" FontSize="13" FontWeight="Bold"
-                           Foreground="#58A6FF" VerticalAlignment="Center"/>
-                <TextBlock Text=" — " FontSize="13" Foreground="#388BFD"
-                           VerticalAlignment="Center"/>
-                <TextBlock Text="{Binding BrowserInfoText}"
-                           FontSize="13" FontWeight="SemiBold"
-                           Foreground="#79C0FF" VerticalAlignment="Center"/>
-                <TextBlock Text="  •  Intervalle 1500 ms  •  Onglets inactifs évincés"
-                           FontSize="10" Foreground="#3D6A8A"
-                           VerticalAlignment="Center" Margin="10,0,0,0"/>
-            </StackPanel>
-        </Border>
-
-        <!-- ── Row 3 : Bannière Mode IA ──────────────────────────────────── -->
-        <Border Grid.Row="3" Background="#1A0A2E" Padding="0,8"
-                Visibility="{Binding IsAiModeActive, Converter={StaticResource BoolToVis}}">
-            <StackPanel Orientation="Horizontal" HorizontalAlignment="Center">
-                <TextBlock Text="🤖 " FontSize="13" VerticalAlignment="Center"/>
-                <TextBlock Text="MODE IA ACTIF" FontSize="13" FontWeight="Bold"
-                           Foreground="#C084FC" VerticalAlignment="Center"/>
-                <TextBlock Text=" — " FontSize="13" Foreground="#A855F7"
-                           VerticalAlignment="Center"/>
-                <TextBlock Text="{Binding AiInfoText}"
-                           FontSize="13" FontWeight="SemiBold"
-                           Foreground="#D8B4FE" VerticalAlignment="Center"/>
-                <TextBlock Text="  •  Intervalle 1200 ms  •  Processus inactifs évincés"
-                           FontSize="10" Foreground="#4A2070"
-                           VerticalAlignment="Center" Margin="10,0,0,0"/>
-            </StackPanel>
-        </Border>
-
-        <!-- ── Row 4 : Bannière Mode Éco ───────────────────────────────────── -->
-        <Border Grid.Row="4" Background="#0A1A0A" Padding="0,6"
-                Visibility="{Binding IsEcoModeActive, Converter={StaticResource BoolToVis}}">
-            <StackPanel Orientation="Horizontal" HorizontalAlignment="Center">
-                <TextBlock Text="🔋 " FontSize="13" VerticalAlignment="Center"/>
-                <TextBlock Text="MODE ÉCO ACTIF" FontSize="13" FontWeight="Bold"
-                           Foreground="#4ADE80" VerticalAlignment="Center"/>
-                <TextBlock Text=" — sur batterie  •  Intervalles réduits  •  Impact CPU minimal"
-                           FontSize="10" Foreground="#166534"
-                           VerticalAlignment="Center" Margin="8,0,0,0"/>
-            </StackPanel>
-        </Border>
-
-        <!-- ── Row 5 : Bannière Anti-Swap ───────────────────────────────── -->
-        <Border Grid.Row="5" Padding="0,7"
+        <!-- ── Row 2 : Bannière Anti-Swap ──────────────────────────────────── -->
+        <Border Grid.Row="2" Padding="0,7"
                 Visibility="{Binding IsAntiSwapActive, Converter={StaticResource BoolToVis}}">
-            <Border.Style>
-                <Style TargetType="Border">
-                    <Setter Property="Background" Value="#2D0A0A"/>
-                    <Style.Triggers>
-                        <DataTrigger Binding="{Binding IsAntiSwapActive}" Value="False">
-                            <Setter Property="Background" Value="Transparent"/>
-                        </DataTrigger>
-                    </Style.Triggers>
-                </Style>
-            </Border.Style>
+            <Border.Background>
+                <LinearGradientBrush StartPoint="0,0" EndPoint="1,0">
+                    <GradientStop Color="#7F1D1D" Offset="0.0"/>
+                    <GradientStop Color="#991B1B" Offset="0.5"/>
+                    <GradientStop Color="#7F1D1D" Offset="1.0"/>
+                </LinearGradientBrush>
+            </Border.Background>
             <StackPanel Orientation="Horizontal" HorizontalAlignment="Center">
-                <Ellipse Width="9" Height="9" Fill="#E94560"
-                         VerticalAlignment="Center" Margin="0,0,8,0">
+                <Ellipse Width="9" Height="9" Fill="#FCA5A5"
+                         VerticalAlignment="Center" Margin="0,0,9,0">
                     <Ellipse.Triggers>
                         <EventTrigger RoutedEvent="FrameworkElement.Loaded">
                             <BeginStoryboard>
@@ -411,14 +391,41 @@
                         </EventTrigger>
                     </Ellipse.Triggers>
                 </Ellipse>
-                <TextBlock Text="{Binding AntiSwapText}"
-                           FontSize="13" FontWeight="Bold"
-                           Foreground="#FF6B6B" VerticalAlignment="Center"/>
+                <TextBlock Text="ANTI-SWAP ACTIF" FontSize="13" FontWeight="Bold"
+                           Foreground="#FCA5A5" VerticalAlignment="Center"/>
+                <TextBlock Text=" — Intervalle 500 ms  •  " FontSize="11"
+                           Foreground="#FECACA" VerticalAlignment="Center" Margin="8,0,0,0"/>
+                <TextBlock Text="{Binding SwapPagesPerSec, StringFormat={}{0:F0} pages/s}"
+                           FontSize="11" FontWeight="SemiBold"
+                           Foreground="#FEF2F2" VerticalAlignment="Center"/>
             </StackPanel>
         </Border>
 
-        <!-- ── Row 6 : Contenu principal ─────────────────────────────────── -->
-        <Grid Grid.Row="6">
+        <!-- ── Row 3 : Bannière Mode Éco ────────────────────────────────────── -->
+        <Border Grid.Row="3" Background="#0A1A0A" Padding="0,6"
+                Visibility="{Binding IsEcoModeActive, Converter={StaticResource BoolToVis}}">
+            <StackPanel Orientation="Horizontal" HorizontalAlignment="Center">
+                <TextBlock Text="🔋 " FontSize="13" VerticalAlignment="Center"/>
+                <TextBlock Text="MODE ÉCO ACTIF" FontSize="13" FontWeight="Bold"
+                           Foreground="#4ADE80" VerticalAlignment="Center"/>
+                <TextBlock FontSize="10" Foreground="#166534"
+                           VerticalAlignment="Center" Margin="8,0,0,0">
+                    <TextBlock.Style>
+                        <Style TargetType="TextBlock">
+                            <Setter Property="Text" Value=" — sur batterie  •  Intervalles réduits  •  Impact CPU minimal"/>
+                            <Style.Triggers>
+                                <DataTrigger Binding="{Binding ForceEcoMode}" Value="True">
+                                    <Setter Property="Text" Value=" — Mode Éco forcé manuellement  •  Intervalles réduits"/>
+                                </DataTrigger>
+                            </Style.Triggers>
+                        </Style>
+                    </TextBlock.Style>
+                </TextBlock>
+            </StackPanel>
+        </Border>
+
+        <!-- ── Row 4 : Contenu principal ─────────────────────────────────── -->
+        <Grid Grid.Row="4">
             <StackPanel VerticalAlignment="Center" HorizontalAlignment="Center">
 
                 <TextBlock Text="RAM PHYSIQUE UTILISÉE"
@@ -521,8 +528,8 @@
             </StackPanel>
         </Grid>
 
-        <!-- ── Row 7 : Status bar ─────────────────────────────────────────── -->
-        <Border Grid.Row="7" Background="#161B22"
+        <!-- ── Row 5 : Status bar ─────────────────────────────────────────── -->
+        <Border Grid.Row="5" Background="#161B22"
                 BorderBrush="#30363D" BorderThickness="0,1,0,0">
             <Grid Margin="12,0">
                 <Grid.ColumnDefinitions>
@@ -580,8 +587,8 @@
             </Grid>
         </Border>
 
-        <!-- ── Row 8 : Bandeau bêta testeur ──────────────────────────────── -->
-        <Border Grid.Row="8" Background="#1A1500" Padding="8,5"
+        <!-- ── Row 6 : Bandeau bêta testeur ──────────────────────────────── -->
+        <Border Grid.Row="6" Background="#1A1500" Padding="8,5"
                 Visibility="{Binding IsBetaMode, Converter={StaticResource BoolToVis}}">
             <TextBlock Text="{Binding BetaExpiryText}"
                        FontSize="11" FontWeight="SemiBold"

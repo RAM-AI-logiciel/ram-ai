@@ -214,12 +214,13 @@ function Measure-Phase {
 function Get-PhaseActions {
     param([DateTime]$PhaseStart, [DateTime]$PhaseEnd)
 
-    $actionsPath = Join-Path $OutputDir "actions.json"
-    $result = @()
-
-    if (-not (Test-Path $actionsPath)) {
-        for ($i = 0; $i -lt $TotalPoints; $i++) { $result += 0 }
-        return $result
+    # Source de vérité : events.log (champ physicalMbFreed), écrit par Phase3 à chaque tick.
+    # actions.json est figé (Phase3 n'y écrit plus depuis un refactoring).
+    $zeros     = [double[]]::new($TotalPoints)
+    $eventsLog = Join-Path $OutputDir "events.log"
+    if (-not (Test-Path $eventsLog)) {
+        Write-Warning "  Get-PhaseActions : events.log introuvable -> valeurs nulles"
+        return $zeros
     }
 
     try {
@@ -227,43 +228,45 @@ function Get-PhaseActions {
         $dtStyles    = [System.Globalization.DateTimeStyles]::RoundtripKind
         $windowStart = $PhaseStart.AddSeconds(-30)
         $windowEnd   = $PhaseEnd.AddSeconds(30)
-        $lines       = Get-Content $actionsPath -Encoding UTF8
-        $filtered    = @()
+
+        # Lecture avec FileShare (Phase3 garde le fichier ouvert en écriture)
+        $fs   = [System.IO.FileStream]::new($eventsLog, [System.IO.FileMode]::Open,
+                    [System.IO.FileAccess]::Read, [System.IO.FileShare]::ReadWrite)
+        $sr   = [System.IO.StreamReader]::new($fs)
+        $raw  = $sr.ReadToEnd()
+        $sr.Close(); $fs.Close()
+
+        $lines    = $raw -split "`n"
+        $filtered = [System.Collections.Generic.List[double]]::new()
+        $matched  = 0
 
         foreach ($line in $lines) {
             if ([string]::IsNullOrWhiteSpace($line)) { continue }
             try {
-                $entry = $line | ConvertFrom-Json
-                $ts    = [DateTime]::Parse($entry.Timestamp, $inv3, $dtStyles)
+                $entry = ConvertFrom-Json $line
+                $ts    = [DateTime]::Parse($entry.timestamp, $inv3, $dtStyles)
                 if ($ts -ge $windowStart -and $ts -le $windowEnd) {
-                    $filtered += [double]$entry.RamFreedMb
+                    $filtered.Add([double]$entry.physicalMbFreed)
+                    $matched++
                 }
             } catch {}
         }
 
-        if ($filtered.Count -lt 1) {
-            $allEntries = @()
-            foreach ($line in $lines) {
-                if ([string]::IsNullOrWhiteSpace($line)) { continue }
-                try { $allEntries += [double]($line | ConvertFrom-Json).RamFreedMb } catch {}
-            }
-            if ($allEntries.Count -gt 0) {
-                $startIdx = $allEntries.Count - $TotalPoints
-                if ($startIdx -lt 0) { $startIdx = 0 }
-                $filtered = $allEntries[$startIdx..($allEntries.Count - 1)]
-            }
+        if ($matched -eq 0) {
+            Write-Warning ("  Get-PhaseActions : aucune entree dans la fenetre [{0:HH:mm:ss} - {1:HH:mm:ss}] UTC -> valeurs nulles" -f $windowStart, $windowEnd)
+            return $zeros
         }
 
-        foreach ($v in $filtered) {
-            $result += [math]::Max(0, [math]::Round($v, 0))
-        }
+        $result = [System.Collections.Generic.List[double]]::new()
+        foreach ($v in $filtered) { $result.Add([math]::Max(0, [math]::Round($v, 0))) }
+
+        while ($result.Count -lt $TotalPoints) { $result.Add(0) }
+
+        return $result.ToArray()[0..($TotalPoints - 1)]
     } catch {
-        Write-Warning "  Impossible de lire actions.json pour cette phase."
+        Write-Warning "  Get-PhaseActions : erreur lecture events.log -> $_"
+        return $zeros
     }
-
-    while ($result.Count -lt $TotalPoints) { $result += 0 }
-    if ($result.Count -gt $TotalPoints)    { $result = $result[0..($TotalPoints - 1)] }
-    return $result
 }
 
 function Enable-GamingMode {
@@ -299,18 +302,22 @@ function Disable-TournoiMode {
 $script:ramLoadObjects = New-Object System.Collections.ArrayList
 
 function Start-RamLoad {
-    $MaxLoadMb      = 3072   # cap absolu (3 Go)
-    $LoadChunkMb    = 50     # taille de chaque bloc
-    $MinFreeAfterMb = 512    # RAM libre minimale a laisser
+    $LoadChunkMb    = 25     # taille de chaque bloc (granularite fine = stop plus precis)
+    $MinFreeAfterMb = 700    # RAM libre minimale a garantir (marge de securite anti-gel)
+
+    # Cible : allouer au plus 75% de la RAM totale.
+    # Reproductible quelle que soit la machine (16 Go, 32 Go, etc.)
+    $cs          = Get-CimInstance -ClassName Win32_OperatingSystem
+    $totalRamMb  = [int]($cs.TotalVisibleMemorySize / 1024)
+    $MaxLoadMb   = [int]($totalRamMb * 0.75)
+    $freeNowMb   = [int]($cs.FreePhysicalMemory  / 1024)
 
     Write-Host "  Chargement RAM en cours..." -ForegroundColor Yellow
-    Write-Host "  (Objectif : saturer la RAM pour simuler un systeme charge)" -ForegroundColor DarkGray
+    Write-Host "  (RAM totale : $totalRamMb Mo  |  Cible : $MaxLoadMb Mo = 75%  |  Garde-fou : $MinFreeAfterMb Mo libres)" -ForegroundColor DarkGray
     Write-Host ""
 
     $script:ramLoadObjects.Clear()
 
-    $cs        = Get-CimInstance -ClassName Win32_OperatingSystem
-    $freeNowMb = [int]($cs.FreePhysicalMemory / 1024)
     $targetMb  = $freeNowMb - $MinFreeAfterMb
     if ($targetMb -gt $MaxLoadMb)   { $targetMb = $MaxLoadMb }
     if ($targetMb -lt $LoadChunkMb) { $targetMb = $LoadChunkMb }
@@ -320,7 +327,8 @@ function Start-RamLoad {
     $freeNow   = $freeNowMb
 
     for ($i = 0; $i -lt $chunks; $i++) {
-        if ($i % 5 -eq 0) {
+        # Vérification RAM libre toutes les 2 itérations (= 50 Mo) pour stopper tôt
+        if ($i % 2 -eq 0) {
             $csNow   = Get-CimInstance -ClassName Win32_OperatingSystem
             $freeNow = [int]($csNow.FreePhysicalMemory / 1024)
         }

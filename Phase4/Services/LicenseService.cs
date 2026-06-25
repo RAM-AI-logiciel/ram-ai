@@ -1,4 +1,4 @@
-using System.Diagnostics;
+using System.IO;
 using System.Net.Http;
 using System.Security.Cryptography;
 using System.Text;
@@ -98,8 +98,17 @@ public sealed class LicenseService
     {
         string key = rawKey.Trim();
 
-        if (!_uuidRegex.IsMatch(key))
+        DbgLog($"[LICENSE-DBG] === ValidateLemonSqueezyAsync START ===");
+        DbgLog($"[LICENSE-DBG] rawKey='{rawKey}'  key='{key}'");
+
+        bool regexMatch = _uuidRegex.IsMatch(key);
+        DbgLog($"[LICENSE-DBG] UUID regex match = {regexMatch}");
+
+        if (!regexMatch)
+        {
+            DbgLog($"[LICENSE-DBG] → clé non-UUID, abandon.");
             return new(LicenseTier.None, LsError.None);
+        }
 
         try
         {
@@ -108,60 +117,73 @@ public sealed class LicenseService
                 new KeyValuePair<string, string>("license_key", key)
             ]);
 
+            DbgLog($"[LICENSE-DBG] POST → {LsValidateUrl}");
+            DbgLog($"[LICENSE-DBG] body = license_key={key}");
+
             using var response = await _http.PostAsync(LsValidateUrl, body)
                                             .ConfigureAwait(false);
 
-            string json = await response.Content.ReadAsStringAsync().ConfigureAwait(false);
+            DbgLog($"[LICENSE-DBG] HTTP status = {(int)response.StatusCode} {response.StatusCode}");
 
-            Trace.WriteLine($"[LicenseService] LS validate HTTP {(int)response.StatusCode} — {json}");
+            string json = await response.Content.ReadAsStringAsync().ConfigureAwait(false);
+            DbgLog($"[LICENSE-DBG] JSON reçu = {json}");
 
             JsonNode? node = JsonNode.Parse(json);
 
             bool   valid  = node?["valid"]?.GetValue<bool>()   ?? false;
             string status = node?["license_key"]?["status"]?.GetValue<string>() ?? "";
+            DbgLog($"[LICENSE-DBG] valid={valid}  status='{status}'");
 
-            Trace.WriteLine($"[LicenseService] valid={valid} status={status}");
-
-            if (!valid)
-                return new(LicenseTier.None, LsError.None);
-
-            // Statuts acceptés : "active" (déjà activée) ou "inactive" (jamais activée — 1ère utilisation).
-            // "expired" et "disabled" sont des refus légitimes.
             bool statusOk = string.Equals(status, "active",   StringComparison.OrdinalIgnoreCase)
                          || string.Equals(status, "inactive", StringComparison.OrdinalIgnoreCase);
-
-            if (!statusOk)
+            if (!valid || !statusOk)
             {
-                Trace.WriteLine($"[LicenseService] Rejet : statut '{status}' non accepté");
+                DbgLog($"[LICENSE-DBG] → ÉCHEC : valid={valid} status='{status}'");
                 return new(LicenseTier.None, LsError.None);
             }
 
             // Déterminer le tier depuis le nom produit / variante
             string productName = node?["meta"]?["product_name"]?.GetValue<string>() ?? "";
             string variantName = node?["meta"]?["variant_name"]?.GetValue<string>() ?? "";
-
-            Trace.WriteLine($"[LicenseService] product='{productName}' variant='{variantName}'");
+            DbgLog($"[LICENSE-DBG] product_name='{productName}'  variant_name='{variantName}'");
 
             bool isUltra = productName.Contains("Ultra", StringComparison.OrdinalIgnoreCase)
                         || variantName.Contains("Ultra", StringComparison.OrdinalIgnoreCase);
 
+            DbgLog($"[LICENSE-DBG] → SUCCÈS : tier={( isUltra ? "Ultra" : "Pro" )}");
             return new(isUltra ? LicenseTier.Ultra : LicenseTier.Pro, LsError.None);
         }
         catch (HttpRequestException ex)
         {
-            Trace.WriteLine($"[LicenseService] Erreur réseau : {ex.Message}");
+            DbgLog($"[LICENSE-DBG] HttpRequestException : {ex.Message}");
             return new(LicenseTier.None, LsError.Network);
         }
-        catch (TaskCanceledException)
+        catch (TaskCanceledException ex)
         {
-            Trace.WriteLine("[LicenseService] Timeout");
+            DbgLog($"[LICENSE-DBG] TaskCanceledException (timeout?) : {ex.Message}");
             return new(LicenseTier.None, LsError.Network);
         }
         catch (Exception ex)
         {
-            Trace.WriteLine($"[LicenseService] Erreur inattendue : {ex}");
+            DbgLog($"[LICENSE-DBG] Exception inattendue : {ex.GetType().Name} — {ex.Message}");
             return new(LicenseTier.None, LsError.None);
         }
+    }
+
+    // ── Debug helper (temporaire — supprimer après validation) ───────────────
+    private static readonly string _dbgPath =
+        Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.CommonApplicationData),
+                     "RAM-AI", "license_debug.log");
+
+    private static void DbgLog(string msg)
+    {
+        try
+        {
+            string line = $"{DateTime.Now:HH:mm:ss.fff} {msg}{Environment.NewLine}";
+            Directory.CreateDirectory(Path.GetDirectoryName(_dbgPath)!);
+            File.AppendAllText(_dbgPath, line, System.Text.Encoding.UTF8);
+        }
+        catch { }
     }
 
     // ── Validation BETA ───────────────────────────────────────────────────────

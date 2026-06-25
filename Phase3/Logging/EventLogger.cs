@@ -140,20 +140,14 @@ internal sealed class EventEntry
     public long     CacheByteSaved       { get; init; }
     public bool     IsGamingMode         { get; init; }
     public string   GameName             { get; init; } = string.Empty;
-    public bool     IsBrowserMode        { get; init; }
-    public string   BrowserName          { get; init; } = string.Empty;
-    public int      BrowserTabsOptimized { get; init; }
-    public bool     IsAiMode             { get; init; }
-    public string   AiName               { get; init; } = string.Empty;
-    public int      AiProcessesOptimized { get; init; }
     /// <summary>RAM physique effectivement libérée ce cycle (delta ullAvailPhys avant/après).</summary>
     public long     PhysicalMbFreed      { get; init; }
     /// <summary>True si le service tourne en mode éco (batterie détectée).</summary>
     public bool     IsEcoMode            { get; init; }
     public bool     IsTournamentMode     { get; init; }
     public long     VramMb               { get; init; }
-    /// <summary>Taux de pagination système au moment du tick (PerformanceCounter "Memory\Pages/sec").</summary>
+    [System.Text.Json.Serialization.JsonPropertyName("swapPagesPerSec")]
     public float    SwapPagesPerSec      { get; init; }
-    /// <summary>True si RAM-AI est intervenu de façon agressive ce tick pour réduire le swap (>100 p/s).</summary>
+    [System.Text.Json.Serialization.JsonPropertyName("antiSwapIntervention")]
     public bool     AntiSwapIntervention { get; init; }
 }

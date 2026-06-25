@@ -28,11 +28,18 @@ internal sealed class MemoryOrchestrator : IDisposable
     private const float ColdThreshold        = 0.20f;
     private const float ColdThresholdGaming  = 0.50f;
     private const float HotThreshold         = 0.65f;
-    private const int   NormalIntervalMs     =   800;  // mode normal
-    private const int   GamingIntervalMs     = 1_200;  // mode Gaming  — intervalle long pour éviter les micro-freezes cycliques
-    private const int   AiIntervalMs         = 1_200;  // mode IA      — entre gaming et navigateur
-    private const int   BrowserIntervalMs    = 1_500;  // mode Navigateur — le moins agressif
-    private const long  AiWsThresholdMb      =   10L;  // seuil WS minimum pour évincer un processus IA
+    // ── Intervalles par palier de charge ──────────────────────────────────────
+    private const int   ReposIntervalMs      = 3_000;  // CPU < 20% ET RAM < 60% → repos
+    private const int   NormalIntervalMs     = 2_000;  // défaut (inclut zone 60-75%)
+    private const int   HighRamIntervalMs    = 1_200;  // RAM > 75% utilisée
+    private const int   SwapIntervalMs       =   500;  // Swap > 100 pages/sec (priorité absolue)
+    private const int   GamingIntervalMs     = 1_200;  // mode Gaming
+
+    // ── Seuils de charge ──────────────────────────────────────────────────────
+    private const float CpuReposPct          =  20f;   // CPU < 20% (condition repos)
+    private const float RamReposPct          = 0.60f;  // RAM < 60% utilisée (condition repos)
+    private const float RamHighPct           = 0.75f;  // RAM > 75% → entrer HighRam
+    private const float RamHighExitPct       = 0.65f;  // RAM < 65% → sortir HighRam (hystérèse)
 
     // ── Mode Tournoi (Ultra — performances gaming absolues) ──────────────────
     private const int   TournamentIntervalMs      = 500;   // anti-stutter : 500ms (300ms causait des drops FPS)
@@ -48,15 +55,16 @@ internal sealed class MemoryOrchestrator : IDisposable
     private const int  PredictiveMinSamples           =  5;
     private const long PredictiveDropThresholdMbCycle = 50L; // 50 Mo/cycle = alerte
 
-    // ── Intervalles mode Éco (batterie) ──────────────────────────────────────
-    private const int   EcoNormalIntervalMs  = 3_000;
-    private const int   EcoGamingIntervalMs  = 2_000;
-    private const int   EcoAiIntervalMs      = 4_000;
-    private const int   EcoBrowserIntervalMs = 4_000;
+    // ── Intervalles et limites mode Éco ──────────────────────────────────────
+    private const int   EcoIntervalMs        = 3_000;
     private const int   EcoMaxProcsPerCycle  =     8;  // max processus par cycle en mode éco
-    private const int   NormalMaxProcsPerCycle = 20;   // max processus par cycle en mode normal
     private const int   EcoBatchSleepMs      =   100;  // pause entre batches en mode éco
     private const int   NormalBatchSleepMs   =    50;  // pause entre batches en mode normal
+
+    // ── Limites de processus par palier ───────────────────────────────────────
+    private const int   ReposMaxProcs        =  10;
+    private const int   NormalMaxProcs       =  15;
+    private const int   HighRamMaxProcs      =  20;
 
     // ── Dossier partagé Phase3 ↔ Phase4 ──────────────────────────────────────
     // C:\ProgramData\RAM-AI\ est accessible par :
@@ -72,15 +80,8 @@ internal sealed class MemoryOrchestrator : IDisposable
     private static readonly string ForceFlagPath      = Path.Combine(SharedFlagDir, "gaming_mode.force");
     private static readonly string TurboFlagPath      = Path.Combine(SharedFlagDir, "turbo_mode.force");
     private static readonly string TournamentFlagPath = Path.Combine(SharedFlagDir, "tournament_mode.force");
+    private static readonly string EcoFlagPath        = Path.Combine(SharedFlagDir, "eco_mode.force");
     private static readonly string GamingProfilesPath = Path.Combine(SharedFlagDir, "gaming_profiles.json");
-
-    // ── Anti-swap (PerformanceCounter "Memory\Pages/sec") ────────────────────
-    private const float SwapThresholdOrange = 10f;   // < 10 : normal (vert)
-    private const float SwapThresholdRed    = 100f;  // > 100 : intervention agressive
-
-    private System.Diagnostics.PerformanceCounter? _swapCounter;
-    private float _swapPagesPerSec;
-    private long  _antiSwapInterventions;   // cumulatif toute la durée de vie du service
 
     // ── État Ultra ────────────────────────────────────────────────────────────
     private bool     _tournamentModeActive;
@@ -131,46 +132,6 @@ internal sealed class MemoryOrchestrator : IDisposable
             "riotclientservices","riotclient",
         };
 
-    // ── Applications IA locales et services IA cloud ─────────────────────────
-    // SÉPARÉ de KnownGameProcesses et KnownBrowserProcesses.
-    // Un outil IA ne doit PAS déclencher le Mode Gaming ni le Mode Navigateur.
-    private static readonly HashSet<string> KnownAiProcesses =
-        new(StringComparer.OrdinalIgnoreCase)
-        {
-            // Runtimes IA locaux
-            "ollama",           "ollama.exe",
-            "lmstudio",         "lmstudio.exe",
-            "jan",              "jan.exe",
-            "koboldcpp",        "koboldcpp.exe",
-            "textgenwebui",
-            // Clients desktop IA
-            "claude",           "claude.exe",       // Claude desktop
-            "chatgpt",          "chatgpt.exe",      // ChatGPT desktop
-            "perplexity",       "perplexity.exe",
-            "gemini",           "gemini.exe",
-            // Processus worker courants (inférence GPU/CPU)
-            "llama-server",     "llama_server",
-            "python",           "python3",          // scripts IA (large, intentionnel)
-        };
-
-    // ── Navigateurs connus — SÉPARÉ de KnownGameProcesses ────────────────────
-    // Séparation intentionnelle : un navigateur ne doit PAS déclencher le Mode Gaming.
-    // Process.ProcessName retourne le nom sans .exe. Les noms .exe sont inclus
-    // pour compatibilité avec d'éventuels outils tiers.
-    private static readonly HashSet<string> KnownBrowserProcesses =
-        new(StringComparer.OrdinalIgnoreCase)
-        {
-            "chrome",   "chrome.exe",
-            "msedge",   "msedge.exe",
-            "firefox",  "firefox.exe",
-            "brave",    "brave.exe",
-            "opera",    "opera.exe",
-            "vivaldi",  "vivaldi.exe",
-            "arc",      "arc.exe",
-            // Processus de rendu / GPU communs (même nom que le navigateur principal)
-            // Chrome, Edge, Brave : tous leurs enfants s'appellent pareil
-        };
-
     // ── Processus système exclus en mode normal (inclus en mode Turbo) ────────
     private static readonly HashSet<string> SystemProcesses =
         new(StringComparer.OrdinalIgnoreCase)
@@ -218,89 +179,95 @@ internal sealed class MemoryOrchestrator : IDisposable
     private bool   _gamingModeActive;
     private string _currentGame = string.Empty;
 
-    // ── État IA ───────────────────────────────────────────────────────────────
-    private bool   _aiModeActive;
-    private string _currentAiApp = string.Empty;
-
-    // ── État navigateur ───────────────────────────────────────────────────────
-    private bool   _browserModeActive;
-    private string _currentBrowser   = string.Empty;
-    private int    _browserTabsThisTick;
-
-    // ── Suivi CPU pour les processus IA (delta entre ticks) ───────────────────
-    private readonly ConcurrentDictionary<int, TimeSpan> _prevCpuTime = new();
-
     // ── Mode Éco (batterie) ───────────────────────────────────────────────────
     private bool _ecoMode;
 
-    /// <summary>Nombre max de processus à traiter par cycle selon le mode éco.</summary>
-    private int MaxProcsPerCycle => _ecoMode ? EcoMaxProcsPerCycle : NormalMaxProcsPerCycle;
+    // ── Intervalle, limites et charge (recalculés chaque tick par UpdateInterval) ──
+    private int   _intervalMs       = NormalIntervalMs;
+    private int   _maxProcsPerCycle = NormalMaxProcs;
+    private int   _batchSleepMs     = NormalBatchSleepMs;
+    private float _cpuPct;
+    private float _ramUsedPct;
+    // Hystérèse HighRam : évite d'osciller entre paliers quand RAM ≈ 75%
+    private bool  _highRamActive;    // true = on est entré en mode HighRam, on n'en sort qu'à <65%
 
-    /// <summary>Pause en ms entre chaque batch de processus.</summary>
-    private int BatchSleepMs => _ecoMode ? EcoBatchSleepMs : NormalBatchSleepMs;
+    // ── CPU counter (paliers d'intervalle) ────────────────────────────────────
+    private readonly PerformanceCounter? _cpuCounter;
 
-    // ── Intervalle courant (recalculé par UpdateInterval() à chaque tick) ──────
-    private int _intervalMs = NormalIntervalMs;
-
-    // Bornes du mode adaptatif (RAM disponible → intervalle en ms)
-    private const double RamHighPct   = 0.40; // ≥ 40 % dispo → 3000ms
-    private const double RamLowPct    = 0.20; // < 20 % dispo → vers 500ms
-    private const int    IntervalHigh = 3_000;
-    private const int    IntervalMid  = 1_500;
-    private const int    IntervalMin  =   500;
+    // ── Protection processus ──────────────────────────────────────────────────
+    private int _foregroundPid = -1;
+    private readonly ConcurrentDictionary<int, (long WsMb, long TickMs)> _wsTracker = new();
 
     /// <summary>
-    /// Recalcule _intervalMs chaque tick.
-    /// Priorité (override total) : Tournoi > Gaming > Éco > Adaptatif RAM.
-    /// En mode adaptatif, l'intervalle varie en continu avec la pression RAM :
-    ///   ≥ 40 % dispo → 3000 ms
-    ///   20–40 %      → interpolation linéaire 3000 → 1500 ms
-    ///    0–20 %      → interpolation linéaire 1500 →  500 ms
-    /// IA et Navigateur n'influencent plus l'intervalle.
+    /// Recalcule l'intervalle et les limites par palier de charge.
+    /// Priorité : Tournoi > Éco > Gaming > Swap > HighRam(hyst) > Med > Repos > Normal.
+    /// AntiSwap a priorité absolue — un pic de swap n'est jamais retardé par l'hystérèse RAM.
+    /// HighRam utilise une hystérèse : entrée à >75%, sortie seulement à <65%.
+    /// Repos nécessite CPU<20% ET RAM<60% simultanément (évite repos pendant pression mémoire).
     /// </summary>
     private void UpdateInterval()
     {
-        // Tournoi : géré directement dans Tick() — ne pas écraser
-        if (_tournamentModeActive) return;
-
-        // Gaming override
-        if (_gamingModeActive)
+        // Tournoi, Éco, Gaming : overrides totaux, non affectés par les seuils RAM/CPU
+        if (_tournamentModeActive)
         {
-            _intervalMs = _ecoMode ? EcoGamingIntervalMs : GamingIntervalMs;
+            _intervalMs       = TournamentIntervalMs;
+            _maxProcsPerCycle = int.MaxValue;
+            _batchSleepMs     = 0;
             return;
         }
-
-        // Éco override (batterie) — intervalle fixe conservateur
         if (_ecoMode)
         {
-            _intervalMs = EcoNormalIntervalMs;
+            _intervalMs       = EcoIntervalMs;
+            _maxProcsPerCycle = EcoMaxProcsPerCycle;
+            _batchSleepMs     = EcoBatchSleepMs;
+            return;
+        }
+        if (_gamingModeActive)
+        {
+            _intervalMs       = GamingIntervalMs;
+            _maxProcsPerCycle = HighRamMaxProcs;
+            _batchSleepMs     = NormalBatchSleepMs;
             return;
         }
 
-        // Mode adaptatif : interpolation continue basée sur la pression RAM
-        long availMb = NativeMemory.GetAvailablePhysicalMb();
-        long totalMb = NativeMemory.GetTotalPhysicalMb();
-        double availPct = totalMb > 0 ? (double)availMb / totalMb : 0.5;
-
-        int adaptive;
-        if (availPct >= RamHighPct)
+        // AntiSwap : priorité absolue sur tous les paliers RAM, y compris hystérèse active.
+        // Un pic de swap soudain ne doit jamais être retardé par l'état _highRamActive.
+        if (AntiSwapActive)
         {
-            adaptive = IntervalHigh;
-        }
-        else if (availPct >= RamLowPct)
-        {
-            // Interpolation linéaire 3000 → 1500 ms sur la plage [20%, 40%]
-            double t = (availPct - RamLowPct) / (RamHighPct - RamLowPct); // 0..1
-            adaptive = IntervalMid + (int)(t * (IntervalHigh - IntervalMid));
-        }
-        else
-        {
-            // Interpolation linéaire 1500 → 500 ms sur la plage [0%, 20%]
-            double t = availPct / RamLowPct; // 0..1
-            adaptive = IntervalMin + (int)(t * (IntervalMid - IntervalMin));
+            _intervalMs       = SwapIntervalMs;
+            _maxProcsPerCycle = int.MaxValue;
+            _batchSleepMs     = 0;
+            return;
         }
 
-        _intervalMs = adaptive;
+        // Hystérèse HighRam : entrée à >75%, sortie seulement à <65%.
+        // Évite l'oscillation 1200ms↔3000ms quand RAM ≈ 75% (cause de pics CPU périodiques).
+        if (_ramUsedPct > RamHighPct)
+            _highRamActive = true;
+        else if (_ramUsedPct < RamHighExitPct)
+            _highRamActive = false;
+        // Entre 65% et 75% : _highRamActive reste à sa valeur précédente (zone d'hystérèse)
+
+        if (_highRamActive)
+        {
+            _intervalMs       = HighRamIntervalMs;
+            _maxProcsPerCycle = HighRamMaxProcs;
+            _batchSleepMs     = NormalBatchSleepMs;
+            return;
+        }
+
+        // Repos : CPU bas ET RAM confortable (les deux conditions requises)
+        if (_cpuPct < CpuReposPct && _ramUsedPct < RamReposPct)
+        {
+            _intervalMs       = ReposIntervalMs;
+            _maxProcsPerCycle = ReposMaxProcs;
+            _batchSleepMs     = NormalBatchSleepMs;
+            return;
+        }
+
+        _intervalMs       = NormalIntervalMs;
+        _maxProcsPerCycle = NormalMaxProcs;
+        _batchSleepMs     = NormalBatchSleepMs;
     }
 
     // ── Dépendances ───────────────────────────────────────────────────────────
@@ -313,6 +280,11 @@ internal sealed class MemoryOrchestrator : IDisposable
     private readonly object                                     _predictLock = new();
     // ConcurrentDictionary pour accès thread-safe depuis Parallel.ForEach
     private readonly ConcurrentDictionary<int, uint>            _prevFaults  = new();
+
+    // ── Anti-Swap ─────────────────────────────────────────────────────────────
+    private readonly PerformanceCounter? _swapCounter;
+    public float SwapPagesPerSec { get; private set; }
+    public bool  AntiSwapActive  { get; private set; }
 
     // Indique si la prédiction ML est disponible
     internal bool IsMlEnabled => _engine is not null;
@@ -331,13 +303,6 @@ internal sealed class MemoryOrchestrator : IDisposable
         _cache  = cache;
         _events = events;
 
-        try
-        {
-            _swapCounter = new System.Diagnostics.PerformanceCounter("Memory", "Pages/sec", readOnly: true);
-            _ = _swapCounter.NextValue(); // premier appel toujours 0 — consommer pour initialiser
-        }
-        catch { _swapCounter = null; }
-
         if (modelPath is not null)
         {
             _log.LogInformation("Loading ML model: {P}", modelPath);
@@ -352,6 +317,40 @@ internal sealed class MemoryOrchestrator : IDisposable
                             "Gaming, Turbo et éviction restent opérationnels.");
             Console.WriteLine("[Phase3] Mode sans ML : tous les processus seront évincés (prob=0).");
         }
+
+        try
+        {
+            _swapCounter = new PerformanceCounter("Memory", "Pages/sec", readOnly: true);
+            _swapCounter.NextValue(); // premier appel toujours 0 — à jeter
+        }
+        catch (Exception ex)
+        {
+            _log.LogWarning("PerformanceCounter Pages/sec indisponible : {M}", ex.Message);
+            _swapCounter = null;
+        }
+
+        try
+        {
+            _cpuCounter = new PerformanceCounter("Processor", "% Processor Time", "_Total", readOnly: true);
+            _cpuCounter.NextValue(); // premier appel toujours 0 — à jeter
+        }
+        catch (Exception ex)
+        {
+            _log.LogWarning("PerformanceCounter CPU indisponible : {M}", ex.Message);
+            _cpuCounter = null;
+        }
+    }
+
+    // ── Foreground window protection ─────────────────────────────────────────────
+    [DllImport("user32.dll")] private static extern IntPtr GetForegroundWindow();
+    [DllImport("user32.dll")] private static extern uint GetWindowThreadProcessId(IntPtr hWnd, out uint lpdwProcessId);
+
+    private static int GetForegroundPid()
+    {
+        IntPtr hwnd = GetForegroundWindow();
+        if (hwnd == IntPtr.Zero) return -1;
+        GetWindowThreadProcessId(hwnd, out uint pid);
+        return (int)pid;
     }
 
     // ── Boucle principale ─────────────────────────────────────────────────────
@@ -381,13 +380,12 @@ internal sealed class MemoryOrchestrator : IDisposable
             if (_tickCount % 20 == 0)
                 RefreshEcoMode();
 
-            // Mettre à jour la VRAM toutes les 60 ticks (~1 min)
+            // Mettre à jour la VRAM + purger _wsTracker toutes les 60 ticks (~1-3 min)
             if (_tickCount % 60 == 0)
+            {
                 RefreshVramInfo();
-
-            // Libérer la mémoire de RAM-AI lui-même toutes les ~60 secondes
-            if ((DateTime.UtcNow - _lastSelfTrimTime).TotalSeconds >= 60)
-                SelfTrimMemory();
+                PurgeWsTracker();
+            }
 
             var sw = Stopwatch.StartNew();
             try   { Tick(); }
@@ -402,21 +400,15 @@ internal sealed class MemoryOrchestrator : IDisposable
     // ── Tick ─────────────────────────────────────────────────────────────────
 
     // Compteur de ticks pour les logs périodiques (évite de flooder)
-    private int      _tickCount;
-    private DateTime _lastSelfTrimTime = DateTime.MinValue;
+    private int _tickCount;
 
     private void Tick()
     {
-        // Recalcule _intervalMs à chaque tick selon la pression RAM courante
-        UpdateInterval();
-
         var sw = Stopwatch.StartNew();
         int  coldEvicted        = 0;
         int  hotPrefetch        = 0;
         int  faultsAvoided      = 0;
         long mbSaved            = 0;
-        int  browserTabsEvicted = 0;
-        int  aiProcsEvicted     = 0;
 
         Process[] allProcs = Process.GetProcesses();
 
@@ -424,48 +416,34 @@ internal sealed class MemoryOrchestrator : IDisposable
         var (isGaming, gameName) = DetectGaming(allProcs);
         ApplyGamingMode(isGaming, gameName);
 
-        if (_gamingModeActive)
-        {
-            // Gaming prioritaire : désactiver IA et navigateur si actifs
-            if (_aiModeActive)      ApplyAiMode(false, string.Empty);
-            if (_browserModeActive) ApplyBrowserMode(false, string.Empty);
-        }
-        else
-        {
-            // ── 2. Détection IA (priorité sur navigateur) ─────────────────────
-            var (isAi, aiName) = DetectAi(allProcs);
-            ApplyAiMode(isAi, aiName);
-
-            // ── 3. Détection navigateur (seulement si pas en mode IA) ─────────
-            if (!_aiModeActive)
-            {
-                var (isBrowser, browserName) = DetectBrowser(allProcs);
-                ApplyBrowserMode(isBrowser, browserName);
-            }
-            else if (_browserModeActive)
-            {
-                // Mode IA prend la priorité sur le navigateur
-                ApplyBrowserMode(false, string.Empty);
-            }
-        }
-
-        // ── Lecture Pages/sec + seuil anti-swap ──────────────────────────────
+        // ── Anti-Swap : lecture Pages/sec + calcul agressivité ──────────────────
         bool antiSwapIntervention = false;
         if (_swapCounter is not null)
         {
-            try { _swapPagesPerSec = _swapCounter.NextValue(); }
-            catch { _swapPagesPerSec = 0f; }
+            try { SwapPagesPerSec = _swapCounter.NextValue(); }
+            catch { SwapPagesPerSec = 0f; }
         }
-        if (_swapPagesPerSec > SwapThresholdRed)
-        {
-            antiSwapIntervention = true;
-            Interlocked.Increment(ref _antiSwapInterventions);
-        }
+        // Vert < 10, Orange 10-100, Rouge > 100 → intervention
+        AntiSwapActive = SwapPagesPerSec > 100f;
+        if (AntiSwapActive) antiSwapIntervention = true;
 
-        // En intervention anti-swap, abaisser le seuil d'éviction pour libérer plus
-        float coldThreshold = _gamingModeActive   ? ColdThresholdGaming :
+        float coldThreshold = _gamingModeActive ? ColdThresholdGaming :
                               antiSwapIntervention ? Math.Min(ColdThreshold + 0.15f, 0.45f) :
                                                      ColdThreshold;
+
+        // ── Lecture CPU + % RAM utilisée → UpdateInterval() ──────────────────────
+        if (_cpuCounter is not null)
+        {
+            try { _cpuPct = _cpuCounter.NextValue(); }
+            catch { _cpuPct = 30f; }
+        }
+        {
+            long _totalRamMb = NativeMemory.GetTotalPhysicalMb();
+            long _availRamMb = NativeMemory.GetAvailablePhysicalMb();
+            _ramUsedPct = _totalRamMb > 0 ? (float)(_totalRamMb - _availRamMb) / _totalRamMb : 0f;
+        }
+        UpdateInterval();
+        _foregroundPid = GetForegroundPid();
 
         // ── 3. Mode Tournoi (Ultra) — appliqué en priorité si gaming actif ────
         bool tournamentMode = _gamingModeActive && File.Exists(TournamentFlagPath);
@@ -555,12 +533,12 @@ internal sealed class MemoryOrchestrator : IDisposable
 
             // 2. Traiter les autres processus
             //    Mode Tournoi : illimité + profil par jeu, mais avec seuil RAM et cap
-            //    Mode normal  : limité à MaxProcsPerCycle + profil par jeu
+            //    Mode normal  : limité à _maxProcsPerCycle + profil par jeu
             LoadGamingProfilesIfNeeded();
             var profile  = GetGameProfile(_currentGame);
             int maxProcs = _tournamentModeActive ? int.MaxValue
-                         : (profile?.MaxProcs ?? MaxProcsPerCycle);
-            int sleepMs  = _tournamentModeActive ? 0 : BatchSleepMs;
+                         : (profile?.MaxProcs ?? _maxProcsPerCycle);
+            int sleepMs  = _tournamentModeActive ? 0 : _batchSleepMs;
 
             if (profile is not null && !_tournamentModeActive)
                 _log.LogInformation("[Ultra] Profil jeu '{G}' : maxProcs={M}", _currentGame, maxProcs);
@@ -694,115 +672,23 @@ internal sealed class MemoryOrchestrator : IDisposable
             _log.LogInformation("[Gaming] Cycle optimisation — jeu exclu, {N} processus traités en {T}ms",
                 gamingProcessed, swGaming.ElapsedMilliseconds);
         }
-        else if (_aiModeActive)
-        {
-            // ── Mode IA : traitement léger pour ne pas interrompre l'app IA ──
-            // Thread déjà en BelowNormal (défini une fois pour toutes dans RunAsync)
-            var swAi = Stopwatch.StartNew();
-            int aiProcessed = 0;
-
-            // Trier : processus IA d'un côté, reste (filtré) de l'autre
-            var aiProcs    = new List<Process>();
-            var otherProcs = new List<Process>();
-
-            foreach (var p in allProcs)
-            {
-                try
-                {
-                    string n = p.ProcessName;
-                    if (IsAiProcess(n))
-                        aiProcs.Add(p);
-                    else if (!SystemProcesses.Contains(n)
-                          && !GamingProtectedProcesses.Contains(n)
-                          && !n.StartsWith("amd",  StringComparison.OrdinalIgnoreCase)
-                          && !n.StartsWith("igfx", StringComparison.OrdinalIgnoreCase))
-                        otherProcs.Add(p);
-                    else
-                        p.Dispose();
-                }
-                catch { p.Dispose(); }
-            }
-
-            // 1. Traiter les processus IA (éviction si inactif et WS > seuil)
-            _log.LogInformation("[IA] Processus IA trouvés : {F} (app principale='{A}', seuil={T}Mo)",
-                aiProcs.Count, _currentAiApp, AiWsThresholdMb);
-
-            int aiEligible = 0;
-            foreach (var aiProc in aiProcs)
-            {
-                using (aiProc)
-                {
-                    try
-                    {
-                        long wsMb = ReadWorkingSetMb(aiProc.Id);
-                        bool aboveThreshold = wsMb >= AiWsThresholdMb;
-                        if (aboveThreshold) aiEligible++;
-
-                        _log.LogInformation("[IA] Processus {N} (PID {P}) : WS={W}Mo, éligible={E}",
-                            aiProc.ProcessName, aiProc.Id, wsMb, aboveThreshold);
-
-                        if (aboveThreshold && IsAiProcessInactive(aiProc))
-                        {
-                            long freed = EvictTurbo(aiProc);
-                            if (freed >= 0)
-                            {
-                                Interlocked.Increment(ref aiProcsEvicted);
-                                Interlocked.Add(ref mbSaved, freed);
-                            }
-                        }
-                        else
-                        {
-                            UpdateCpuTracking(aiProc);
-                        }
-                        aiProcessed++;
-                    }
-                    catch { }
-                }
-            }
-
-            _log.LogInformation("[IA] Bilan : {F} trouvés, {E} éligibles (WS>={T}Mo), {V} évincés",
-                aiProcs.Count, aiEligible, AiWsThresholdMb, aiProcsEvicted);
-
-            // 2. Traiter max MaxProcsPerCycle autres processus, par batch de 5 avec pause entre
-            int aiMaxProcs = MaxProcsPerCycle;
-            int aiSleepMs  = BatchSleepMs;
-            var limited = otherProcs.Take(aiMaxProcs).ToList();
-            foreach (var p in otherProcs.Skip(aiMaxProcs)) try { p.Dispose(); } catch { }
-
-            const int aiBatchSize = 5;
-            for (int i = 0; i < limited.Count; i += aiBatchSize)
-            {
-                int end = Math.Min(i + aiBatchSize, limited.Count);
-                for (int j = i; j < end; j++)
-                {
-                    using var proc = limited[j];
-                    try
-                    {
-                        proc.Refresh();
-                        float prob = Predict(proc);
-                        long freed = EvictProcess(proc, prob, storeToColdCache: prob < coldThreshold);
-                        if (freed >= 0)
-                        {
-                            Interlocked.Increment(ref coldEvicted);
-                            Interlocked.Add(ref mbSaved, freed);
-                        }
-                        aiProcessed++;
-                    }
-                    catch { }
-                }
-                if (end < limited.Count) Thread.Sleep(aiSleepMs);
-            }
-
-            swAi.Stop();
-
-            _log.LogInformation("[IA] Cycle optimisation — {N} processus traités en {T}ms",
-                aiProcessed, swAi.ElapsedMilliseconds);
-        }
         else
         {
-            // ── Modes Normal / Navigateur / Turbo : traitement parallèle complet ──
+            // ── Modes Normal / Turbo : limiter par _maxProcsPerCycle (sauf Turbo) ──
+            Process[] procsToProcess;
+            if (!turboMode && _maxProcsPerCycle < allProcs.Length)
+            {
+                procsToProcess = allProcs.Take(_maxProcsPerCycle).ToArray();
+                foreach (var dp in allProcs.Skip(_maxProcsPerCycle))
+                    try { dp.Dispose(); } catch { }
+            }
+            else
+            {
+                procsToProcess = allProcs;
+            }
+
             Parallel.ForEach(
-                allProcs,
+                procsToProcess,
                 new ParallelOptions { MaxDegreeOfParallelism = Environment.ProcessorCount },
                 proc =>
             {
@@ -822,21 +708,6 @@ internal sealed class MemoryOrchestrator : IDisposable
                             {
                                 Interlocked.Increment(ref coldEvicted);
                                 Interlocked.Add(ref mbSaved, freed);
-                            }
-                            return;
-                        }
-
-                        // ── Mode Navigateur : éviction ciblée des onglets ─────
-                        if (_browserModeActive && IsBrowserProcess(procName))
-                        {
-                            if (wsBefore > 50L * 1024 * 1024)
-                            {
-                                long freed = EvictTurbo(proc);
-                                if (freed >= 0)
-                                {
-                                    Interlocked.Increment(ref browserTabsEvicted);
-                                    Interlocked.Add(ref mbSaved, freed);
-                                }
                             }
                             return;
                         }
@@ -867,9 +738,6 @@ internal sealed class MemoryOrchestrator : IDisposable
             });
         }
 
-        _browserTabsThisTick = browserTabsEvicted;
-        _ = aiProcsEvicted; // utilisé dans EventEntry ci-dessous
-
         // Supprimer le flag Turbo après la passe (one-shot)
         if (turboMode)
         {
@@ -891,25 +759,18 @@ internal sealed class MemoryOrchestrator : IDisposable
             CacheByteSaved         = _cache.TotalBytesSaved,
             IsGamingMode           = _gamingModeActive,
             GameName               = _currentGame,
-            IsBrowserMode          = _browserModeActive,
-            BrowserName            = _currentBrowser,
-            BrowserTabsOptimized   = browserTabsEvicted,
-            IsAiMode               = _aiModeActive,
-            AiName                 = _currentAiApp,
-            AiProcessesOptimized   = aiProcsEvicted,
             PhysicalMbFreed        = mbSaved,
             IsEcoMode              = _ecoMode,
             IsTournamentMode       = _tournamentModeActive,
             VramMb                 = _vramMb,
-            SwapPagesPerSec        = _swapPagesPerSec,
-            AntiSwapIntervention   = antiSwapIntervention,
+            SwapPagesPerSec        = SwapPagesPerSec,
+            AntiSwapIntervention   = AntiSwapActive,
         });
 
         _log.LogDebug(
-            "Tick {L}ms | cold={C} hot={H} saved≈{M}MB gaming={G} ai={A}({AP}procs) browser={B}({T}tabs) turbo={U}",
+            "Tick {L}ms | cold={C} hot={H} saved≈{M}MB gaming={G} swap={S} cpu={P:F0}% ram={R:P0} turbo={U}",
             sw.ElapsedMilliseconds, coldEvicted, hotPrefetch, mbSaved,
-            _gamingModeActive, _aiModeActive, aiProcsEvicted,
-            _browserModeActive, browserTabsEvicted, turboMode);
+            _gamingModeActive, AntiSwapActive, _cpuPct, _ramUsedPct, turboMode);
     }
 
     // ── Détection gaming ──────────────────────────────────────────────────────
@@ -1009,46 +870,7 @@ internal sealed class MemoryOrchestrator : IDisposable
         catch { return string.Empty; }
     }
 
-    private static bool IsGameProcess(string name)    => KnownGameProcesses.Contains(name);
-    private static bool IsBrowserProcess(string name) => KnownBrowserProcesses.Contains(name);
-
-    // ── Détection IA ─────────────────────────────────────────────────────────
-
-    private static (bool IsAi, string AiName) DetectAi(Process[] procs)
-    {
-        foreach (var p in procs)
-        {
-            try
-            {
-                if (KnownAiProcesses.Contains(p.ProcessName))
-                    return (true, p.ProcessName);
-            }
-            catch { }
-        }
-        return (false, string.Empty);
-    }
-
-    private void ApplyAiMode(bool isAi, string aiName)
-    {
-        if (isAi && !_aiModeActive)
-        {
-            _aiModeActive  = true;
-            _currentAiApp  = aiName;
-            UpdateInterval();
-            _events.WriteMarker($"AI MODE ON — {aiName}");
-            _log.LogInformation(">>> AI mode ON  : {A} (intervalle {I}ms)", aiName, AiIntervalMs);
-            Console.WriteLine($"[RAM-AI] >>> AI MODE ON  : {aiName} (intervalle={AiIntervalMs}ms)");
-        }
-        else if (!isAi && _aiModeActive)
-        {
-            _aiModeActive = false;
-            _currentAiApp = string.Empty;
-            UpdateInterval();
-            _events.WriteMarker("AI MODE OFF");
-            _log.LogInformation(">>> AI mode OFF : intervalle {I}ms", _intervalMs);
-            Console.WriteLine($"[RAM-AI] >>> AI MODE OFF (intervalle={_intervalMs}ms)");
-        }
-    }
+    private static bool IsGameProcess(string name) => KnownGameProcesses.Contains(name);
 
     // ── Ultra : Optimisation prédictive ──────────────────────────────────────
 
@@ -1153,13 +975,11 @@ internal sealed class MemoryOrchestrator : IDisposable
             _log.LogInformation("[Ultra] VRAM adaptateur : {V} Mo", _vramMb);
     }
 
-    private static bool IsAiProcess(string name) => KnownAiProcesses.Contains(name);
-
     // ── Détection et application du mode Éco (batterie) ─────────────────────
 
     private void RefreshEcoMode()
     {
-        bool onBattery = NativeMemory.IsOnBattery();
+        bool onBattery = NativeMemory.IsOnBattery() || File.Exists(EcoFlagPath);
 
         // Log de diagnostic à chaque vérification (pas seulement au changement d'état)
         Console.WriteLine($"[ECO] RefreshEcoMode — sur batterie : {onBattery} | écoMode courant : {_ecoMode}");
@@ -1176,8 +996,8 @@ internal sealed class MemoryOrchestrator : IDisposable
             _log.LogInformation(
                 "[ÉCO] Batterie détectée → mode éco ON " +
                 "(intervalle={I}ms, max {M} procs/cycle, sleep={S}ms/batch)",
-                _intervalMs, MaxProcsPerCycle, BatchSleepMs);
-            Console.WriteLine($"[RAM-AI] 🔋 MODE ÉCO ON (intervalle={_intervalMs}ms, max {MaxProcsPerCycle} procs/cycle)");
+                _intervalMs, _maxProcsPerCycle, _batchSleepMs);
+            Console.WriteLine($"[RAM-AI] 🔋 MODE ÉCO ON (intervalle={_intervalMs}ms, max {_maxProcsPerCycle} procs/cycle)");
             _events.WriteMarker("ECO MODE ON — batterie");
         }
         else
@@ -1205,73 +1025,6 @@ internal sealed class MemoryOrchestrator : IDisposable
                 : 0L;
         }
         finally { NativeMemory.CloseHandle(h); }
-    }
-
-    /// <summary>
-    /// Retourne true si le processus est inactif (CPU approx < 2% depuis le dernier tick).
-    /// Met aussi à jour le suivi CPU.
-    /// </summary>
-    private bool IsAiProcessInactive(Process proc)
-    {
-        try
-        {
-            TimeSpan currentCpu = proc.TotalProcessorTime;
-            bool hadPrev = _prevCpuTime.TryGetValue(proc.Id, out TimeSpan prevCpu);
-            _prevCpuTime[proc.Id] = currentCpu;
-
-            if (!hadPrev) return true; // premier tick : pas de delta CPU → évincer d'emblée si WS dépasse le seuil
-
-            double deltaMsActive = (currentCpu - prevCpu).TotalMilliseconds;
-            double deltaMsElapsed = AiIntervalMs * Environment.ProcessorCount; // budget max
-            double cpuPct = deltaMsActive / deltaMsElapsed * 100.0;
-
-            return cpuPct < 2.0; // inactif si < 2% CPU
-        }
-        catch { return true; } // accès refusé CPU → traiter comme inactif, l'éviction sera tentée
-    }
-
-    private void UpdateCpuTracking(Process proc)
-    {
-        try { _prevCpuTime[proc.Id] = proc.TotalProcessorTime; }
-        catch { }
-    }
-
-    // ── Détection navigateur ─────────────────────────────────────────────────
-
-    private static (bool IsBrowser, string BrowserName) DetectBrowser(Process[] procs)
-    {
-        foreach (var p in procs)
-        {
-            try
-            {
-                if (KnownBrowserProcesses.Contains(p.ProcessName))
-                    return (true, p.ProcessName);
-            }
-            catch { }
-        }
-        return (false, string.Empty);
-    }
-
-    private void ApplyBrowserMode(bool isBrowser, string browserName)
-    {
-        if (isBrowser && !_browserModeActive)
-        {
-            _browserModeActive = true;
-            _currentBrowser    = browserName;
-            UpdateInterval();
-            _events.WriteMarker($"BROWSER MODE ON — {browserName}");
-            _log.LogInformation(">>> Browser mode ON  : {B} (intervalle {I}ms)", browserName, BrowserIntervalMs);
-            Console.WriteLine($"[RAM-AI] >>> BROWSER MODE ON  : {browserName} (intervalle={BrowserIntervalMs}ms)");
-        }
-        else if (!isBrowser && _browserModeActive)
-        {
-            _browserModeActive = false;
-            _currentBrowser    = string.Empty;
-            UpdateInterval();
-            _events.WriteMarker("BROWSER MODE OFF");
-            _log.LogInformation(">>> Browser mode OFF : intervalle {I}ms", _intervalMs);
-            Console.WriteLine($"[RAM-AI] >>> BROWSER MODE OFF (intervalle={_intervalMs}ms)");
-        }
     }
 
     // ── Mode gaming ──────────────────────────────────────────────────────────
@@ -1367,6 +1120,20 @@ internal sealed class MemoryOrchestrator : IDisposable
     /// </summary>
     private long EvictProcess(Process proc, float prob, bool storeToColdCache)
     {
+        // ── Protection : premier plan ──────────────────────────────────────────
+        if (proc.Id == _foregroundPid) return -1L;
+
+        // ── Protection : WS modifié dans les 10 dernières secondes ────────────
+        long nowMs = Environment.TickCount64;
+        long wsMbNow = proc.WorkingSet64 / (1024L * 1024L);
+        if (_wsTracker.TryGetValue(proc.Id, out var wsEntry)
+            && (nowMs - wsEntry.TickMs) < 10_000
+            && Math.Abs(wsMbNow - wsEntry.WsMb) > 5)
+        {
+            return -1L;
+        }
+        _wsTracker[proc.Id] = (wsMbNow, nowMs);
+
         IntPtr hProc = NativeMemory.OpenProcess(
             NativeMemory.PROCESS_QUERY_INFORMATION | NativeMemory.PROCESS_SET_QUOTA,
             false, proc.Id);
@@ -1502,28 +1269,22 @@ internal sealed class MemoryOrchestrator : IDisposable
         finally { NativeMemory.CloseHandle(hProc); }
     }
 
-    /// <summary>
-    /// Libère la mémoire de RAM-AI lui-même (~60s d'intervalle).
-    /// GC doux (non-bloquant) + EmptyWorkingSet sur le processus courant.
-    /// </summary>
-    private void SelfTrimMemory()
+    private void PurgeWsTracker()
     {
-        _lastSelfTrimTime = DateTime.UtcNow;
-        try
+        long cutoffMs = Environment.TickCount64 - 60_000; // 60s
+        foreach (var pid in _wsTracker.Keys.ToArray())
         {
-            // GC génération 2 en mode optimisé (non-bloquant) — compacte le tas managé
-            GC.Collect(2, GCCollectionMode.Optimized, blocking: false);
-            // Trim du working set natif — pages inactives renvoyées au kernel
-            NativeMemory.EmptyWorkingSet(Process.GetCurrentProcess().Handle);
+            if (_wsTracker.TryGetValue(pid, out var entry) && entry.TickMs < cutoffMs)
+                _wsTracker.TryRemove(pid, out _);
         }
-        catch { /* jamais de crash en self-trim */ }
     }
 
     public void Dispose()
     {
+        _swapCounter?.Dispose();
+        _cpuCounter?.Dispose();
         _engine?.Dispose();   // null si mode sans ML
         _cache.Dispose();
-        _swapCounter?.Dispose();
     }
 }
 

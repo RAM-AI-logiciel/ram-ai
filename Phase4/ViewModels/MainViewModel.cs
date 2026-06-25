@@ -38,30 +38,19 @@ public sealed partial class MainViewModel : ObservableObject
     [ObservableProperty] private bool   _forceGamingMode;
     [ObservableProperty] private string _detectedGameLabel = string.Empty;
 
-    // ── Mode Navigateur ───────────────────────────────────────────────────────
-    [ObservableProperty] private bool   _isBrowserModeActive;
-    [ObservableProperty] private string _browserInfoText   = string.Empty;
-
-    // ── Mode IA ───────────────────────────────────────────────────────────────
-    [ObservableProperty] private bool   _isAiModeActive;
-    [ObservableProperty] private string _aiInfoText        = string.Empty;
-
-    // ── Mode Éco (batterie) ───────────────────────────────────────────────────
+    // ── Mode Éco (batterie ou forcé) ─────────────────────────────────────────
     [ObservableProperty] private bool   _isEcoModeActive;
     [ObservableProperty] private string _ecoModeText       = string.Empty;
+    [ObservableProperty] private bool   _forceEcoMode;
 
-    // ── Anti-swap ─────────────────────────────────────────────────────────────
-    [ObservableProperty] private bool   _isAntiSwapActive;
-    [ObservableProperty] private string _antiSwapText      = string.Empty;
-    [ObservableProperty] private string _swapLevelColor    = "#3FB950"; // vert par défaut
+    // ── Anti-Swap ─────────────────────────────────────────────────────────────
+    [ObservableProperty] private float _swapPagesPerSec;
+    [ObservableProperty] private bool  _isAntiSwapActive;
 
     // ── Ultra ─────────────────────────────────────────────────────────────────
     [ObservableProperty] private bool   _isUltraModeActive;
     [ObservableProperty] private bool   _isTournamentModeActive;
     [ObservableProperty] private string _vramInfoText       = string.Empty;
-
-    // ── Compteurs IA cumulatifs ───────────────────────────────────────────────
-    private int _totalAiProcessesEvicted;
 
     // ── RAM au démarrage ─────────────────────────────────────────────────────
     private long _baselineRamUsedMb;
@@ -79,14 +68,10 @@ public sealed partial class MainViewModel : ObservableObject
 
     // ── Tracking des transitions de mode (pour compter les activations) ────────
     private bool _prevGaming;
-    private bool _prevAi;
-    private bool _prevBrowser;
     private bool _prevEco;
 
-    // ── Compteurs de ticks par mode aujourd'hui (pour "mode le plus utilisé") ──
+    // ── Compteurs de ticks par mode aujourd'hui ───────────────────────────────
     private int _todayGamingTicks;
-    private int _todayAiTicks;
-    private int _todayBrowserTicks;
     private int _todayEcoTicks;
 
     // ── Pic de RAM libérée en un seul tick (cette session) ────────────────────
@@ -112,6 +97,7 @@ public sealed partial class MainViewModel : ObservableObject
     private static readonly string ForceFlagPath      = Path.Combine(SharedFlagDir, "gaming_mode.force");
     private static readonly string TurboFlagPath      = Path.Combine(SharedFlagDir, "turbo_mode.force");
     private static readonly string TournamentFlagPath = Path.Combine(SharedFlagDir, "tournament_mode.force");
+    private static readonly string EcoFlagPath        = Path.Combine(SharedFlagDir, "eco_mode.force");
 
     // ── Services ──────────────────────────────────────────────────────────────
     private readonly LogWatcherService _logWatcher;
@@ -134,6 +120,14 @@ public sealed partial class MainViewModel : ObservableObject
             IsGamingModeActive = true;
             DetectedGameName   = "Mode Gaming FORCÉ";
             DetectedGameLabel  = "Mode Gaming FORCÉ";
+        }
+
+        // Synchroniser ForceEcoMode depuis le fichier flag au démarrage.
+        if (File.Exists(EcoFlagPath))
+        {
+            ForceEcoMode    = true;
+            IsEcoModeActive = true;
+            EcoModeText     = "🔋 Mode Éco forcé (manuel)";
         }
 
         // Créer le dossier partagé si nécessaire
@@ -200,15 +194,13 @@ public sealed partial class MainViewModel : ObservableObject
                 _stats.TotalRamFreedGb += freedGb;
                 _stats.TodayRamFreedGb += freedGb;
 
-                // Attribuer la RAM libérée au mode actif (priorité : Gaming > IA > Navigateur > Éco)
-                if      (entry.IsGamingMode || ForceGamingMode) _stats.GamingRamFreedGb  += freedGb;
-                else if (entry.IsAiMode)                        _stats.AiRamFreedGb      += freedGb;
-                else if (entry.IsBrowserMode)                   _stats.BrowserRamFreedGb += freedGb;
-                else if (entry.IsEcoMode)                       _stats.EcoRamFreedGb     += freedGb;
+                // Attribuer la RAM libérée au mode actif
+                if      (entry.IsGamingMode || ForceGamingMode) _stats.GamingRamFreedGb += freedGb;
+                else if (entry.IsEcoMode)                       _stats.EcoRamFreedGb    += freedGb;
             }
 
             // ── Processus ──
-            long procsThisTick = entry.ColdEvicted + entry.AiProcessesOptimized;
+            long procsThisTick = entry.ColdEvicted;
             ProcessesOptimized            += procsThisTick;
             _stats.TotalProcessesOptimized += procsThisTick;
             _stats.TodayProcessesOptimized += procsThisTick;
@@ -237,39 +229,6 @@ public sealed partial class MainViewModel : ObservableObject
                 DetectedGameLabel = "Mode Gaming FORCÉ";
             }
 
-            // ── Mode Navigateur ──
-            bool browserNow = entry.IsBrowserMode && !gamingNow && !entry.IsAiMode;
-            if (browserNow)
-            {
-                IsBrowserModeActive = true;
-                BrowserInfoText     = $"{entry.BrowserName} — {entry.BrowserTabsOptimized} onglet(s) optimisé(s)";
-            }
-            else if (!entry.IsBrowserMode)
-            {
-                IsBrowserModeActive = false;
-                BrowserInfoText     = string.Empty;
-            }
-            if (!_prevBrowser && browserNow) _stats.BrowserActivations++;
-            _prevBrowser = browserNow;
-            if (browserNow) _todayBrowserTicks++;
-
-            // ── Mode IA ──
-            bool aiNow = entry.IsAiMode && !gamingNow;
-            if (aiNow)
-            {
-                _totalAiProcessesEvicted += entry.AiProcessesOptimized;
-                IsAiModeActive = true;
-                AiInfoText     = $"{entry.AiName} — {_totalAiProcessesEvicted} processus optimisé(s)";
-            }
-            else if (!entry.IsAiMode)
-            {
-                IsAiModeActive = false;
-                AiInfoText     = string.Empty;
-            }
-            if (!_prevAi && aiNow) _stats.AiActivations++;
-            _prevAi = aiNow;
-            if (aiNow) _todayAiTicks++;
-
             // ── Mode Éco ──
             bool ecoNow = entry.IsEcoMode;
             if (ecoNow)
@@ -286,27 +245,9 @@ public sealed partial class MainViewModel : ObservableObject
             _prevEco = ecoNow;
             if (ecoNow) _todayEcoTicks++;
 
-            // ── Anti-swap ──
-            float pps = entry.SwapPagesPerSec;
-            if (pps > 100f)
-            {
-                IsAntiSwapActive = true;
-                AntiSwapText     = $"⚠ ANTI-SWAP ACTIF — {pps:F0} pages/sec — Libération agressive en cours";
-                SwapLevelColor   = "#E94560"; // rouge
-                _stats.AntiSwapInterventions++;
-            }
-            else if (pps > 10f)
-            {
-                IsAntiSwapActive = false;
-                AntiSwapText     = $"⚡ Swap léger : {pps:F0} pages/sec";
-                SwapLevelColor   = "#D29922"; // orange
-            }
-            else
-            {
-                IsAntiSwapActive = false;
-                AntiSwapText     = string.Empty;
-                SwapLevelColor   = "#3FB950"; // vert
-            }
+            // ── Anti-Swap ──
+            SwapPagesPerSec  = entry.SwapPagesPerSec;
+            IsAntiSwapActive = entry.AntiSwapIntervention;
 
             // ── Ultra ──
             IsTournamentModeActive = entry.IsTournamentMode;
@@ -316,12 +257,10 @@ public sealed partial class MainViewModel : ObservableObject
 
             // ── Mettre à jour le mode courant (lu par MeasureLoop) ──
             _currentActiveMode =
-                entry.IsTournamentMode            ? "Tournoi"    :
-                (entry.IsGamingMode || ForceGamingMode) ? "Gaming" :
-                (entry.IsAiMode && !gamingNow)    ? "IA"         :
-                browserNow                        ? "Navigateur" :
-                ecoNow                            ? "Éco"        :
-                                                    "Standard";
+                entry.IsTournamentMode                  ? "Tournoi" :
+                (entry.IsGamingMode || ForceGamingMode) ? "Gaming"  :
+                ecoNow                                  ? "Éco"     :
+                                                          "Standard";
         });
     }
 
@@ -625,6 +564,29 @@ public sealed partial class MainViewModel : ObservableObject
     }
 
     [RelayCommand]
+    private void ToggleForceEcoMode()
+    {
+        ForceEcoMode = !ForceEcoMode;
+        try
+        {
+            if (ForceEcoMode)
+            {
+                Directory.CreateDirectory(SharedFlagDir);
+                File.WriteAllText(EcoFlagPath, "manual");
+                IsEcoModeActive = true;
+                EcoModeText     = "🔋 Mode Éco forcé (manuel)";
+            }
+            else
+            {
+                if (File.Exists(EcoFlagPath)) File.Delete(EcoFlagPath);
+                IsEcoModeActive = false;
+                EcoModeText     = string.Empty;
+            }
+        }
+        catch { }
+    }
+
+    [RelayCommand]
     private void Turbo()
     {
         try
@@ -636,15 +598,8 @@ public sealed partial class MainViewModel : ObservableObject
         catch { }
     }
 
-    // ── Rapport détaillé ──────────────────────────────────────────────────────
-
-    [RelayCommand]
-    private void GenerateReport()
-    {
-        try
-        {
-            var    now     = DateTime.Now;
-            var    elapsed = now - _sessionStart;
+    private void GenerateReportLegacy() { var    now     = DateTime.Now;
+        var    elapsed = now - _sessionStart;
             int    hours   = (int)elapsed.TotalHours;
             int    minutes = elapsed.Minutes;
 
@@ -664,10 +619,8 @@ public sealed partial class MainViewModel : ObservableObject
             // ── Mode le plus utilisé aujourd'hui ──
             string topMode = "Aucun";
             int    topTick = 0;
-            if (_todayGamingTicks  > topTick) { topTick = _todayGamingTicks;  topMode = "Gaming";     }
-            if (_todayAiTicks      > topTick) { topTick = _todayAiTicks;      topMode = "IA";         }
-            if (_todayBrowserTicks > topTick) { topTick = _todayBrowserTicks; topMode = "Navigateur"; }
-            if (_todayEcoTicks     > topTick) {                               topMode = "Éco";        }
+            if (_todayGamingTicks > topTick) { topTick = _todayGamingTicks; topMode = "Gaming"; }
+            if (_todayEcoTicks    > topTick) {                               topMode = "Éco";    }
 
             // ── Pics et stats globales ──
             double peakGb           = _peakTickFreedMb / 1024.0;
@@ -751,7 +704,6 @@ public sealed partial class MainViewModel : ObservableObject
             sb.AppendLine($"Mode Eco        : {_stats.EcoActivations,3} sessions — {_stats.EcoRamFreedGb:F2} Go récupérés");
             sb.AppendLine($"Mode Turbo      : {_stats.TurboUseCount,3} utilisation(s)");
             sb.AppendLine($"Mode Tournoi    : {_stats.TournamentUseCount,3} utilisation(s)");
-            sb.AppendLine($"Interventions anti-swap : {_stats.AntiSwapInterventions,3} (ticks avec swap > 100 pages/sec)");
             sb.AppendLine();
 
             // Point 3 : PROCESSUS RELANCÉS
@@ -860,8 +812,6 @@ public sealed partial class MainViewModel : ObservableObject
             {
                 UseShellExecute = true,
             });
-        }
-        catch { }
     }
 
     // ── Informations système ──────────────────────────────────────────────────

@@ -718,23 +718,41 @@ if ($p2GainAbs -gt 0.5) {
     $verdictColor = "#F44336"
 }
 
-if ($p1AvgSwap -gt 0 -and $p2AvgSwap -eq 0) {
-    $verdictSwapText  = "RAM-AI a elimine le swap sur ce systeme !"
+# Classification swap en paliers absolus (independants du ratio entre phases)
+function Get-SwapPalier {
+    param([double]$Val)
+    if ($Val -lt 10)  { return "Negligeable" }
+    if ($Val -le 100) { return "Modere"      }
+    return "Eleve"
+}
+function Get-SwapPalierColor {
+    param([string]$Palier)
+    switch ($Palier) {
+        "Negligeable" { return "#4CAF50" }
+        "Modere"      { return "#F5A623" }
+        "Eleve"       { return "#ef5350" }
+        default       { return "#888"    }
+    }
+}
+
+$p1SwapPalier = Get-SwapPalier $p1AvgSwap
+$p2SwapPalier = Get-SwapPalier $p2AvgSwap
+
+if ($p1SwapPalier -eq $p2SwapPalier) {
+    $verdictSwapText  = "Swap reste $p1SwapPalier dans les deux phases (ref: $p1AvgSwap p/s mediane, RAM-AI: $p2AvgSwap p/s mediane) -- aucun impact mesurable."
+    $verdictSwapColor = Get-SwapPalierColor $p2SwapPalier
+} elseif ($p2SwapPalier -eq "Negligeable") {
+    $verdictSwapText  = "Swap passe de $p1SwapPalier a Negligeable avec RAM-AI actif ($p1AvgSwap -> $p2AvgSwap p/s) -- amelioration."
     $verdictSwapColor = "#4CAF50"
-} elseif ($p1AvgSwap -gt 0 -and $p2AvgSwap -lt $p1AvgSwap) {
-    $swapReducPct     = [math]::Round(($p1AvgSwap - $p2AvgSwap) / $p1AvgSwap * 100, 0)
-    $verdictSwapText  = "RAM-AI a reduit le swap de $swapReducPct% ($p1AvgSwap -> $p2AvgSwap p/s en moyenne)."
-    $verdictSwapColor = "#8BC34A"
-} elseif ($p1AvgSwap -eq 0 -and $p2AvgSwap -eq 0) {
-    $verdictSwapText  = "Aucun swap detecte -- la RAM est suffisante sur ce systeme."
-    $verdictSwapColor = "#4CAF50"
-} elseif ($p2AvgSwap -gt $p1AvgSwap) {
-    $swapHausseAbs    = [math]::Round($p2AvgSwap - $p1AvgSwap, 1)
-    $verdictSwapText  = "Attention : le swap a augmente de $swapHausseAbs p/s avec RAM-AI actif. RAM liberee mais transferee sur disque -- normal si le systeme manque de RAM."
+} elseif ($p1SwapPalier -eq "Negligeable" -and $p2SwapPalier -eq "Modere") {
+    $verdictSwapText  = "Swap passe de Negligeable a Modere avec RAM-AI actif ($p1AvgSwap -> $p2AvgSwap p/s) -- a surveiller."
+    $verdictSwapColor = "#F5A623"
+} elseif ($p2SwapPalier -eq "Eleve") {
+    $verdictSwapText  = "Attention : swap passe de $p1SwapPalier a Eleve avec RAM-AI actif ($p1AvgSwap -> $p2AvgSwap p/s) -- RAM liberee transferee sur disque."
     $verdictSwapColor = "#ef5350"
 } else {
-    $verdictSwapText  = "Swap stable -- aucune variation significative detectee."
-    $verdictSwapColor = "#F5A623"
+    $verdictSwapText  = "Swap : $p1SwapPalier (ref: $p1AvgSwap p/s) -> $p2SwapPalier (RAM-AI: $p2AvgSwap p/s)."
+    $verdictSwapColor = Get-SwapPalierColor $p2SwapPalier
 }
 
 # =============================================================================
@@ -796,46 +814,20 @@ $swapLabelsJs = $swapLabelsArr -join ","
 $swapDataJs   = $swapDataArr   -join ","
 $swapColorsJs = $swapColorsArr -join ","
 
-# Titre dynamique du graphique swap
-if ($p2AvgSwap -lt ($p1AvgSwap - 0.5)) {
-    $swapChartTitle = "Reduction du Swap &mdash; Impact RAM-AI"
-} elseif ($p2AvgSwap -gt ($p1AvgSwap + 0.5)) {
-    $swapChartTitle = "Swap &mdash; Augmentation detectee avec RAM-AI actif"
+# Titre dynamique du graphique swap (base sur paliers)
+if ($p1SwapPalier -eq $p2SwapPalier) {
+    $swapChartTitle = "Swap &mdash; Palier $p1SwapPalier dans les deux phases"
+} elseif ($p2SwapPalier -eq "Negligeable" -or ($p1SwapPalier -eq "Eleve" -and $p2SwapPalier -eq "Modere")) {
+    $swapChartTitle = "Swap &mdash; Amelioration avec RAM-AI actif"
 } else {
-    $swapChartTitle = "Swap &mdash; Aucune variation significative"
+    $swapChartTitle = "Swap &mdash; Degradation de palier avec RAM-AI actif"
 }
 
-# Stat : reduction swap % — vert si reduit (bon), rouge si augmente (mauvais)
-if ($p1AvgSwap -eq 0 -and $p2AvgSwap -eq 0) {
-    $swapStatLabel   = "Swap absent"
-    $swapReducText   = "Aucun swap"
-    $swapReducColor  = "#42A5F5"
-    $swapBorderColor = "#42A5F5"
-} elseif ($p1AvgSwap -gt 0) {
-    $sr = [math]::Round(($p1AvgSwap - $p2AvgSwap) / $p1AvgSwap * 100, 0)
-    if ($sr -gt 0) {
-        $swapStatLabel   = "Swap reduit"
-        $swapReducText   = "$sr% ↓"
-        $swapReducColor  = "#00D4AA"
-        $swapBorderColor = "#00D4AA"
-    } elseif ($sr -lt 0) {
-        $absVal          = [math]::Abs($sr)
-        $swapStatLabel   = "Swap augmente !"
-        $swapReducText   = "+$absVal% ↑"
-        $swapReducColor  = "#ef5350"
-        $swapBorderColor = "#ef5350"
-    } else {
-        $swapStatLabel   = "Swap inchange"
-        $swapReducText   = "0%"
-        $swapReducColor  = "#888"
-        $swapBorderColor = "#888"
-    }
-} else {
-    $swapStatLabel   = "Swap"
-    $swapReducText   = "N/A"
-    $swapReducColor  = "#555"
-    $swapBorderColor = "#555"
-}
+# Stat card swap : affiche palier + mediane + P95 (plus de % ratio)
+$swapStatLabel   = "Swap RAM-AI : $p2SwapPalier"
+$swapReducText   = "$p2AvgSwap p/s  |  P95: $p2P95Swap"
+$swapReducColor  = Get-SwapPalierColor $p2SwapPalier
+$swapBorderColor = $swapReducColor
 
 # Visibilite colonnes optionnelles (CSS)
 if ($hasGaming)  { $p3ColStyle = "" }   else { $p3ColStyle = "display:none" }
@@ -995,7 +987,7 @@ $htmlTemplate = @'
     <div class="stat-card s-swap">
       <h3>##SWAP_STAT_LABEL##</h3>
       <div class="big">##SWAP_REDUC_TEXT##</div>
-      <div class="sub">##P1_AVG_SWAP## &rarr; ##P2_AVG_SWAP## p/s (moy)</div>
+      <div class="sub">Ref: ##P1_AVG_SWAP## p/s (##P1_SWAP_PALIER##) &rarr; ##P2_AVG_SWAP## p/s (##P2_SWAP_PALIER##)</div>
     </div>
     <div class="stat-card s-ram">
       <h3>Gain RAM (Mode Auto)</h3>
@@ -1125,8 +1117,8 @@ $htmlTemplate = @'
       <div class="rapport-block">
         <h4>Swap benchmark</h4>
         <table>
-          <tr><td>Phase 1 (sans RAM-AI)</td><td>med ##P1_AVG_SWAP## &mdash; P95 ##P1_P95_SWAP## &mdash; max ##P1_MAX_SWAP## p/s</td></tr>
-          <tr><td>Phase 2 (Mode Auto)</td><td>med ##P2_AVG_SWAP## &mdash; P95 ##P2_P95_SWAP## &mdash; max ##P2_MAX_SWAP## p/s</td></tr>
+          <tr><td>Phase 1 (sans RAM-AI)</td><td>med ##P1_AVG_SWAP## &mdash; P95 ##P1_P95_SWAP## &mdash; max ##P1_MAX_SWAP## p/s &mdash; <strong>##P1_SWAP_PALIER##</strong></td></tr>
+          <tr><td>Phase 2 (Mode Auto)</td><td>med ##P2_AVG_SWAP## &mdash; P95 ##P2_P95_SWAP## &mdash; max ##P2_MAX_SWAP## p/s &mdash; <strong>##P2_SWAP_PALIER##</strong></td></tr>
         </table>
       </div>
     </div>
@@ -1375,12 +1367,14 @@ $html = $htmlTemplate `
     -replace '##P1_AVG_SWAP##',        $p1AvgSwap.ToString($inv2) `
     -replace '##P1_P95_SWAP##',        $p1P95Swap.ToString($inv2) `
     -replace '##P1_MAX_SWAP##',        $p1MaxSwap.ToString($inv2) `
+    -replace '##P1_SWAP_PALIER##',     $p1SwapPalier `
     -replace '##P2_AVG_RAM##',         $p2AvgRam.ToString($inv2) `
     -replace '##P2_MIN_RAM##',         $p2MinRam.ToString($inv2) `
     -replace '##P2_MAX_RAM##',         $p2MaxRam.ToString($inv2) `
     -replace '##P2_AVG_SWAP##',        $p2AvgSwap.ToString($inv2) `
     -replace '##P2_P95_SWAP##',        $p2P95Swap.ToString($inv2) `
     -replace '##P2_MAX_SWAP##',        $p2MaxSwap.ToString($inv2) `
+    -replace '##P2_SWAP_PALIER##',     $p2SwapPalier `
     -replace '##P2_AVG_CPU_RAI##',     $p2AvgCpuRai.ToString($inv2) `
     -replace '##P2_MAX_CPU_RAI##',     $p2MaxCpuRai.ToString($inv2) `
     -replace '##P2_GAIN_ABS##',        $p2GainAbs.ToString($inv2) `

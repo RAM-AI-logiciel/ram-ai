@@ -36,10 +36,18 @@ internal sealed class MemoryOrchestrator : IDisposable
     private const int   GamingIntervalMs     = 1_200;  // mode Gaming
 
     // ── Seuils de charge ──────────────────────────────────────────────────────
-    private const float CpuReposPct          =  20f;   // CPU < 20% (condition repos)
-    private const float RamReposPct          = 0.60f;  // RAM < 60% utilisée (condition repos)
-    private const float RamHighPct           = 0.75f;  // RAM > 75% → entrer HighRam
-    private const float RamHighExitPct       = 0.65f;  // RAM < 65% → sortir HighRam (hystérèse)
+    private const float CpuReposPct             =  20f;    // CPU < 20% (condition repos)
+    private const float RamReposPct             = 0.60f;   // RAM < 60% utilisée (condition repos)
+
+    // HighRam : seuil absolu en Mo disponibles — proportionnel à la RAM totale,
+    // avec plancher pour les petites machines. Entrée < 15%, sortie > 22%.
+    // Sur 16 Go : entrée < 2 444 Mo, sortie > 3 585 Mo.
+    // Sur  8 Go : entrée < 2 000 Mo (plancher), sortie > 3 000 Mo (plancher).
+    // Sur 32 Go : entrée < 4 915 Mo, sortie > 7 187 Mo.
+    private const float HighRamAvailFraction     = 0.15f;  // entrer HighRam si avail < 15% total
+    private const float HighRamExitAvailFraction = 0.22f;  // sortir HighRam si avail > 22% total
+    private const long  HighRamAvailMinMb        = 2_000L; // plancher entrée (machines < 13 Go)
+    private const long  HighRamExitMinMb         = 3_000L; // plancher sortie
 
     // ── Mode Tournoi (Ultra — performances gaming absolues) ──────────────────
     private const int   TournamentIntervalMs      = 500;   // anti-stutter : 500ms (300ms causait des drops FPS)
@@ -188,8 +196,11 @@ internal sealed class MemoryOrchestrator : IDisposable
     private int   _batchSleepMs     = NormalBatchSleepMs;
     private float _cpuPct;
     private float _ramUsedPct;
-    // Hystérèse HighRam : évite d'osciller entre paliers quand RAM ≈ 75%
-    private bool  _highRamActive;    // true = on est entré en mode HighRam, on n'en sort qu'à <65%
+    private long  _tickAvailMb;          // Mo disponibles ce tick (source UpdateInterval)
+    private long  _highRamThresholdMb;   // calculé une fois au premier tick depuis totalRamMb
+    private long  _highRamExitMb;        // idem — seuil de sortie d'hystérèse
+    // Hystérèse HighRam : évite d'osciller entre paliers quand avail ≈ seuil
+    private bool  _highRamActive;        // true = entré en HighRam, sort seulement si avail > _highRamExitMb
 
     // ── CPU counter (paliers d'intervalle) ────────────────────────────────────
     private readonly PerformanceCounter? _cpuCounter;
@@ -240,13 +251,13 @@ internal sealed class MemoryOrchestrator : IDisposable
             return;
         }
 
-        // Hystérèse HighRam : entrée à >75%, sortie seulement à <65%.
-        // Évite l'oscillation 1200ms↔3000ms quand RAM ≈ 75% (cause de pics CPU périodiques).
-        if (_ramUsedPct > RamHighPct)
+        // Hystérèse HighRam : entrée si avail < seuil (15% total), sortie si avail > seuil sortie (22% total).
+        // Basé sur Mo disponibles absolus — robuste sur 8/16/32 Go, insensible à la standby list.
+        if (_tickAvailMb < _highRamThresholdMb)
             _highRamActive = true;
-        else if (_ramUsedPct < RamHighExitPct)
+        else if (_tickAvailMb > _highRamExitMb)
             _highRamActive = false;
-        // Entre 65% et 75% : _highRamActive reste à sa valeur précédente (zone d'hystérèse)
+        // Entre les deux seuils : _highRamActive reste à sa valeur précédente (zone d'hystérèse)
 
         if (_highRamActive)
         {
@@ -285,6 +296,16 @@ internal sealed class MemoryOrchestrator : IDisposable
     private readonly PerformanceCounter? _swapCounter;
     public float SwapPagesPerSec { get; private set; }
     public bool  AntiSwapActive  { get; private set; }
+
+    // ── Signal mémoire natif (observation) ───────────────────────────────────
+    // Windows expose la standby list en trois counters séparés (Reserve + Normal + Core).
+    // vraiePressionPct = (Total - Available - Standby) / Total mesure la pression
+    // applicative réelle, sans compter le cache que Windows vide en <1ms si besoin.
+    private readonly PerformanceCounter? _standbyReserveCounter;
+    private readonly PerformanceCounter? _standbyNormalCounter;
+    private readonly PerformanceCounter? _standbyCoreCounter;
+    private long  _standbyMb;         // Mo en standby list (observation seule)
+    private float _vraiePressionPct;  // signal de pression réelle (observation seule)
 
     // Indique si la prédiction ML est disponible
     internal bool IsMlEnabled => _engine is not null;
@@ -338,6 +359,25 @@ internal sealed class MemoryOrchestrator : IDisposable
         {
             _log.LogWarning("PerformanceCounter CPU indisponible : {M}", ex.Message);
             _cpuCounter = null;
+        }
+
+        _standbyReserveCounter = TryCreateCounter("Memory", "Standby Cache Reserve Bytes");
+        _standbyNormalCounter  = TryCreateCounter("Memory", "Standby Cache Normal Priority Bytes");
+        _standbyCoreCounter    = TryCreateCounter("Memory", "Standby Cache Core Bytes");
+    }
+
+    private PerformanceCounter? TryCreateCounter(string category, string counter)
+    {
+        try
+        {
+            var pc = new PerformanceCounter(category, counter, readOnly: true);
+            pc.NextValue(); // premier appel toujours 0 — à jeter
+            return pc;
+        }
+        catch (Exception ex)
+        {
+            _log.LogWarning("PerformanceCounter '{C}' indisponible : {M}", counter, ex.Message);
+            return null;
         }
     }
 
@@ -437,11 +477,35 @@ internal sealed class MemoryOrchestrator : IDisposable
             try { _cpuPct = _cpuCounter.NextValue(); }
             catch { _cpuPct = 30f; }
         }
+        long tickTotalMb, tickAvailMb;
         {
-            long _totalRamMb = NativeMemory.GetTotalPhysicalMb();
-            long _availRamMb = NativeMemory.GetAvailablePhysicalMb();
-            _ramUsedPct = _totalRamMb > 0 ? (float)(_totalRamMb - _availRamMb) / _totalRamMb : 0f;
+            tickTotalMb    = NativeMemory.GetTotalPhysicalMb();
+            tickAvailMb    = NativeMemory.GetAvailablePhysicalMb();
+            _tickAvailMb   = tickAvailMb;
+            _ramUsedPct    = tickTotalMb > 0 ? (float)(tickTotalMb - tickAvailMb) / tickTotalMb : 0f;
+            // Initialisation unique des seuils HighRam (dépend de la RAM totale de la machine)
+            if (_highRamThresholdMb == 0 && tickTotalMb > 0)
+            {
+                _highRamThresholdMb = Math.Max(HighRamAvailMinMb, (long)(tickTotalMb * HighRamAvailFraction));
+                _highRamExitMb      = Math.Max(HighRamExitMinMb,  (long)(tickTotalMb * HighRamExitAvailFraction));
+                _log.LogInformation(
+                    "[MEM-SIGNAL] Seuils HighRam calculés : entrée<{E}Mo, sortie>{X}Mo (total={T}Mo)",
+                    _highRamThresholdMb, _highRamExitMb, tickTotalMb);
+            }
         }
+        {
+            static long ReadMb(PerformanceCounter? pc) {
+                if (pc is null) return 0L;
+                try { return (long)(pc.NextValue() / (1024f * 1024f)); }
+                catch { return 0L; }
+            }
+            _standbyMb = ReadMb(_standbyReserveCounter)
+                       + ReadMb(_standbyNormalCounter)
+                       + ReadMb(_standbyCoreCounter);
+        }
+        long committedMb = tickTotalMb - tickAvailMb - _standbyMb;
+        if (committedMb < 0) committedMb = 0;
+        _vraiePressionPct = tickTotalMb > 0 ? (float)committedMb / tickTotalMb : 0f;
         UpdateInterval();
         _foregroundPid = GetForegroundPid();
 
@@ -771,6 +835,18 @@ internal sealed class MemoryOrchestrator : IDisposable
             "Tick {L}ms | cold={C} hot={H} saved≈{M}MB gaming={G} swap={S} cpu={P:F0}% ram={R:P0} turbo={U}",
             sw.ElapsedMilliseconds, coldEvicted, hotPrefetch, mbSaved,
             _gamingModeActive, AntiSwapActive, _cpuPct, _ramUsedPct, turboMode);
+
+        // ── Comparaison signal mémoire : ramUsedPct (courant) vs vraiePressionPct (observé) ──
+        // Observation seule — ne modifie pas la logique de paliers.
+        // standbyMb = cache disque récupérable en <1ms → ne représente pas de vraie pression.
+        // vraiePressionPct = (Total - Available - Standby) / Total = pages réellement committées.
+        if (_tickCount % 10 == 0)
+        {
+            _log.LogInformation(
+                "[MEM-SIGNAL] avail={A}Mo (seuil<{E} >sortie{X}) | highRam={H} | ramUsedPct={U:P1} | standby={S}Mo | total={T}Mo",
+                tickAvailMb, _highRamThresholdMb, _highRamExitMb, _highRamActive,
+                _ramUsedPct, _standbyMb, tickTotalMb);
+        }
     }
 
     // ── Détection gaming ──────────────────────────────────────────────────────
@@ -1283,6 +1359,9 @@ internal sealed class MemoryOrchestrator : IDisposable
     {
         _swapCounter?.Dispose();
         _cpuCounter?.Dispose();
+        _standbyReserveCounter?.Dispose();
+        _standbyNormalCounter?.Dispose();
+        _standbyCoreCounter?.Dispose();
         _engine?.Dispose();   // null si mode sans ML
         _cache.Dispose();
     }

@@ -55,7 +55,9 @@
       "Bash(powershell.exe -Command \"Get-Date; \\(Get-TimeZone\\).Id\")",
       "Bash(awk -F: ' *)",
       "Bash(powershell.exe -Command \"\\(Get-Item 'C:\\\\projettoto\\\\RAM-AI\\\\installer\\\\RAM-AI-Setup-1.0.0.exe'\\).LastWriteTime\")",
-      "Bash(powershell.exe -ExecutionPolicy Bypass -File \".\\\\build_protected.ps1\")"
+      "Bash(powershell.exe -ExecutionPolicy Bypass -File \".\\\\build_protected.ps1\")",
+      "Bash(powershell.exe -ExecutionPolicy Bypass -File \"Tools/build_protected.ps1\")",
+      "PowerShell(Set-Location \"C:\\\\projettoto\\\\RAM-AI\"; powershell.exe -ExecutionPolicy Bypass -File \"build_protected.ps1\" 2>&1 | Select-Object -Last 25)"
     ]
   }
 }

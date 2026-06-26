@@ -63,6 +63,18 @@ internal sealed class MemoryOrchestrator : IDisposable
     private const int  PredictiveMinSamples           =  5;
     private const long PredictiveDropThresholdMbCycle = 50L; // 50 Mo/cycle = alerte
 
+    // ── Trim prédictif basé sur la pente d'availMb ────────────────────────────
+    // Ring buffer de 15 ticks + régression linéaire → estime le temps avant HighRam.
+    // Si projection < PredictiveTrimLookAheadSec → éviction anticipée PREDICTIVE_TRIM.
+    private const int   PredictiveTrimRingSize       = 15;
+    private const float PredictiveTrimLookAheadSec   =  5f;  // déclencher si < 5s avant seuil
+    private const int   PredictiveTrimCooldownTicks  = 10;   // inhibition après déclenchement
+
+    // ── GPU Non-Local : offset d'entrée HighRam si pression GPU montante ─────
+    // Abaisse le seuil d'entrée de 15% (= déclenche HighRam plus tôt).
+    // Ex : seuil normal 2444 Mo → avec GPU pressure 2811 Mo (entrée plus précoce).
+    private const float GpuPressureOffsetFraction    = 0.15f;
+
     // ── Intervalles et limites mode Éco ──────────────────────────────────────
     private const int   EcoIntervalMs        = 3_000;
     private const int   EcoMaxProcsPerCycle  =     8;  // max processus par cycle en mode éco
@@ -108,6 +120,12 @@ internal sealed class MemoryOrchestrator : IDisposable
     private readonly long[] _availMbRing          = new long[4]; // [i%4] = availMb au tick i
     private int         _availMbRingIdx;                   // index courant dans le ring
     private int         _preSwapCooldownRemaining;         // ticks restants de cooldown
+
+    // ── Ring buffer trim prédictif ────────────────────────────────────────────
+    private readonly long[] _predictRing         = new long[PredictiveTrimRingSize];
+    private int              _predictRingIdx;
+    private int              _predictSampleCount;
+    private int              _predictiveTrimCooldown; // ticks d'inhibition restants
 
     // ── Profils gaming par jeu ────────────────────────────────────────────────
     private Dictionary<string, GamingProfile>? _gamingProfiles;
@@ -263,7 +281,13 @@ internal sealed class MemoryOrchestrator : IDisposable
 
         // Hystérèse HighRam : entrée si avail < seuil (15% total), sortie si avail > seuil sortie (22% total).
         // Basé sur Mo disponibles absolus — robuste sur 8/16/32 Go, insensible à la standby list.
-        if (_tickAvailMb < _highRamThresholdMb)
+        // GPU pressure : si VRAM partagée monte vite, abaisser légèrement le seuil d'entrée
+        // (= déclencher HighRam un peu plus tôt pour compenser la pression GPU imminente).
+        long effectiveHighRamThreshold = _highRamThresholdMb;
+        if (_gpuMonitor.IsGpuMemoryPressureRising())
+            effectiveHighRamThreshold = (long)(_highRamThresholdMb * (1f + GpuPressureOffsetFraction));
+
+        if (_tickAvailMb < effectiveHighRamThreshold)
             _highRamActive = true;
         else if (_tickAvailMb > _highRamExitMb)
             _highRamActive = false;
@@ -316,6 +340,9 @@ internal sealed class MemoryOrchestrator : IDisposable
     private readonly PerformanceCounter? _standbyCoreCounter;
     private long  _standbyMb;         // Mo en standby list (observation seule)
     private float _vraiePressionPct;  // signal de pression réelle (observation seule)
+
+    // ── Monitoring GPU Non-Local ──────────────────────────────────────────────
+    private readonly GpuMemoryMonitor _gpuMonitor;
 
     // Indique si la prédiction ML est disponible
     internal bool IsMlEnabled => _engine is not null;
@@ -374,6 +401,8 @@ internal sealed class MemoryOrchestrator : IDisposable
         _standbyReserveCounter = TryCreateCounter("Memory", "Standby Cache Reserve Bytes");
         _standbyNormalCounter  = TryCreateCounter("Memory", "Standby Cache Normal Priority Bytes");
         _standbyCoreCounter    = TryCreateCounter("Memory", "Standby Cache Core Bytes");
+
+        _gpuMonitor = new GpuMemoryMonitor(log);
     }
 
     private PerformanceCounter? TryCreateCounter(string category, string counter)
@@ -430,11 +459,12 @@ internal sealed class MemoryOrchestrator : IDisposable
             if (_tickCount % 20 == 0)
                 RefreshEcoMode();
 
-            // Mettre à jour la VRAM + purger _wsTracker toutes les 60 ticks (~1-3 min)
+            // Mettre à jour la VRAM + purger _wsTracker + rafraîchir compteurs GPU toutes les 60 ticks (~1-3 min)
             if (_tickCount % 60 == 0)
             {
                 RefreshVramInfo();
                 PurgeWsTracker();
+                _gpuMonitor.RefreshCounters();
             }
 
             var sw = Stopwatch.StartNew();
@@ -516,6 +546,10 @@ internal sealed class MemoryOrchestrator : IDisposable
         long committedMb = tickTotalMb - tickAvailMb - _standbyMb;
         if (committedMb < 0) committedMb = 0;
         _vraiePressionPct = tickTotalMb > 0 ? (float)committedMb / tickTotalMb : 0f;
+
+        // Lire GPU Non-Local avant UpdateInterval() pour que IsGpuMemoryPressureRising() soit à jour
+        _gpuMonitor.Sample();
+
         UpdateInterval();
 
         // ── Détection précoce chute availMb (observation seule) ──────────────
@@ -529,6 +563,7 @@ internal sealed class MemoryOrchestrator : IDisposable
         else if (_preSwapCooldownRemaining > 0)
             _preSwapCooldownRemaining--;
         CheckPreSwapDrop(tickAvailMb);
+        CheckPredictiveTrim(tickAvailMb, allProcs, ref coldEvicted, ref mbSaved);
 
         _foregroundPid = GetForegroundPid();
 
@@ -1009,6 +1044,76 @@ internal sealed class MemoryOrchestrator : IDisposable
             d1, d2, d3, PreSwapDropThresholdMb, totalDrop, currentAvailMb, _highRamActive, AntiSwapActive);
     }
 
+    // ── Trim prédictif (pente availMb → estimation temps avant HighRam) ───────
+
+    /// <summary>
+    /// Calcule la pente de décroissance d'availMb sur les derniers ticks.
+    /// Si la projection indique un franchissement du seuil HighRam dans les
+    /// PredictiveTrimLookAheadSec secondes, déclenche une éviction anticipée
+    /// et loggue [PREDICTIVE_TRIM] pour analyse post-session.
+    /// N'agit pas si HighRam ou AntiSwap est déjà actif, ni en mode Gaming/Tournoi/Éco.
+    /// </summary>
+    private void CheckPredictiveTrim(long currentAvailMb, Process[] allProcs,
+        ref int coldEvicted, ref long mbSaved)
+    {
+        // Alimenter le ring buffer (utilise _tickAvailMb déjà mis en cache — zéro appel API supplémentaire)
+        _predictRing[_predictRingIdx % PredictiveTrimRingSize] = currentAvailMb;
+        _predictRingIdx++;
+        if (_predictSampleCount < PredictiveTrimRingSize) _predictSampleCount++;
+
+        // Pas d'action si un palier plus prioritaire gère déjà la pression
+        if (_highRamActive || AntiSwapActive) { _predictiveTrimCooldown = 0; return; }
+        if (_gamingModeActive || _tournamentModeActive || _ecoMode) return;
+        if (_predictiveTrimCooldown > 0) { _predictiveTrimCooldown--; return; }
+        if (_predictSampleCount < PredictiveTrimRingSize) return;
+        if (_highRamThresholdMb == 0) return; // seuils pas encore initialisés
+
+        // Régression : pente moyenne (Mo/tick) sur les N derniers échantillons
+        // Lire dans l'ordre chronologique depuis le ring circulaire
+        int   n         = PredictiveTrimRingSize;
+        long  oldest    = _predictRing[(_predictRingIdx - n)     % n];
+        long  newest    = _predictRing[(_predictRingIdx - 1)     % n];
+        double dropPerTick = (double)(oldest - newest) / (n - 1); // positif = avail décroissante
+
+        if (dropPerTick <= 0) return; // avail stable ou en hausse — rien à faire
+
+        // Temps estimé avant franchissement du seuil d'entrée HighRam
+        double marginMb = currentAvailMb - _highRamThresholdMb;
+        if (marginMb <= 0) return; // déjà en dessous du seuil (HighRam devrait être actif)
+
+        double ticksToThreshold  = marginMb / dropPerTick;
+        double secsToThreshold   = ticksToThreshold * _intervalMs / 1000.0;
+
+        if (secsToThreshold > PredictiveTrimLookAheadSec) return; // pas encore urgent
+
+        _log.LogInformation(
+            "[PREDICTIVE_TRIM] Seuil HighRam dans ~{S:F1}s (pente={D:F0}Mo/tick, avail={A}Mo, seuil={E}Mo) → éviction anticipée",
+            secsToThreshold, dropPerTick, currentAvailMb, _highRamThresholdMb);
+        Console.WriteLine(
+            $"[RAM-AI] 🔮 PREDICTIVE_TRIM : HighRam dans ~{secsToThreshold:F1}s — éviction anticipée");
+        _events.WriteMarker(
+            $"PREDICTIVE_TRIM — seuil dans ~{secsToThreshold:F1}s | pente={dropPerTick:F0}Mo/tick | avail={currentAvailMb}Mo");
+
+        // Éviction anticipée : même logique que le cold path HighRam
+        int trimmed = 0;
+        foreach (var p in allProcs)
+        {
+            try
+            {
+                if (SystemProcesses.Contains(p.ProcessName)) continue;
+                float prob = Predict(p);
+                if (prob > HotThreshold) continue;
+
+                long freed = EvictProcess(p, prob, storeToColdCache: prob < ColdThreshold);
+                if (freed >= 0) { coldEvicted++; mbSaved += freed; trimmed++; }
+            }
+            catch { }
+        }
+
+        _log.LogInformation("[PREDICTIVE_TRIM] {N} processus traités, {M}Mo libérés", trimmed, mbSaved);
+        _predictiveTrimCooldown = PredictiveTrimCooldownTicks;
+    }
+
     /// Si la RAM disponible chute de plus de 50 Mo/cycle sur les 5 derniers cycles,
     /// déclenche une éviction préventive des processus non-hot.
     /// </summary>
@@ -1420,6 +1525,7 @@ internal sealed class MemoryOrchestrator : IDisposable
         _standbyNormalCounter?.Dispose();
         _standbyCoreCounter?.Dispose();
         _engine?.Dispose();   // null si mode sans ML
+        _gpuMonitor.Dispose();
         _cache.Dispose();
     }
 }

@@ -281,10 +281,10 @@ internal sealed class MemoryOrchestrator : IDisposable
 
         // Hystérèse HighRam : entrée si avail < seuil (15% total), sortie si avail > seuil sortie (22% total).
         // Basé sur Mo disponibles absolus — robuste sur 8/16/32 Go, insensible à la standby list.
-        // GPU pressure : si VRAM partagée monte vite, abaisser légèrement le seuil d'entrée
-        // (= déclencher HighRam un peu plus tôt pour compenser la pression GPU imminente).
+        // GPU pressure : si VRAM partagée monte vite (>25 Mo/s, normalisé), abaisser légèrement
+        // le seuil d'entrée HighRam (= déclencher plus tôt pour compenser la pression GPU imminente).
         long effectiveHighRamThreshold = _highRamThresholdMb;
-        if (_gpuMonitor.IsGpuMemoryPressureRising())
+        if (_gpuMonitor.IsGpuMemoryPressureRising(_intervalMs))
             effectiveHighRamThreshold = (long)(_highRamThresholdMb * (1f + GpuPressureOffsetFraction));
 
         if (_tickAvailMb < effectiveHighRamThreshold)
@@ -1061,9 +1061,14 @@ internal sealed class MemoryOrchestrator : IDisposable
         _predictRingIdx++;
         if (_predictSampleCount < PredictiveTrimRingSize) _predictSampleCount++;
 
-        // Pas d'action si un palier plus prioritaire gère déjà la pression
+        // Inhibition par palier :
+        //   HighRam    → déjà en pression, anticipation inutile (reset cooldown pour relancer dès sortie)
+        //   AntiSwap   → priorité absolue déjà ultra-réactif (500ms), pas besoin de superposer
+        //   Tournoi    → 500ms déjà agressif, le moindre trim supplémentaire risque le stutter
+        //   Éco        → contexte batterie, on économise les cycles CPU
+        //   Gaming     → AUTORISÉ : c'est précisément le scénario cible (pression GPU pendant le jeu)
         if (_highRamActive || AntiSwapActive) { _predictiveTrimCooldown = 0; return; }
-        if (_gamingModeActive || _tournamentModeActive || _ecoMode) return;
+        if (_tournamentModeActive || _ecoMode) return;
         if (_predictiveTrimCooldown > 0) { _predictiveTrimCooldown--; return; }
         if (_predictSampleCount < PredictiveTrimRingSize) return;
         if (_highRamThresholdMb == 0) return; // seuils pas encore initialisés

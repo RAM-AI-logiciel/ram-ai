@@ -16,7 +16,7 @@ internal sealed class GpuMemoryMonitor : IDisposable
     private const string CategoryName    = "GPU Process Memory";
     private const string CounterName     = "Non Local Usage";  // bytes (gauge, pas rate)
     private const int    RingSize        = 10;
-    private const long   MinDeltaMb      = 50L;   // hausse > 50 Mo/tick pour signaler
+    private const double MinRateMbPerSec = 25.0;  // hausse > 25 Mo/s (normalisé) pour signaler
     private const int    MinRisingSamples = 3;     // N ticks consécutifs en hausse
 
     private readonly ILogger _log;
@@ -127,18 +127,23 @@ internal sealed class GpuMemoryMonitor : IDisposable
 
     /// <summary>
     /// Retourne true si la VRAM partagée est en hausse rapide sur les derniers ticks.
-    /// Critère : N ticks consécutifs récents avec delta > MinDeltaMb chacun.
+    /// Critère : N ticks consécutifs récents avec une hausse normalisée > MinRateMbPerSec.
+    /// Le paramètre <paramref name="currentIntervalMs"/> est l'intervalle courant du tick
+    /// (varie selon le palier : 500ms AntiSwap, 1200ms Gaming, 3000ms Repos) — utilisé pour
+    /// convertir le delta Mo/tick en Mo/s et obtenir un seuil cohérent quelle que soit la cadence.
     /// </summary>
-    internal bool IsGpuMemoryPressureRising()
+    internal bool IsGpuMemoryPressureRising(int currentIntervalMs)
     {
         if (!_available || _sampleCount < MinRisingSamples + 1) return false;
 
+        double secPerTick = currentIntervalMs / 1000.0;
         int rising = 0;
         for (int i = 1; i <= MinRisingSamples; i++)
         {
             long newer = _ring[(_ringIdx - i)     % RingSize];
             long older = _ring[(_ringIdx - i - 1) % RingSize];
-            if (newer - older >= MinDeltaMb)
+            double rateMbPerSec = (newer - older) / secPerTick;
+            if (rateMbPerSec >= MinRateMbPerSec)
                 rising++;
             else
                 break; // pas consécutif — arrêter

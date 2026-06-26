@@ -16,8 +16,11 @@ internal sealed class GpuMemoryMonitor : IDisposable
     private const string CategoryName    = "GPU Process Memory";
     private const string CounterName     = "Non Local Usage";  // bytes (gauge, pas rate)
     private const int    RingSize        = 10;
-    private const double MinRateMbPerSec = 25.0;  // hausse > 25 Mo/s (normalisé) pour signaler
-    private const int    MinRisingSamples = 3;     // N ticks consécutifs en hausse
+    // Seuil empirique — à ajuster après tests réels en jeu (logs [GPU] dans events.log).
+    // 25 Mo/s ≈ +30 Mo/tick à 1200ms (Gaming) sur 3 ticks consécutifs = +90 Mo VRAM partagée en 3.6s.
+    private const double GpuPressureThresholdMbPerSec = 25.0;
+    // Nombre de ticks consécutifs requis pour confirmer la tendance (évite les pics isolés).
+    private const int    GpuPressureConsecTicks        = 3;
 
     private readonly ILogger _log;
     private readonly bool    _available;
@@ -134,21 +137,21 @@ internal sealed class GpuMemoryMonitor : IDisposable
     /// </summary>
     internal bool IsGpuMemoryPressureRising(int currentIntervalMs)
     {
-        if (!_available || _sampleCount < MinRisingSamples + 1) return false;
+        if (!_available || _sampleCount < GpuPressureConsecTicks + 1) return false;
 
         double secPerTick = currentIntervalMs / 1000.0;
         int rising = 0;
-        for (int i = 1; i <= MinRisingSamples; i++)
+        for (int i = 1; i <= GpuPressureConsecTicks; i++)
         {
             long newer = _ring[(_ringIdx - i)     % RingSize];
             long older = _ring[(_ringIdx - i - 1) % RingSize];
             double rateMbPerSec = (newer - older) / secPerTick;
-            if (rateMbPerSec >= MinRateMbPerSec)
+            if (rateMbPerSec >= GpuPressureThresholdMbPerSec)
                 rising++;
             else
                 break; // pas consécutif — arrêter
         }
-        return rising >= MinRisingSamples;
+        return rising >= GpuPressureConsecTicks;
     }
 
     public void Dispose()

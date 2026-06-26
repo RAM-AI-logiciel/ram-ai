@@ -64,15 +64,20 @@ internal sealed class MemoryOrchestrator : IDisposable
     private const long PredictiveDropThresholdMbCycle = 50L; // 50 Mo/cycle = alerte
 
     // ── Trim prédictif basé sur la pente d'availMb ────────────────────────────
-    // Ring buffer de 15 ticks + régression linéaire → estime le temps avant HighRam.
-    // Si projection < PredictiveTrimLookAheadSec → éviction anticipée PREDICTIVE_TRIM.
+    // Ring buffer de N ticks + pente moyenne → estime le temps avant franchissement HighRam.
+    // Si projection < PredictiveTrimLeadTimeSec → éviction anticipée PREDICTIVE_TRIM.
     private const int   PredictiveTrimRingSize       = 15;
-    private const float PredictiveTrimLookAheadSec   =  5f;  // déclencher si < 5s avant seuil
-    private const int   PredictiveTrimCooldownTicks  = 10;   // inhibition après déclenchement
+    // Fenêtre d'anticipation — à ajuster après analyse des logs PREDICTIVE_TRIM en session réelle.
+    // Trop petit : déclenche trop tard (inutile). Trop grand : faux positifs sur pics courts.
+    private const float PredictiveTrimLeadTimeSec    =  5f;
+    // Inhibition post-déclenchement en ticks. À 1200ms (Gaming) = 12s de rebond.
+    // À ajuster si les logs montrent des rafales (trop bas) ou des manques (trop haut).
+    private const int   PredictiveTrimCooldownTicks  = 10;
 
     // ── GPU Non-Local : offset d'entrée HighRam si pression GPU montante ─────
-    // Abaisse le seuil d'entrée de 15% (= déclenche HighRam plus tôt).
-    // Ex : seuil normal 2444 Mo → avec GPU pressure 2811 Mo (entrée plus précoce).
+    // Fraction d'élargissement du seuil d'entrée HighRam quand GPU pressure est détectée.
+    // Ex. 0.15 → seuil 2444 Mo passe à 2811 Mo sur 16 Go (HighRam déclenche 15% plus tôt).
+    // À ajuster après tests si trop de faux positifs ou trop peu d'anticipation.
     private const float GpuPressureOffsetFraction    = 0.15f;
 
     // ── Intervalles et limites mode Éco ──────────────────────────────────────
@@ -1049,7 +1054,7 @@ internal sealed class MemoryOrchestrator : IDisposable
     /// <summary>
     /// Calcule la pente de décroissance d'availMb sur les derniers ticks.
     /// Si la projection indique un franchissement du seuil HighRam dans les
-    /// PredictiveTrimLookAheadSec secondes, déclenche une éviction anticipée
+    /// PredictiveTrimLeadTimeSec secondes, déclenche une éviction anticipée
     /// et loggue [PREDICTIVE_TRIM] pour analyse post-session.
     /// N'agit pas si HighRam ou AntiSwap est déjà actif, ni en mode Gaming/Tournoi/Éco.
     /// </summary>
@@ -1089,7 +1094,7 @@ internal sealed class MemoryOrchestrator : IDisposable
         double ticksToThreshold  = marginMb / dropPerTick;
         double secsToThreshold   = ticksToThreshold * _intervalMs / 1000.0;
 
-        if (secsToThreshold > PredictiveTrimLookAheadSec) return; // pas encore urgent
+        if (secsToThreshold > PredictiveTrimLeadTimeSec) return; // pas encore urgent
 
         _log.LogInformation(
             "[PREDICTIVE_TRIM] Seuil HighRam dans ~{S:F1}s (pente={D:F0}Mo/tick, avail={A}Mo, seuil={E}Mo) → éviction anticipée",

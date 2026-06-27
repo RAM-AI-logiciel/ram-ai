@@ -91,6 +91,13 @@ internal sealed class MemoryOrchestrator : IDisposable
     private const int   NormalMaxProcs       =  15;
     private const int   HighRamMaxProcs      =  20;
 
+    // ── Cooldown par PID entre deux évictions ─────────────────────────────────
+    // Durée minimale avant de réévincer le même processus (même PID + même StartTime).
+    // Empirique — trop bas : réévictions en boucle sous pression (cause du 21% CPU observé) ;
+    // trop haut : processus rapide à reconstruire son WS n'est pas retrimmé assez souvent.
+    // À ajuster si les logs montrent skippedCooldown trop élevé (>80% seen) ou trop bas (<20%).
+    private const double EvictionCooldownSeconds = 2.5;
+
     // ── Dossier partagé Phase3 ↔ Phase4 ──────────────────────────────────────
     // C:\ProgramData\RAM-AI\ est accessible par :
     //   • Phase3 tournant comme service Windows (compte LocalSystem ou service dédié)
@@ -241,6 +248,15 @@ internal sealed class MemoryOrchestrator : IDisposable
     // ── Protection processus ──────────────────────────────────────────────────
     private int _foregroundPid = -1;
     private readonly ConcurrentDictionary<int, (long WsMb, long TickMs)> _wsTracker = new();
+
+    // ── Cooldown par PID : évite les réévictions en boucle ───────────────────
+    // Clé = PID ; valeur = (ms de la dernière éviction, ticks StartTime du processus).
+    // StartTimeTicks permet de détecter le recyclage de PID par Windows.
+    // Thread-safe : ConcurrentDictionary car utilisé depuis Parallel.ForEach (AntiSwap).
+    private readonly ConcurrentDictionary<int, (long LastEvictedMs, long StartTimeTicks)> _evictionCooldown = new();
+    // Compteur de skips par tick (reset au début de Tick, lu dans [PERF-TICK]).
+    // Interlocked pour thread-safety dans Parallel.ForEach.
+    private int _tickSkippedCooldown;
 
     /// <summary>
     /// Recalcule l'intervalle et les limites par palier de charge.
@@ -469,6 +485,7 @@ internal sealed class MemoryOrchestrator : IDisposable
             {
                 RefreshVramInfo();
                 PurgeWsTracker();
+                PurgeEvictionCooldown();
                 _gpuMonitor.RefreshCounters();
             }
 
@@ -494,6 +511,7 @@ internal sealed class MemoryOrchestrator : IDisposable
         int  hotPrefetch        = 0;
         int  faultsAvoided      = 0;
         long mbSaved            = 0;
+        _tickSkippedCooldown    = 0; // reset avant le cycle — lu dans [PERF-TICK] en fin de tick
 
         var swEnum = Stopwatch.StartNew();
         Process[] allProcs = Process.GetProcesses();
@@ -821,7 +839,8 @@ internal sealed class MemoryOrchestrator : IDisposable
                 _events.WriteMarker(
                     $"PERF-TICK mode={perfMode} enum={perfEnumMs}ms predict={perfPredictMs}ms" +
                     $" evict={perfEvictMs}ms other={perfOtherMs}ms total={swGaming.ElapsedMilliseconds}ms" +
-                    $" | seen={perfSeen} evicted={perfEvicted} otherProcs={otherProcs.Count + limited.Count}");
+                    $" | seen={perfSeen} evicted={perfEvicted} skippedCooldown={_tickSkippedCooldown}" +
+                    $" otherProcs={otherProcs.Count + limited.Count}");
             }
         }
         else
@@ -911,7 +930,8 @@ internal sealed class MemoryOrchestrator : IDisposable
                 _events.WriteMarker(
                     $"PERF-TICK mode=AntiSwap enum={perfEnumMs}ms predict={perfNormalPredictMs}ms" +
                     $" evict={perfNormalEvictMs}ms parallelLoop={swParallel.ElapsedMilliseconds}ms" +
-                    $" | seen={perfNormalSeen} evicted={perfNormalEvicted} total={procsToProcess.Length}procs");
+                    $" | seen={perfNormalSeen} evicted={perfNormalEvicted} skippedCooldown={_tickSkippedCooldown}" +
+                    $" total={procsToProcess.Length}procs");
             }
         }
 
@@ -1421,8 +1441,23 @@ internal sealed class MemoryOrchestrator : IDisposable
         // ── Protection : premier plan ──────────────────────────────────────────
         if (proc.Id == _foregroundPid) return -1L;
 
-        // ── Protection : WS modifié dans les 10 dernières secondes ────────────
+        // ── Cooldown par PID : ne pas réévincer un processus trimé récemment ──
+        // Capture StartTime pour distinguer un vrai même processus d'un PID recyclé.
         long nowMs = Environment.TickCount64;
+        long startTimeTicks = 0L;
+        try { startTimeTicks = proc.StartTime.Ticks; } catch { /* accès refusé sur certains procs système */ }
+
+        if (_evictionCooldown.TryGetValue(proc.Id, out var cd))
+        {
+            bool samePid = startTimeTicks == 0L || cd.StartTimeTicks == 0L || cd.StartTimeTicks == startTimeTicks;
+            if (samePid && (nowMs - cd.LastEvictedMs) < EvictionCooldownSeconds * 1_000)
+            {
+                Interlocked.Increment(ref _tickSkippedCooldown);
+                return -1L;
+            }
+        }
+
+        // ── Protection : WS modifié dans les 10 dernières secondes ────────────
         long wsMbNow = proc.WorkingSet64 / (1024L * 1024L);
         if (_wsTracker.TryGetValue(proc.Id, out var wsEntry)
             && (nowMs - wsEntry.TickMs) < 10_000
@@ -1480,6 +1515,9 @@ internal sealed class MemoryOrchestrator : IDisposable
 
             _log.LogInformation("[RAM] Processus {N} : WS avant={B}Mo après={A}Mo delta={D}Mo",
                 proc.ProcessName, wsBefore / (1024 * 1024), wsAfter / (1024 * 1024), deltaMb);
+
+            // Enregistrer l'éviction pour le cooldown (empêche une rééviction immédiate)
+            _evictionCooldown[proc.Id] = (Environment.TickCount64, startTimeTicks);
 
             return deltaMb;
         }
@@ -1574,6 +1612,18 @@ internal sealed class MemoryOrchestrator : IDisposable
         {
             if (_wsTracker.TryGetValue(pid, out var entry) && entry.TickMs < cutoffMs)
                 _wsTracker.TryRemove(pid, out _);
+        }
+    }
+
+    private void PurgeEvictionCooldown()
+    {
+        // Retire les entrées dont la dernière éviction remonte à plus de 30s
+        // (processus terminé ou cooldown largement expiré — évite la fuite mémoire).
+        long cutoffMs = Environment.TickCount64 - 30_000;
+        foreach (var pid in _evictionCooldown.Keys.ToArray())
+        {
+            if (_evictionCooldown.TryGetValue(pid, out var entry) && entry.LastEvictedMs < cutoffMs)
+                _evictionCooldown.TryRemove(pid, out _);
         }
     }
 

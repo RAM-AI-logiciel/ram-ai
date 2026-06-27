@@ -91,6 +91,12 @@ internal sealed class MemoryOrchestrator : IDisposable
     private const int   NormalMaxProcs       =  15;
     private const int   HighRamMaxProcs      =  20;
 
+    // ── Pré-filtre WS avant inférence ML ─────────────────────────────────────
+    // Processus dont le WS est inférieur à ce seuil ne valent pas le coût d'un
+    // appel ML (~6-8ms) : même si on les évince, le gain mémoire est négligeable.
+    // Traités directement comme prob=0 (cold path). Empirique, ajustable.
+    private const float MinWorkingSetMbForPredict = 10f;
+
     // ── Cooldown par PID entre deux évictions ─────────────────────────────────
     // Durée minimale avant de réévincer le même processus (même PID + même StartTime).
     // Empirique — trop bas : réévictions en boucle sous pression (cause du 21% CPU observé) ;
@@ -342,7 +348,8 @@ internal sealed class MemoryOrchestrator : IDisposable
     private readonly EventLogger                                _events;
     private readonly MLContext?                                 _mlCtx;
     // Nullable : null si le modèle Phase2 est absent (mode sans ML)
-    private readonly PredictionEngine<MlInputRow, MlOutputRow>? _engine;
+    private readonly ITransformer?                               _mlModel;    // pour l'inférence par lot (batch)
+    private readonly PredictionEngine<MlInputRow, MlOutputRow>? _engine;     // pour les appels unitaires (gaming, prédictif)
     private readonly object                                     _predictLock = new();
     // ConcurrentDictionary pour accès thread-safe depuis Parallel.ForEach
     private readonly ConcurrentDictionary<int, uint>            _prevFaults  = new();
@@ -387,8 +394,9 @@ internal sealed class MemoryOrchestrator : IDisposable
             _log.LogInformation("Loading ML model: {P}", modelPath);
             _mlCtx  = new MLContext(seed: 42);
             var model = _mlCtx.Model.Load(modelPath, out _);
+            _mlModel  = model; // conservé pour l'inférence par lot dans le chemin AntiSwap/Normal
             _engine   = _mlCtx.Model.CreatePredictionEngine<MlInputRow, MlOutputRow>(model);
-            _log.LogInformation("Model loaded — prédiction ML active.");
+            _log.LogInformation("Model loaded — prédiction ML active (batch + engine).");
         }
         else
         {
@@ -879,7 +887,7 @@ internal sealed class MemoryOrchestrator : IDisposable
 
             // ── Instrumentation PERF-TICK (AntiSwap / Normal / Turbo) ──────────
             long perfNormalPredictMs = 0L, perfNormalEvictMs = 0L;
-            int  perfNormalSeen = 0, perfNormalEvicted = 0;
+            int  perfNormalSeen = 0, perfNormalEvicted = 0, perfWsFiltered = 0; // wsFiltered = Option B skip count
 
             // ── Étape A : filtre séquentiel (système + cooldown) ──────────────
             // Coût : un lookup de dictionnaire par PID — négligeable, inutile
@@ -931,40 +939,93 @@ internal sealed class MemoryOrchestrator : IDisposable
             long perfFilterMs = swFilter.ElapsedMilliseconds;
             int  toEvictCount = toEvict.Count;
 
-            // ── Étape B : pré-calcul séquentiel des probabilités ML ───────────
-            // Predict() n'est pas thread-safe — il prend un lock global sur
-            // PredictionEngine. Si Predict() tourne dans Parallel.ForEach, tous
-            // les threads s'idle-spinnent sur ce lock, sérialisant de facto les
-            // appels ML ET consommant inutilement des slots DOP. En pré-calculant
-            // ici en séquentiel, les threads de l'étape C n'ont plus aucun lock
-            // à acquérir → éviction en vrai parallèle, predict wall-clock = N×5ms
-            // (proportionnel à toEvict.Count, pas à seen).
-            // Turbo : pas de Predict (EvictTurbo évince sans ML) → court-circuit.
+            // ── Étape B : pré-calcul des probabilités ML par lot (batch) ─────
+            // Option A : model.Transform(IDataView) amortit le coût de schéma/pipeline
+            //   sur tout le batch au lieu de payer ~5-7ms overhead par appel PredictionEngine.
+            // Option B (pré-filtre WS) : processus < MinWorkingSetMbForPredict sont
+            //   traités comme prob=0 directement — pas de valeur à classifier.
+            // Turbo : pas de ML → court-circuit.
+            // Les autres chemins (Gaming, Prédictif) gardent _engine.Predict() individuel.
             const int ParallelEvictThreshold = 20;
             int       parallelDop            = Math.Max(2, Environment.ProcessorCount / 2);
 
-            var swPredictPhase = Stopwatch.StartNew();
+            var swPredictPhase  = Stopwatch.StartNew();
             var toEvictWithProb = new List<(Process Proc, float Prob)>(toEvict.Count);
 
-            if (turboMode)
+            if (turboMode || _mlModel is null || _mlCtx is null)
             {
+                // Turbo ou sans modèle : prob=0 pour tous (cold path systématique)
                 foreach (var p in toEvict) toEvictWithProb.Add((p, 0f));
             }
             else
             {
+                // ── Étape B1 : collecte des features + pré-filtre WS ─────────
+                var batchProcs  = new List<Process>(toEvict.Count);
+                var batchInputs = new List<MlInputRow>(toEvict.Count);
+
                 foreach (var p in toEvict)
                 {
                     try
                     {
                         p.Refresh();
-                        toEvictWithProb.Add((p, Predict(p)));
+                        float wsMB = (float)(p.WorkingSet64 / (1024.0 * 1024.0));
+
+                        // Pré-filtre (Option B) : WS trop faible → éviction directe sans ML
+                        if (wsMB < MinWorkingSetMbForPredict)
+                        {
+                            toEvictWithProb.Add((p, 0f)); // prob=0, évincé comme cold sans ML
+                            perfWsFiltered++;
+                            continue;
+                        }
+
+                        float privMB = (float)(p.PrivateMemorySize64 / (1024.0 * 1024.0));
+                        float pfKB   = GetPageFaultDeltaKB(p);
+                        float ratio  = privMB > 0f ? wsMB / privMB : 1f;
+                        float logWS  = wsMB  > 0f ? (float)Math.Log2(wsMB) : 0f;
+
+                        batchProcs.Add(p);
+                        batchInputs.Add(new MlInputRow
+                        {
+                            WorkingSetMB     = wsMB,
+                            PrivateBytesMB   = privMB,
+                            PageFaultDeltaKB = Math.Min(pfKB, 100f * 1024f),
+                            WsToPrivateRatio = ratio,
+                            LogWorkingSet    = logWS,
+                        });
                     }
                     catch { try { p.Dispose(); } catch { } }
+                }
+
+                // ── Étape B2 : inférence par lot (Option A) ───────────────────
+                // model.Transform() valide le schéma une fois et exécute FastTree
+                // en mode batch → gain 4-8x vs N appels PredictionEngine individuels.
+                if (batchProcs.Count > 0)
+                {
+                    try
+                    {
+                        var dataView  = _mlCtx.Data.LoadFromEnumerable(batchInputs);
+                        var predicted = _mlCtx.Data.CreateEnumerable<MlOutputRow>(
+                            _mlModel.Transform(dataView), reuseRowObject: false).ToList();
+                        for (int bi = 0; bi < batchProcs.Count; bi++)
+                            toEvictWithProb.Add((batchProcs[bi], predicted[bi].Probability));
+                    }
+                    catch (Exception ex)
+                    {
+                        // Fallback : inférence individuelle si le batch échoue (modèle incompatible, etc.)
+                        _log.LogWarning("[ML-BATCH] Fallback individuel : {M}", ex.Message);
+                        foreach (var p in batchProcs)
+                        {
+                            float prob = 0f;
+                            try { lock (_predictLock) prob = _engine!.Predict(
+                                batchInputs[batchProcs.IndexOf(p)]).Probability; } catch { }
+                            toEvictWithProb.Add((p, prob));
+                        }
+                    }
                 }
             }
 
             swPredictPhase.Stop();
-            perfNormalPredictMs = swPredictPhase.ElapsedMilliseconds; // wall-clock, pas cumulatif
+            perfNormalPredictMs = swPredictPhase.ElapsedMilliseconds;
 
             // ── Étape C : éviction — séquentielle si peu de candidats, parallèle sinon ──
             // Seuil empirique : en dessous de ParallelEvictThreshold items, l'overhead
@@ -1042,7 +1103,7 @@ internal sealed class MemoryOrchestrator : IDisposable
                     $"PERF-TICK mode=AntiSwap enum={perfEnumMs}ms filter={perfFilterMs}ms" +
                     $" predictPhase={perfNormalPredictMs}ms evict={perfNormalEvictMs}ms evictLoop={swParallel.ElapsedMilliseconds}ms" +
                     $" | seen={perfNormalSeen} toEvict={toEvictCount} evicted={perfNormalEvicted}" +
-                    $" skippedCooldown={_tickSkippedCooldown} total={procsToProcess.Length}procs");
+                    $" skippedCooldown={_tickSkippedCooldown} wsFiltered={perfWsFiltered} total={procsToProcess.Length}procs");
             }
         }
 

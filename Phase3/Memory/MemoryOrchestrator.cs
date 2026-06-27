@@ -495,7 +495,10 @@ internal sealed class MemoryOrchestrator : IDisposable
         int  faultsAvoided      = 0;
         long mbSaved            = 0;
 
+        var swEnum = Stopwatch.StartNew();
         Process[] allProcs = Process.GetProcesses();
+        swEnum.Stop();
+        long perfEnumMs = swEnum.ElapsedMilliseconds;
 
         // ── 1. Détection gaming ───────────────────────────────────────────────
         var (isGaming, gameName) = DetectGaming(allProcs);
@@ -612,6 +615,9 @@ internal sealed class MemoryOrchestrator : IDisposable
             // Thread déjà en BelowNormal (défini une fois pour toutes dans RunAsync)
             var swGaming = Stopwatch.StartNew();
             int gamingProcessed = 0;
+            // ── Instrumentation perf [PERF-TICK] ─────────────────────────────
+            long perfPredictMs = 0L, perfEvictMs = 0L;
+            int  perfSeen = 0, perfEvicted = 0;
 
             // Trier les processus : jeu à part, tout le reste filtré
             var gameProcs  = new List<Process>();
@@ -773,11 +779,19 @@ internal sealed class MemoryOrchestrator : IDisposable
                         if (_tournamentModeActive && TournamentProtectedProcesses.Contains(proc.ProcessName))
                             continue;
 
+                        perfSeen++;
                         proc.Refresh();
+                        var swP = Stopwatch.StartNew();
                         float prob = Predict(proc);
+                        swP.Stop(); perfPredictMs += swP.ElapsedMilliseconds;
+
+                        var swE = Stopwatch.StartNew();
                         long freed = EvictProcess(proc, prob, storeToColdCache: prob < coldThreshold);
+                        swE.Stop(); perfEvictMs += swE.ElapsedMilliseconds;
+
                         if (freed >= 0)
                         {
+                            perfEvicted++;
                             Interlocked.Increment(ref coldEvicted);
                             Interlocked.Add(ref mbSaved, freed);
                             if (_tournamentModeActive)
@@ -798,6 +812,17 @@ internal sealed class MemoryOrchestrator : IDisposable
 
             _log.LogInformation("[Gaming] Cycle optimisation — jeu exclu, {N} processus traités en {T}ms",
                 gamingProcessed, swGaming.ElapsedMilliseconds);
+
+            // Log PERF-TICK : uniquement en mode Tournoi ou AntiSwap pour diagnostiquer le CPU élevé
+            if (_tournamentModeActive || AntiSwapActive)
+            {
+                string perfMode = _tournamentModeActive ? "Tournoi" : "AntiSwap-Gaming";
+                long perfOtherMs = swGaming.ElapsedMilliseconds - perfEnumMs - perfPredictMs - perfEvictMs;
+                _log.LogInformation(
+                    "[PERF-TICK] mode={M} enum={En}ms predict={Pr}ms evict={Ev}ms other={Ot}ms total={T}ms | seen={S} evicted={Ev2} otherProcs={O}",
+                    perfMode, perfEnumMs, perfPredictMs, perfEvictMs, perfOtherMs,
+                    swGaming.ElapsedMilliseconds, perfSeen, perfEvicted, otherProcs.Count + limited.Count);
+            }
         }
         else
         {
@@ -813,6 +838,11 @@ internal sealed class MemoryOrchestrator : IDisposable
             {
                 procsToProcess = allProcs;
             }
+
+            // ── Instrumentation PERF-TICK (AntiSwap / Normal / Turbo) ──────────
+            long perfNormalPredictMs = 0L, perfNormalEvictMs = 0L;
+            int  perfNormalSeen = 0, perfNormalEvicted = 0;
+            var  swParallel = Stopwatch.StartNew();
 
             Parallel.ForEach(
                 procsToProcess,
@@ -842,7 +872,12 @@ internal sealed class MemoryOrchestrator : IDisposable
                         // Mode normal : exclure les processus système
                         if (SystemProcesses.Contains(procName)) return;
 
+                        Interlocked.Increment(ref perfNormalSeen);
+
+                        var swNP = Stopwatch.StartNew();
                         float prob = Predict(proc);
+                        swNP.Stop();
+                        Interlocked.Add(ref perfNormalPredictMs, swNP.ElapsedMilliseconds);
 
                         if (prob > HotThreshold)
                         {
@@ -852,9 +887,13 @@ internal sealed class MemoryOrchestrator : IDisposable
                         }
                         else
                         {
+                            var swNE = Stopwatch.StartNew();
                             long freed = EvictProcess(proc, prob, storeToColdCache: prob < coldThreshold);
+                            swNE.Stop();
+                            Interlocked.Add(ref perfNormalEvictMs, swNE.ElapsedMilliseconds);
                             if (freed >= 0)
                             {
+                                Interlocked.Increment(ref perfNormalEvicted);
                                 Interlocked.Increment(ref coldEvicted);
                                 Interlocked.Add(ref mbSaved, freed);
                             }
@@ -863,6 +902,17 @@ internal sealed class MemoryOrchestrator : IDisposable
                     catch { /* processus terminé ou accès refusé */ }
                 }
             });
+
+            swParallel.Stop();
+
+            // Log PERF-TICK pour AntiSwap (pas Turbo ni modes repos — trop bavard)
+            if (AntiSwapActive)
+            {
+                _log.LogInformation(
+                    "[PERF-TICK] mode=AntiSwap enum={En}ms predict={Pr}ms evict={Ev}ms parallelLoop={PL}ms | seen={S} evicted={Ev2} total≈{T} procs",
+                    perfEnumMs, perfNormalPredictMs, perfNormalEvictMs, swParallel.ElapsedMilliseconds,
+                    perfNormalSeen, perfNormalEvicted, procsToProcess.Length);
+            }
         }
 
         // Supprimer le flag Turbo après la passe (one-shot)

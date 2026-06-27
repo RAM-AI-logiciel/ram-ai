@@ -473,6 +473,31 @@
       color: var(--muted);
       font-style: italic;
     }
+
+    .smartscreen-help {
+      margin: 14px auto 0;
+      max-width: 420px;
+      text-align: left;
+      background: rgba(255,255,255,.03);
+      border: 1px solid rgba(255,255,255,.08);
+      border-radius: 10px;
+      padding: 10px 16px;
+      font-size: .82rem;
+      color: var(--muted);
+    }
+    .smartscreen-help summary {
+      cursor: pointer;
+      font-weight: 600;
+      color: var(--gold);
+      list-style: none;
+      padding: 4px 0;
+    }
+    .smartscreen-help summary::-webkit-details-marker { display: none; }
+    .smartscreen-help summary::before { content: "▸ "; }
+    .smartscreen-help[open] summary::before { content: "▾ "; }
+    .smartscreen-help p { margin: 8px 0 0; line-height: 1.5; }
+    .smartscreen-help strong { color: var(--text); }
+
     /* ─── DOCS SECTION ──────────────────────────────────────── */
     #docs { background: var(--bg2); }
     .docs-grid {
@@ -624,6 +649,32 @@
       <span class="es">Licencia Pro requerida para todas las funciones</span>
       <span class="de">Pro-Lizenz für alle Funktionen erforderlich</span>
     </p>
+    <details class="smartscreen-help">
+      <summary class="fr">Le téléchargement est bloqué ? Clique ici</summary>
+      <summary class="en">Download blocked? Click here</summary>
+      <summary class="es">¿Descarga bloqueada? Haz clic aquí</summary>
+      <summary class="de">Download blockiert? Hier klicken</summary>
+      <div class="fr"><p>C'est normal, ton navigateur bloque le fichier parce que c'est un logiciel encore récent, pas parce qu'il y a un problème.</p>
+      <p><strong>Pour le débloquer :</strong></p>
+      <p>1. Clique sur les "..." à côté du téléchargement bloqué<br>2. Choisis "Conserver" ou "Garder malgré tout"</p>
+      <p>Si Windows affiche ensuite un écran bleu "Windows a protégé votre ordinateur" au moment de lancer le fichier :</p>
+      <p>3. Clique sur "Informations complémentaires"<br>4. Puis "Exécuter quand même"</p></div>
+      <div class="en"><p>This is normal — your browser blocks the file because it's a recent piece of software, not because there's a problem.</p>
+      <p><strong>To unblock it:</strong></p>
+      <p>1. Click the "..." next to the blocked download<br>2. Choose "Keep" or "Keep anyway"</p>
+      <p>If Windows then shows a blue screen "Windows protected your PC" when launching the file:</p>
+      <p>3. Click "More info"<br>4. Then "Run anyway"</p></div>
+      <div class="es"><p>Es normal — tu navegador bloquea el archivo porque es un software reciente, no porque haya un problema.</p>
+      <p><strong>Para desbloquearlo:</strong></p>
+      <p>1. Haz clic en los "..." junto a la descarga bloqueada<br>2. Elige "Conservar" o "Mantener de todos modos"</p>
+      <p>Si Windows muestra después una pantalla azul "Windows protegió tu PC" al ejecutar el archivo:</p>
+      <p>3. Haz clic en "Más información"<br>4. Luego en "Ejecutar de todas formas"</p></div>
+      <div class="de"><p>Das ist normal — dein Browser blockiert die Datei, weil es sich um neue Software handelt, nicht weil es ein Problem gibt.</p>
+      <p><strong>So entsperrst du sie:</strong></p>
+      <p>1. Klicke auf "..." neben dem blockierten Download<br>2. Wähle "Beibehalten" oder "Trotzdem beibehalten"</p>
+      <p>Falls Windows beim Starten der Datei einen blauen Bildschirm "Windows hat deinen PC geschützt" anzeigt:</p>
+      <p>3. Klicke auf "Weitere Informationen"<br>4. Dann auf "Trotzdem ausführen"</p></div>
+    </details>
   </div>
   <div class="scroll-hint">
     <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">

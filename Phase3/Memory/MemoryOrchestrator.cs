@@ -813,15 +813,15 @@ internal sealed class MemoryOrchestrator : IDisposable
             _log.LogInformation("[Gaming] Cycle optimisation — jeu exclu, {N} processus traités en {T}ms",
                 gamingProcessed, swGaming.ElapsedMilliseconds);
 
-            // Log PERF-TICK : uniquement en mode Tournoi ou AntiSwap pour diagnostiquer le CPU élevé
+            // Log PERF-TICK → events.log via WriteMarker, uniquement Tournoi ou AntiSwap
             if (_tournamentModeActive || AntiSwapActive)
             {
-                string perfMode = _tournamentModeActive ? "Tournoi" : "AntiSwap-Gaming";
-                long perfOtherMs = swGaming.ElapsedMilliseconds - perfEnumMs - perfPredictMs - perfEvictMs;
-                _log.LogInformation(
-                    "[PERF-TICK] mode={M} enum={En}ms predict={Pr}ms evict={Ev}ms other={Ot}ms total={T}ms | seen={S} evicted={Ev2} otherProcs={O}",
-                    perfMode, perfEnumMs, perfPredictMs, perfEvictMs, perfOtherMs,
-                    swGaming.ElapsedMilliseconds, perfSeen, perfEvicted, otherProcs.Count + limited.Count);
+                string perfMode   = _tournamentModeActive ? "Tournoi" : "AntiSwap-Gaming";
+                long   perfOtherMs = swGaming.ElapsedMilliseconds - perfEnumMs - perfPredictMs - perfEvictMs;
+                _events.WriteMarker(
+                    $"PERF-TICK mode={perfMode} enum={perfEnumMs}ms predict={perfPredictMs}ms" +
+                    $" evict={perfEvictMs}ms other={perfOtherMs}ms total={swGaming.ElapsedMilliseconds}ms" +
+                    $" | seen={perfSeen} evicted={perfEvicted} otherProcs={otherProcs.Count + limited.Count}");
             }
         }
         else
@@ -905,13 +905,13 @@ internal sealed class MemoryOrchestrator : IDisposable
 
             swParallel.Stop();
 
-            // Log PERF-TICK pour AntiSwap (pas Turbo ni modes repos — trop bavard)
+            // Log PERF-TICK → events.log via WriteMarker, uniquement AntiSwap (pas Turbo ni Repos)
             if (AntiSwapActive)
             {
-                _log.LogInformation(
-                    "[PERF-TICK] mode=AntiSwap enum={En}ms predict={Pr}ms evict={Ev}ms parallelLoop={PL}ms | seen={S} evicted={Ev2} total≈{T} procs",
-                    perfEnumMs, perfNormalPredictMs, perfNormalEvictMs, swParallel.ElapsedMilliseconds,
-                    perfNormalSeen, perfNormalEvicted, procsToProcess.Length);
+                _events.WriteMarker(
+                    $"PERF-TICK mode=AntiSwap enum={perfEnumMs}ms predict={perfNormalPredictMs}ms" +
+                    $" evict={perfNormalEvictMs}ms parallelLoop={swParallel.ElapsedMilliseconds}ms" +
+                    $" | seen={perfNormalSeen} evicted={perfNormalEvicted} total={procsToProcess.Length}procs");
             }
         }
 

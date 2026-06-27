@@ -148,11 +148,52 @@ internal static class NativeMemory
         return GetSystemPowerStatus(out var s) && s.ACLineStatus == 0;
     }
 
-    // ── VRAM via Win32_VideoController (WMI) ─────────────────────────────────
-    // Retourne la VRAM totale de l'adaptateur principal en Mo.
-    // Usage temps-réel : intégration NvAPI/DXGI requise (hors scope actuel).
+    // ── VRAM via registre pilote WDDM (64 bits) ──────────────────────────────
+    // Win32_VideoController.AdapterRAM est un uint32 dans le schéma WMI — il sature
+    // à 4 294 967 295 octets (= 4095 Mo) pour tout GPU > 4 Go (bug WMI non corrigé).
+    // Le pilote WDDM écrit HardwareInformation.qwMemorySize en REG_QWORD (64 bits)
+    // sous la clé de la classe Display Adapters → valeur exacte sans troncature.
+    // Fallback WMI conservé pour les environnements sans pilote WDDM standard (VM, etc.).
     internal static long GetTotalVramMb()
     {
+        const string DisplayClass =
+            @"SYSTEM\CurrentControlSet\Control\Class\{4d36e968-e325-11ce-bfc1-08002be10318}";
+        try
+        {
+            using var baseKey = Microsoft.Win32.Registry.LocalMachine.OpenSubKey(DisplayClass);
+            if (baseKey is not null)
+            {
+                long maxBytes = 0L;
+                foreach (var name in baseKey.GetSubKeyNames())
+                {
+                    // Sous-clés numériques "0000", "0001", … = adaptateurs ; "Properties" etc. ignorées
+                    if (!int.TryParse(name, System.Globalization.NumberStyles.None,
+                            System.Globalization.CultureInfo.InvariantCulture, out _)) continue;
+
+                    using var sub = baseKey.OpenSubKey(name);
+                    if (sub is null) continue;
+
+                    // REG_QWORD → long (64 bits) ; REG_DWORD → int (cast en uint pour non-signé)
+                    long bytes = sub.GetValue("HardwareInformation.qwMemorySize") switch
+                    {
+                        long l => l,
+                        int  i => (long)(uint)i,
+                        _      => 0L,
+                    };
+
+                    // Fallback pilote ancien : MemorySize REG_DWORD (limité à 4 Go)
+                    if (bytes <= 0)
+                        bytes = sub.GetValue("HardwareInformation.MemorySize") is int i2
+                            ? (long)(uint)i2 : 0L;
+
+                    if (bytes > maxBytes) maxBytes = bytes;
+                }
+                if (maxBytes > 0) return maxBytes / (1024L * 1024L);
+            }
+        }
+        catch { /* accès registre refusé ou clé absente */ }
+
+        // Fallback WMI — peut afficher 4095 Mo pour GPU > 4 Go (limitation uint32 WMI)
         try
         {
             using var searcher = new System.Management.ManagementObjectSearcher(
@@ -164,7 +205,7 @@ internal static class NativeMemory
                     return (long)(bytes / (1024UL * 1024UL));
             }
         }
-        catch { /* WMI non disponible ou accès refusé */ }
+        catch { /* WMI non disponible */ }
         return 0L;
     }
 

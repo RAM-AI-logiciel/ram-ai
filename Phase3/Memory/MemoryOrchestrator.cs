@@ -931,46 +931,71 @@ internal sealed class MemoryOrchestrator : IDisposable
             long perfFilterMs = swFilter.ElapsedMilliseconds;
             int  toEvictCount = toEvict.Count;
 
-            // ── Étape B : éviction — séquentielle si peu de candidats, parallèle sinon ──
-            // Seuil empirique : en dessous de ParallelEvictThreshold items, l'overhead
-            // du ThreadPool (.NET) dépasse le gain de parallélisme sur des appels P/Invoke
-            // courts (OpenProcess + EmptyWorkingSet). Ajustable si profil CPU change.
-            // DOP divisé par 2 : évite de saturer tous les cœurs pour de l'éviction RAM.
+            // ── Étape B : pré-calcul séquentiel des probabilités ML ───────────
+            // Predict() n'est pas thread-safe — il prend un lock global sur
+            // PredictionEngine. Si Predict() tourne dans Parallel.ForEach, tous
+            // les threads s'idle-spinnent sur ce lock, sérialisant de facto les
+            // appels ML ET consommant inutilement des slots DOP. En pré-calculant
+            // ici en séquentiel, les threads de l'étape C n'ont plus aucun lock
+            // à acquérir → éviction en vrai parallèle, predict wall-clock = N×5ms
+            // (proportionnel à toEvict.Count, pas à seen).
+            // Turbo : pas de Predict (EvictTurbo évince sans ML) → court-circuit.
             const int ParallelEvictThreshold = 20;
             int       parallelDop            = Math.Max(2, Environment.ProcessorCount / 2);
 
+            var swPredictPhase = Stopwatch.StartNew();
+            var toEvictWithProb = new List<(Process Proc, float Prob)>(toEvict.Count);
+
+            if (turboMode)
+            {
+                foreach (var p in toEvict) toEvictWithProb.Add((p, 0f));
+            }
+            else
+            {
+                foreach (var p in toEvict)
+                {
+                    try
+                    {
+                        p.Refresh();
+                        toEvictWithProb.Add((p, Predict(p)));
+                    }
+                    catch { try { p.Dispose(); } catch { } }
+                }
+            }
+
+            swPredictPhase.Stop();
+            perfNormalPredictMs = swPredictPhase.ElapsedMilliseconds; // wall-clock, pas cumulatif
+
+            // ── Étape C : éviction — séquentielle si peu de candidats, parallèle sinon ──
+            // Seuil empirique : en dessous de ParallelEvictThreshold items, l'overhead
+            // du ThreadPool (.NET) dépasse le gain de parallélisme sur des appels P/Invoke
+            // courts (OpenProcess + EmptyWorkingSet). Ajustable si profil CPU change.
             var swParallel = Stopwatch.StartNew();
 
-            if (turboMode || toEvict.Count >= ParallelEvictThreshold)
+            if (turboMode || toEvictWithProb.Count >= ParallelEvictThreshold)
             {
                 int dop = turboMode ? Environment.ProcessorCount : parallelDop;
-                Parallel.ForEach(toEvict, new ParallelOptions { MaxDegreeOfParallelism = dop }, proc =>
+                Parallel.ForEach(toEvictWithProb, new ParallelOptions { MaxDegreeOfParallelism = dop }, item =>
                 {
-                    using (proc)
+                    using (item.Proc)
                     {
                         try
                         {
-                            proc.Refresh();
                             if (turboMode)
                             {
-                                long freed = EvictTurbo(proc);
+                                long freed = EvictTurbo(item.Proc);
                                 if (freed >= 0) { Interlocked.Increment(ref coldEvicted); Interlocked.Add(ref mbSaved, freed); }
                                 return;
                             }
-                            var swNP = Stopwatch.StartNew();
-                            float prob = Predict(proc);
-                            swNP.Stop();
-                            Interlocked.Add(ref perfNormalPredictMs, swNP.ElapsedMilliseconds);
-
-                            if (prob > HotThreshold)
+                            if (item.Prob > HotThreshold)
                             {
-                                Interlocked.Add(ref faultsAvoided, PrefetchHot(proc));
+                                Interlocked.Add(ref faultsAvoided, PrefetchHot(item.Proc));
                                 Interlocked.Increment(ref hotPrefetch);
                             }
                             else
                             {
                                 var swNE = Stopwatch.StartNew();
-                                long freed = EvictProcess(proc, prob, storeToColdCache: prob < coldThreshold);
+                                long freed = EvictProcess(item.Proc, item.Prob, storeToColdCache: item.Prob < coldThreshold);
                                 swNE.Stop();
                                 Interlocked.Add(ref perfNormalEvictMs, swNE.ElapsedMilliseconds);
                                 if (freed >= 0) { Interlocked.Increment(ref perfNormalEvicted); Interlocked.Increment(ref coldEvicted); Interlocked.Add(ref mbSaved, freed); }
@@ -982,19 +1007,13 @@ internal sealed class MemoryOrchestrator : IDisposable
             }
             else
             {
-                // Séquentiel : toEvict.Count < ParallelEvictThreshold
-                foreach (var proc in toEvict)
+                // Séquentiel : toEvictWithProb.Count < ParallelEvictThreshold
+                foreach (var (proc, prob) in toEvictWithProb)
                 {
                     using (proc)
                     {
                         try
                         {
-                            proc.Refresh();
-                            var swNP = Stopwatch.StartNew();
-                            float prob = Predict(proc);
-                            swNP.Stop();
-                            perfNormalPredictMs += swNP.ElapsedMilliseconds;
-
                             if (prob > HotThreshold)
                             {
                                 faultsAvoided += PrefetchHot(proc);
@@ -1020,8 +1039,8 @@ internal sealed class MemoryOrchestrator : IDisposable
             if (AntiSwapActive)
             {
                 _events.WriteMarker(
-                    $"PERF-TICK mode=AntiSwap enum={perfEnumMs}ms filter={perfFilterMs}ms predict={perfNormalPredictMs}ms" +
-                    $" evict={perfNormalEvictMs}ms parallelLoop={swParallel.ElapsedMilliseconds}ms" +
+                    $"PERF-TICK mode=AntiSwap enum={perfEnumMs}ms filter={perfFilterMs}ms" +
+                    $" predictPhase={perfNormalPredictMs}ms evict={perfNormalEvictMs}ms evictLoop={swParallel.ElapsedMilliseconds}ms" +
                     $" | seen={perfNormalSeen} toEvict={toEvictCount} evicted={perfNormalEvicted}" +
                     $" skippedCooldown={_tickSkippedCooldown} total={procsToProcess.Length}procs");
             }

@@ -463,6 +463,25 @@ internal sealed class MemoryOrchestrator : IDisposable
         _log.LogInformation("ForceFlagPath : {F}", ForceFlagPath);
         _log.LogInformation("TurboFlagPath : {T}", TurboFlagPath);
 
+        // Forcer le démarrage en mode Auto : supprimer les flags de modes manuels
+        // résiduels d'une session précédente. L'utilisateur doit réactiver chaque
+        // mode manuellement dans la nouvelle session — ils ne doivent jamais être
+        // restaurés automatiquement au boot du service.
+        foreach (var flagPath in new[] { TournamentFlagPath, TurboFlagPath })
+        {
+            if (!File.Exists(flagPath)) continue;
+            try
+            {
+                File.Delete(flagPath);
+                _log.LogInformation("[INIT] Flag supprimé au démarrage : {F}", flagPath);
+                _events.WriteMarker($"STARTUP RESET — {Path.GetFileName(flagPath)} supprimé, démarrage en Auto");
+            }
+            catch (Exception ex)
+            {
+                _log.LogWarning("[INIT] Impossible de supprimer {F} : {M}", flagPath, ex.Message);
+            }
+        }
+
         _cache.Open();
         _log.LogInformation(
             "MemoryOrchestrator running (cold<{C:P0} hot>{H:P0}, intervalle={I}ms)",

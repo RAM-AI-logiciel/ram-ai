@@ -121,23 +121,6 @@ public sealed partial class MainViewModel : ObservableObject
         OnLicenseChanged(_licenseService.Current);
         IsUltraModeActive = _licenseService.Current.IsUltra;
 
-        // Synchroniser ForceGamingMode depuis le fichier flag au démarrage.
-        if (ReadFlagContent() == "manual")
-        {
-            ForceGamingMode    = true;
-            IsGamingModeActive = true;
-            DetectedGameName   = "Mode Gaming FORCÉ";
-            DetectedGameLabel  = "Mode Gaming FORCÉ";
-        }
-
-        // Synchroniser ForceEcoMode depuis le fichier flag au démarrage.
-        if (File.Exists(EcoFlagPath))
-        {
-            ForceEcoMode    = true;
-            IsEcoModeActive = true;
-            EcoModeText     = "🔋 Mode Éco forcé (manuel)";
-        }
-
         // Créer le dossier partagé si nécessaire
         try { Directory.CreateDirectory(SharedFlagDir); } catch { }
 

@@ -467,7 +467,7 @@ internal sealed class MemoryOrchestrator : IDisposable
         // résiduels d'une session précédente. L'utilisateur doit réactiver chaque
         // mode manuellement dans la nouvelle session — ils ne doivent jamais être
         // restaurés automatiquement au boot du service.
-        foreach (var flagPath in new[] { TournamentFlagPath, TurboFlagPath })
+        foreach (var flagPath in new[] { TournamentFlagPath, TurboFlagPath, ForceFlagPath, EcoFlagPath })
         {
             if (!File.Exists(flagPath)) continue;
             try

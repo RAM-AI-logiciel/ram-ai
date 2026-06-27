@@ -880,66 +880,139 @@ internal sealed class MemoryOrchestrator : IDisposable
             // ── Instrumentation PERF-TICK (AntiSwap / Normal / Turbo) ──────────
             long perfNormalPredictMs = 0L, perfNormalEvictMs = 0L;
             int  perfNormalSeen = 0, perfNormalEvicted = 0;
-            var  swParallel = Stopwatch.StartNew();
 
-            Parallel.ForEach(
-                procsToProcess,
-                new ParallelOptions { MaxDegreeOfParallelism = Environment.ProcessorCount },
-                proc =>
+            // ── Étape A : filtre séquentiel (système + cooldown) ──────────────
+            // Coût : un lookup de dictionnaire par PID — négligeable, inutile
+            // de paralléliser. Produit toEvict : candidats réels à évincer.
+            // En AntiSwap/HighRam avec cooldown actif, toEvict sera typiquement
+            // vide ou très réduit → évite de payer l'overhead du ThreadPool pour rien.
+            var  swFilter    = Stopwatch.StartNew();
+            var  toEvict     = new List<Process>(procsToProcess.Length);
+
+            if (turboMode)
             {
-                using (proc)
+                // Turbo : aucun filtre cooldown — évincer tout sans exception
+                toEvict.AddRange(procsToProcess);
+            }
+            else
+            {
+                long   nowMsFilter = Environment.TickCount64;
+                double cooldownMs  = EvictionCooldownSeconds * 1_000;
+                foreach (var p in procsToProcess)
                 {
                     try
                     {
-                        proc.Refresh();
-                        string procName = proc.ProcessName;
-                        long   wsBefore = proc.WorkingSet64;
+                        if (SystemProcesses.Contains(p.ProcessName)) { p.Dispose(); continue; }
+                        perfNormalSeen++;
 
-                        if (turboMode)
+                        // Vérification cooldown : même logique que dans EvictProcess,
+                        // déportée ici pour éviter la création de threads sur des candidats
+                        // qu'on sait déjà en cooldown (cas dominant en AntiSwap soutenu).
+                        long startTicks = 0L;
+                        try { startTicks = p.StartTime.Ticks; } catch { }
+                        if (_evictionCooldown.TryGetValue(p.Id, out var cd))
                         {
-                            // ── Mode Turbo : tous les processus sans exception ──
-                            long freed = EvictTurbo(proc);
-                            if (freed >= 0)
+                            bool samePid = startTicks == 0L || cd.StartTimeTicks == 0L
+                                        || cd.StartTimeTicks == startTicks;
+                            if (samePid && (nowMsFilter - cd.LastEvictedMs) < cooldownMs)
                             {
-                                Interlocked.Increment(ref coldEvicted);
-                                Interlocked.Add(ref mbSaved, freed);
-                            }
-                            return;
-                        }
-
-                        // Mode normal : exclure les processus système
-                        if (SystemProcesses.Contains(procName)) return;
-
-                        Interlocked.Increment(ref perfNormalSeen);
-
-                        var swNP = Stopwatch.StartNew();
-                        float prob = Predict(proc);
-                        swNP.Stop();
-                        Interlocked.Add(ref perfNormalPredictMs, swNP.ElapsedMilliseconds);
-
-                        if (prob > HotThreshold)
-                        {
-                            int f = PrefetchHot(proc);
-                            Interlocked.Add(ref faultsAvoided, f);
-                            Interlocked.Increment(ref hotPrefetch);
-                        }
-                        else
-                        {
-                            var swNE = Stopwatch.StartNew();
-                            long freed = EvictProcess(proc, prob, storeToColdCache: prob < coldThreshold);
-                            swNE.Stop();
-                            Interlocked.Add(ref perfNormalEvictMs, swNE.ElapsedMilliseconds);
-                            if (freed >= 0)
-                            {
-                                Interlocked.Increment(ref perfNormalEvicted);
-                                Interlocked.Increment(ref coldEvicted);
-                                Interlocked.Add(ref mbSaved, freed);
+                                _tickSkippedCooldown++;
+                                p.Dispose();
+                                continue;
                             }
                         }
+                        toEvict.Add(p);
                     }
-                    catch { /* processus terminé ou accès refusé */ }
+                    catch { try { p.Dispose(); } catch { } }
                 }
-            });
+            }
+
+            swFilter.Stop();
+            long perfFilterMs = swFilter.ElapsedMilliseconds;
+            int  toEvictCount = toEvict.Count;
+
+            // ── Étape B : éviction — séquentielle si peu de candidats, parallèle sinon ──
+            // Seuil empirique : en dessous de ParallelEvictThreshold items, l'overhead
+            // du ThreadPool (.NET) dépasse le gain de parallélisme sur des appels P/Invoke
+            // courts (OpenProcess + EmptyWorkingSet). Ajustable si profil CPU change.
+            // DOP divisé par 2 : évite de saturer tous les cœurs pour de l'éviction RAM.
+            const int ParallelEvictThreshold = 20;
+            int       parallelDop            = Math.Max(2, Environment.ProcessorCount / 2);
+
+            var swParallel = Stopwatch.StartNew();
+
+            if (turboMode || toEvict.Count >= ParallelEvictThreshold)
+            {
+                int dop = turboMode ? Environment.ProcessorCount : parallelDop;
+                Parallel.ForEach(toEvict, new ParallelOptions { MaxDegreeOfParallelism = dop }, proc =>
+                {
+                    using (proc)
+                    {
+                        try
+                        {
+                            proc.Refresh();
+                            if (turboMode)
+                            {
+                                long freed = EvictTurbo(proc);
+                                if (freed >= 0) { Interlocked.Increment(ref coldEvicted); Interlocked.Add(ref mbSaved, freed); }
+                                return;
+                            }
+                            var swNP = Stopwatch.StartNew();
+                            float prob = Predict(proc);
+                            swNP.Stop();
+                            Interlocked.Add(ref perfNormalPredictMs, swNP.ElapsedMilliseconds);
+
+                            if (prob > HotThreshold)
+                            {
+                                Interlocked.Add(ref faultsAvoided, PrefetchHot(proc));
+                                Interlocked.Increment(ref hotPrefetch);
+                            }
+                            else
+                            {
+                                var swNE = Stopwatch.StartNew();
+                                long freed = EvictProcess(proc, prob, storeToColdCache: prob < coldThreshold);
+                                swNE.Stop();
+                                Interlocked.Add(ref perfNormalEvictMs, swNE.ElapsedMilliseconds);
+                                if (freed >= 0) { Interlocked.Increment(ref perfNormalEvicted); Interlocked.Increment(ref coldEvicted); Interlocked.Add(ref mbSaved, freed); }
+                            }
+                        }
+                        catch { /* processus terminé ou accès refusé */ }
+                    }
+                });
+            }
+            else
+            {
+                // Séquentiel : toEvict.Count < ParallelEvictThreshold
+                foreach (var proc in toEvict)
+                {
+                    using (proc)
+                    {
+                        try
+                        {
+                            proc.Refresh();
+                            var swNP = Stopwatch.StartNew();
+                            float prob = Predict(proc);
+                            swNP.Stop();
+                            perfNormalPredictMs += swNP.ElapsedMilliseconds;
+
+                            if (prob > HotThreshold)
+                            {
+                                faultsAvoided += PrefetchHot(proc);
+                                hotPrefetch++;
+                            }
+                            else
+                            {
+                                var swNE = Stopwatch.StartNew();
+                                long freed = EvictProcess(proc, prob, storeToColdCache: prob < coldThreshold);
+                                swNE.Stop();
+                                perfNormalEvictMs += swNE.ElapsedMilliseconds;
+                                if (freed >= 0) { perfNormalEvicted++; coldEvicted++; mbSaved += freed; }
+                            }
+                        }
+                        catch { /* processus terminé ou accès refusé */ }
+                    }
+                }
+            }
 
             swParallel.Stop();
 
@@ -947,10 +1020,10 @@ internal sealed class MemoryOrchestrator : IDisposable
             if (AntiSwapActive)
             {
                 _events.WriteMarker(
-                    $"PERF-TICK mode=AntiSwap enum={perfEnumMs}ms predict={perfNormalPredictMs}ms" +
+                    $"PERF-TICK mode=AntiSwap enum={perfEnumMs}ms filter={perfFilterMs}ms predict={perfNormalPredictMs}ms" +
                     $" evict={perfNormalEvictMs}ms parallelLoop={swParallel.ElapsedMilliseconds}ms" +
-                    $" | seen={perfNormalSeen} evicted={perfNormalEvicted} skippedCooldown={_tickSkippedCooldown}" +
-                    $" total={procsToProcess.Length}procs");
+                    $" | seen={perfNormalSeen} toEvict={toEvictCount} evicted={perfNormalEvicted}" +
+                    $" skippedCooldown={_tickSkippedCooldown} total={procsToProcess.Length}procs");
             }
         }
 

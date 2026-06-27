@@ -1031,6 +1031,14 @@ internal sealed class MemoryOrchestrator : IDisposable
             // Seuil empirique : en dessous de ParallelEvictThreshold items, l'overhead
             // du ThreadPool (.NET) dépasse le gain de parallélisme sur des appels P/Invoke
             // courts (OpenProcess + EmptyWorkingSet). Ajustable si profil CPU change.
+
+            // Collecte des appels lents pour diagnostic (Bug 1 — pic isolé evict).
+            // Seuil : >300ms par appel individuel = anomalie (AV, GC, pagefile, driver).
+            // Aucun overhead en temps normal : le bag n'est lu qu'après le cycle.
+            const long SlowEvictCallMs  = 300L;  // par appel individuel
+            const long SlowEvictCycleMs = 1500L; // seuil de déclenchement du dump
+            var slowEvictions = new System.Collections.Concurrent.ConcurrentBag<string>();
+
             var swParallel = Stopwatch.StartNew();
 
             if (turboMode || toEvictWithProb.Count >= ParallelEvictThreshold)
@@ -1058,7 +1066,10 @@ internal sealed class MemoryOrchestrator : IDisposable
                                 var swNE = Stopwatch.StartNew();
                                 long freed = EvictProcess(item.Proc, item.Prob, storeToColdCache: item.Prob < coldThreshold);
                                 swNE.Stop();
-                                Interlocked.Add(ref perfNormalEvictMs, swNE.ElapsedMilliseconds);
+                                long callMs = swNE.ElapsedMilliseconds;
+                                if (callMs > SlowEvictCallMs)
+                                    slowEvictions.Add($"PID={item.Proc.Id}[{item.Proc.ProcessName}]={callMs}ms");
+                                Interlocked.Add(ref perfNormalEvictMs, callMs);
                                 if (freed >= 0) { Interlocked.Increment(ref perfNormalEvicted); Interlocked.Increment(ref coldEvicted); Interlocked.Add(ref mbSaved, freed); }
                             }
                         }
@@ -1085,7 +1096,10 @@ internal sealed class MemoryOrchestrator : IDisposable
                                 var swNE = Stopwatch.StartNew();
                                 long freed = EvictProcess(proc, prob, storeToColdCache: prob < coldThreshold);
                                 swNE.Stop();
-                                perfNormalEvictMs += swNE.ElapsedMilliseconds;
+                                long callMs = swNE.ElapsedMilliseconds;
+                                if (callMs > SlowEvictCallMs)
+                                    slowEvictions.Add($"PID={proc.Id}[{proc.ProcessName}]={callMs}ms");
+                                perfNormalEvictMs += callMs;
                                 if (freed >= 0) { perfNormalEvicted++; coldEvicted++; mbSaved += freed; }
                             }
                         }
@@ -1095,6 +1109,20 @@ internal sealed class MemoryOrchestrator : IDisposable
             }
 
             swParallel.Stop();
+
+            // Dump diagnostic si cycle lent OU au moins un appel individuel anormal.
+            // Permet de distinguer : un processus bloquant (AV/driver) vs tous lents
+            // (pression pagefile/GC) vs aucun individuellement lent (ThreadPool overhead).
+            if (AntiSwapActive && (slowEvictions.Count > 0 || swParallel.ElapsedMilliseconds > SlowEvictCycleMs))
+            {
+                string slowList = slowEvictions.Count > 0
+                    ? string.Join(" | ", slowEvictions)
+                    : "none-individually-slow (GC/scheduler/pagefile probable)";
+                _events.WriteMarker(
+                    $"EVICT-SLOW cycle={swParallel.ElapsedMilliseconds}ms" +
+                    $" slowCalls={slowEvictions.Count}/{toEvictWithProb.Count}" +
+                    $" : {slowList}");
+            }
 
             // Log PERF-TICK → events.log via WriteMarker, uniquement AntiSwap (pas Turbo ni Repos)
             if (AntiSwapActive)

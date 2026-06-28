@@ -1246,7 +1246,11 @@ internal sealed class MemoryOrchestrator : IDisposable
     // Rendu non-static pour accéder à _log et _tickCount pour les diagnostics.
     private (bool IsGaming, string GameName) DetectGaming(Process[] procs)
     {
-        bool logThisTick = (++_tickCount % 10 == 1); // logguer 1 tick sur 10 (~8-30 s)
+        bool logThisTick  = (++_tickCount % 10 == 1); // logguer 1 tick sur 10 (~8-30 s)
+        // [DIAG-TEMP] cadence de diagnostic : toutes les 3 ticks (~6 s) hors Gaming,
+        // pour rendre visible dans events.log ce qui se passe en L3 pendant les tests.
+        // À retirer une fois l'heuristique validée sur terrain.
+        bool diagThisTick = !_gamingModeActive && (_tickCount % 3 == 0);
 
         string flagContent = ReadFlagContent();
 
@@ -1341,7 +1345,7 @@ internal sealed class MemoryOrchestrator : IDisposable
         }
 
         // ── Niveau 3 : heuristique — plein écran + GPU Engine 3D + hystérèse ─────
-        bool heuristic = CheckHeuristic(fgHwnd, fgPid, fgName, logThisTick);
+        bool heuristic = CheckHeuristic(fgHwnd, fgPid, fgName, logThisTick, diagThisTick);
         if (heuristic)
             return (true, $"{fgName} (heuristique)");
 
@@ -1361,20 +1365,42 @@ internal sealed class MemoryOrchestrator : IDisposable
 
     // ── Heuristique Niveau 3 : plein écran + GPU Engine 3D + hystérèse ────────
 
-    private bool CheckHeuristic(IntPtr fgHwnd, int fgPid, string fgName, bool logThisTick)
+    private bool CheckHeuristic(IntPtr fgHwnd, int fgPid, string fgName,
+                                bool logThisTick, bool diagThisTick)
     {
         if (fgHwnd == IntPtr.Zero || fgPid <= 0 || string.IsNullOrEmpty(fgName))
         {
             // Pas de fenêtre active valide → traiter comme absence de signaux
+            if (diagThisTick)
+                _events.WriteMarker($"DIAG-HEURISTIC fg=(none) pid={fgPid} — pas de fenêtre active valide");
             ApplyHeuristicSignalLoss();
             return _heuristicActive;
         }
 
-        bool  isFullscreen = IsWindowFullscreen(fgHwnd);
+        // [DIAG-TEMP] Surcharge avec out params pour exposer les dimensions brutes dans le marker.
+        bool  isFullscreen = IsWindowFullscreen(fgHwnd, out int winW, out int winH, out int scrW, out int scrH);
         RefreshHeuristicGpuIfNeeded(fgPid);
-        float gpu3D        = SampleHeuristicGpu3D();
+        float gpu3D        = SampleHeuristicGpu3D(out int gpuErrors);
         bool  hasGpu3D     = gpu3D >= HeuristicGpu3DThresholdPct;
         bool  signals      = isFullscreen && hasGpu3D;
+        int   ctrCount     = _gpuEngine3DCounters.Count;
+
+        double hysterSec = _heuristicSignalSince == DateTime.MinValue ? 0.0
+                         : (DateTime.UtcNow - _heuristicSignalSince).TotalSeconds;
+
+        // [DIAG-TEMP] Marker events.log toutes les ~6 s — couvre les 4 hypothèses :
+        //   H1 multi-écran  : winW/H vs scrW/H (ex. 2560x1440 vs 3840x1080 → fs=false)
+        //   H2 mauvais PID  : fg= montre le vrai process au premier plan
+        //   H3 anti-cheat   : ctr=0 err=N avail=true → catégorie présente mais PID bloqué
+        //   H4 nommage inst : ctr=0 err=0 avail=true → aucune instance engtype_3D trouvée
+        if (diagThisTick || logThisTick)
+        {
+            _events.WriteMarker(
+                $"DIAG-HEURISTIC fg={fgName} pid={fgPid}" +
+                $" | fs={isFullscreen}[win={winW}x{winH} scr={scrW}x{scrH}]" +
+                $" | gpu3D={gpu3D:F1}%(ctr={ctrCount} err={gpuErrors} avail={_gpuEngineAvailable})" +
+                $" | signals={signals} hyster={hysterSec:F1}s/{HeuristicEnterSeconds}s active={_heuristicActive}");
+        }
 
         if (logThisTick)
             _log.LogInformation(
@@ -1437,16 +1463,23 @@ internal sealed class MemoryOrchestrator : IDisposable
         _heuristicActive      = false;
     }
 
-    private bool IsWindowFullscreen(IntPtr hwnd)
+    // [DIAG-TEMP] Surcharge avec out params pour exposer les dimensions brutes dans DIAG-HEURISTIC.
+    private bool IsWindowFullscreen(IntPtr hwnd, out int winW, out int winH, out int scrW, out int scrH)
     {
+        winW = winH = scrW = scrH = 0;
         if (!GetWindowRect(hwnd, out RECT rect)) return false;
-        int sw = GetSystemMetrics(SM_CXSCREEN);
-        int sh = GetSystemMetrics(SM_CYSCREEN);
+        scrW = GetSystemMetrics(SM_CXSCREEN);
+        scrH = GetSystemMetrics(SM_CYSCREEN);
+        winW = rect.Right  - rect.Left;
+        winH = rect.Bottom - rect.Top;
         return rect.Left   <= ScreenEdgeTolerancePx
             && rect.Top    <= ScreenEdgeTolerancePx
-            && rect.Right  >= sw - ScreenEdgeTolerancePx
-            && rect.Bottom >= sh - ScreenEdgeTolerancePx;
+            && rect.Right  >= scrW - ScreenEdgeTolerancePx
+            && rect.Bottom >= scrH - ScreenEdgeTolerancePx;
     }
+
+    private bool IsWindowFullscreen(IntPtr hwnd) =>
+        IsWindowFullscreen(hwnd, out _, out _, out _, out _);
 
     // Rafraîchit les compteurs GPU Engine 3D seulement si le PID au premier plan a changé.
     // Coût : GetInstanceNames + création PerformanceCounter — fait une seule fois par PID.
@@ -1464,12 +1497,18 @@ internal sealed class MemoryOrchestrator : IDisposable
             if (!PerformanceCounterCategory.Exists("GPU Engine"))
             {
                 _gpuEngineAvailable = false;
-                _log.LogDebug("[GAMING-L3] Catégorie 'GPU Engine' absente — heuristique GPU désactivée");
+                // [DIAG-TEMP] WriteMarker pour rendre visible dans events.log (LogDebug était invisible)
+                string absent = "[GAMING-L3] GPU Engine : catégorie 'GPU Engine' absente — heuristique GPU désactivée";
+                _log.LogInformation(absent);
+                _events.WriteMarker(absent);
                 return;
             }
-            var    cat    = new PerformanceCounterCategory("GPU Engine");
-            string pidTag = $"pid_{pid}_";
-            foreach (var inst in cat.GetInstanceNames())
+            var    cat      = new PerformanceCounterCategory("GPU Engine");
+            var    allInsts = cat.GetInstanceNames();
+            string pidTag   = $"pid_{pid}_";
+            int    matched  = 0;
+
+            foreach (var inst in allInsts)
             {
                 if (inst.Contains(pidTag,       StringComparison.OrdinalIgnoreCase) &&
                     inst.Contains("engtype_3D", StringComparison.OrdinalIgnoreCase))
@@ -1479,27 +1518,50 @@ internal sealed class MemoryOrchestrator : IDisposable
                         var pc = new PerformanceCounter("GPU Engine", "Utilization Percentage", inst, readOnly: true);
                         pc.NextValue(); // warm-up — premier appel toujours 0 sur les compteurs de taux
                         _gpuEngine3DCounters.Add(pc);
+                        matched++;
                     }
-                    catch { }
+                    catch (Exception ex)
+                    {
+                        // [DIAG-TEMP] Exception sur un compteur individuel — anti-cheat / accès refusé ?
+                        string errMsg = $"[GAMING-L3] GPU Engine : exception création compteur inst={inst} — {ex.Message}";
+                        _log.LogInformation(errMsg);
+                        _events.WriteMarker(errMsg);
+                    }
                 }
             }
-            _log.LogDebug("[GAMING-L3] GPU Engine 3D : {N} compteur(s) pour PID {P}", _gpuEngine3DCounters.Count, pid);
+
+            // [DIAG-TEMP] Log systématique — une fois par PID — pour confirmer l'état dans events.log
+            string initMsg = matched > 0
+                ? $"[GAMING-L3] GPU Engine PID {pid} : {matched} compteur(s) engtype_3D trouvé(s) (total instances={allInsts.Length})"
+                : $"[GAMING-L3] GPU Engine PID {pid} : 0 instance engtype_3D — pidTag='{pidTag}' total={allInsts.Length} instances";
+            _log.LogInformation(initMsg);
+            _events.WriteMarker(initMsg);
         }
         catch (Exception ex)
         {
-            _log.LogDebug("[GAMING-L3] GPU Engine indisponible : {M}", ex.Message);
+            // [DIAG-TEMP] Exception globale — catégorie présente mais inaccessible (droits, driver ?)
+            string msg = $"[GAMING-L3] GPU Engine exception globale : {ex.Message}";
+            _log.LogInformation(msg);
+            _events.WriteMarker(msg);
             _gpuEngineAvailable = false;
         }
     }
 
-    private float SampleHeuristicGpu3D()
+    // [DIAG-TEMP] Surcharge avec out errors pour détecter H3 (exceptions silencieuses anti-cheat).
+    private float SampleHeuristicGpu3D(out int errors)
     {
+        errors = 0;
         if (_gpuEngine3DCounters.Count == 0) return 0f;
         float total = 0f;
         foreach (var c in _gpuEngine3DCounters)
-            try { total += c.NextValue(); } catch { }
+        {
+            try { total += c.NextValue(); }
+            catch { errors++; }
+        }
         return total;
     }
+
+    private float SampleHeuristicGpu3D() => SampleHeuristicGpu3D(out _);
 
     private static string ReadFlagContent()
     {

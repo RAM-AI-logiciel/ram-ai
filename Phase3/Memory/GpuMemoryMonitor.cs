@@ -26,6 +26,12 @@ internal sealed class GpuMemoryMonitor : IDisposable
     private readonly bool    _available;
     private bool             _loggedUnavailable;
 
+    /// <summary>True si la catégorie 'GPU Process Memory' est disponible sur cette machine.</summary>
+    internal bool IsAvailable => _available;
+
+    /// <summary>Nombre de compteurs actifs (instances GPU) à l'instant T.</summary>
+    internal int ActiveCounterCount { get { lock (_countersLock) return _counters.Count; } }
+
     private List<PerformanceCounter> _counters = new();
     private readonly object          _countersLock = new();
 
@@ -49,7 +55,10 @@ internal sealed class GpuMemoryMonitor : IDisposable
         {
             if (!PerformanceCounterCategory.Exists(CategoryName))
             {
-                _log.LogDebug("[GPU] Catégorie '{C}' absente — monitoring GPU Non-Local désactivé", CategoryName);
+                // LogInformation (pas LogDebug) : visible dans le journal de service
+                // sans nécessiter le niveau Verbose — suffisant pour le diagnostic distant.
+                // WriteMarker vers events.log est fait par MemoryOrchestrator après construction.
+                _log.LogInformation("[GPU] Catégorie '{C}' absente — monitoring GPU Non-Local désactivé (VM ou drivers sans WDDM 2.x)", CategoryName);
                 return false;
             }
             RefreshCounters();
@@ -59,7 +68,7 @@ internal sealed class GpuMemoryMonitor : IDisposable
         {
             if (!_loggedUnavailable)
             {
-                _log.LogDebug("[GPU] Monitoring GPU indisponible : {M}", ex.Message);
+                _log.LogInformation("[GPU] Monitoring GPU indisponible : {M}", ex.Message);
                 _loggedUnavailable = true;
             }
             return false;

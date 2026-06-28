@@ -471,6 +471,14 @@ internal sealed class MemoryOrchestrator : IDisposable
         _standbyCoreCounter    = TryCreateCounter("Memory", "Standby Cache Core Bytes");
 
         _gpuMonitor = new GpuMemoryMonitor(log);
+        // WriteMarker → events.log (ILogger seul n'y écrit pas — même bug que PERF-TICK).
+        // Un seul appel au démarrage, pas répété par tick.
+        if (_gpuMonitor.IsAvailable)
+            _events.WriteMarker(
+                $"[GPU] Monitoring GPU Non-Local : OK — {_gpuMonitor.ActiveCounterCount} compteur(s) 'GPU Process Memory'");
+        else
+            _events.WriteMarker(
+                "[GPU] Monitoring GPU Non-Local : désactivé — catégorie 'GPU Process Memory' absente (VM ou drivers anciens sans WDDM 2.x)");
     }
 
     private PerformanceCounter? TryCreateCounter(string category, string counter)

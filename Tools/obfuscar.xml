@@ -76,9 +76,12 @@
     Exclusions : interop Windows (P/Invoke)
     ========================================
     Les types avec [DllImport] doivent garder leurs signatures exactes.
+    Même avec EntryPoint explicite sur chaque DllImport, les laisser dans SkipType
+    évite tout renommage inattendu de la struct interne (RECT) et des constantes.
   -->
-  <SkipType name="NativeMemory"  />
-  <SkipType name="SystemMemory"  />
+  <SkipType name="NativeMemory"             />
+  <SkipType name="SystemMemory"             />
+  <SkipType name="ForegroundWatcherService" />
 
   <!--
     Exclusions : points d entree service Windows

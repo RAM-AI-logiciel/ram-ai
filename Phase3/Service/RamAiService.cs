@@ -80,6 +80,14 @@ internal sealed class RamAiService : BackgroundService
         }
 
         _events       = new EventLogger(logPath);
+
+        // Confirmation hypothèse Session 0 : un Windows Service tourne en Session 0,
+        // isolé du bureau interactif de l'utilisateur. GetForegroundWindow() retourne
+        // toujours IntPtr.Zero depuis Session 0 — d'où l'absence de GAMING-DETECT.
+        int sessionId = System.Diagnostics.Process.GetCurrentProcess().SessionId;
+        _log.LogInformation("[SESSION-0] Phase3 en session {S} (0 = service Windows, isolé du bureau interactif)", sessionId);
+        _events.WriteMarker($"SESSION-ID sessionId={sessionId} — 0=service Windows, GetForegroundWindow() inutilisable depuis Session 0");
+
         var cache     = new PageCacheManager(cachePath, _cacheLog);
         _orchestrator = new MemoryOrchestrator(_orchLog, cache, _events, resolvedModel);
 

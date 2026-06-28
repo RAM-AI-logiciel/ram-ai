@@ -136,6 +136,9 @@ internal sealed class MemoryOrchestrator : IDisposable
     private static readonly string TournamentFlagPath = Path.Combine(SharedFlagDir, "tournament_mode.force");
     private static readonly string EcoFlagPath        = Path.Combine(SharedFlagDir, "eco_mode.force");
     private static readonly string GamingProfilesPath = Path.Combine(SharedFlagDir, "gaming_profiles.json");
+    // Écrit toutes les 500 ms par Phase4 (session interactive) — Phase3 (Session 0) lit ici
+    // pour connaître la fenêtre au premier plan sans appeler GetForegroundWindow() directement.
+    private static readonly string ForegroundPath     = Path.Combine(SharedFlagDir, "foreground.json");
 
     // ── État Ultra ────────────────────────────────────────────────────────────
     private bool     _tournamentModeActive;
@@ -496,23 +499,39 @@ internal sealed class MemoryOrchestrator : IDisposable
         }
     }
 
-    // ── Foreground window protection ─────────────────────────────────────────────
-    [DllImport("user32.dll")] private static extern IntPtr GetForegroundWindow();
-    [DllImport("user32.dll")] private static extern uint  GetWindowThreadProcessId(IntPtr hWnd, out uint lpdwProcessId);
-    [DllImport("user32.dll")] private static extern bool  GetWindowRect(IntPtr hWnd, out RECT lpRect);
-    [DllImport("user32.dll")] private static extern int   GetSystemMetrics(int nIndex);
-
-    [StructLayout(LayoutKind.Sequential)]
-    private struct RECT { public int Left, Top, Right, Bottom; }
-    private const int SM_CXSCREEN = 0; // largeur écran principal en px
-    private const int SM_CYSCREEN = 1; // hauteur écran principal en px
-
-    private static int GetForegroundPid()
+    // ── Pont Phase4 → Phase3 pour la fenêtre au premier plan ───────────────────
+    // Phase3 tourne en Session 0 (Windows Service) : GetForegroundWindow() appelé
+    // depuis Session 0 retourne toujours IntPtr.Zero (isolement Session 0 depuis Vista).
+    // Phase4 (session interactive) écrit foreground.json toutes les 500 ms avec :
+    //   pid, name, isFullscreen, winW, winH, scrW, scrH, timestamp (ISO 8601 UTC)
+    // Phase3 lit ce fichier à chaque tick au lieu d'appeler GetForegroundWindow().
+    // Fallback si Phase4 fermé ou fichier périmé (>5 s) : pid=-1, tout vide/false.
+    private (int Pid, string Name, bool IsFullscreen, int WinW, int WinH, int ScrW, int ScrH) ReadForegroundInfo()
     {
-        IntPtr hwnd = GetForegroundWindow();
-        if (hwnd == IntPtr.Zero) return -1;
-        GetWindowThreadProcessId(hwnd, out uint pid);
-        return (int)pid;
+        try
+        {
+            if (!File.Exists(ForegroundPath)) return (-1, "", false, 0, 0, 0, 0);
+            string json = File.ReadAllText(ForegroundPath);
+            using var doc = System.Text.Json.JsonDocument.Parse(json);
+            var root = doc.RootElement;
+
+            // Données périmées si > 5 s (Phase4 écrit toutes les 500 ms)
+            if (root.TryGetProperty("timestamp", out var tsEl) &&
+                DateTime.TryParse(tsEl.GetString(), null,
+                    System.Globalization.DateTimeStyles.RoundtripKind, out DateTime ts) &&
+                (DateTime.UtcNow - ts).TotalSeconds > 5.0)
+                return (-1, "", false, 0, 0, 0, 0);
+
+            int    pid   = root.TryGetProperty("pid",         out var pe)  ? pe.GetInt32()        : -1;
+            string name  = root.TryGetProperty("name",        out var ne)  ? ne.GetString() ?? "" : "";
+            bool   fs    = root.TryGetProperty("isFullscreen",out var fe)  ? fe.GetBoolean()      : false;
+            int    winW  = root.TryGetProperty("winW",        out var wwe) ? wwe.GetInt32()        : 0;
+            int    winH  = root.TryGetProperty("winH",        out var whe) ? whe.GetInt32()        : 0;
+            int    scrW  = root.TryGetProperty("scrW",        out var swe) ? swe.GetInt32()        : 0;
+            int    scrH  = root.TryGetProperty("scrH",        out var she) ? she.GetInt32()        : 0;
+            return (pid, name, fs, winW, winH, scrW, scrH);
+        }
+        catch { return (-1, "", false, 0, 0, 0, 0); }
     }
 
     // ── Boucle principale ─────────────────────────────────────────────────────
@@ -671,8 +690,6 @@ internal sealed class MemoryOrchestrator : IDisposable
             _preSwapCooldownRemaining--;
         CheckPreSwapDrop(tickAvailMb);
         CheckPredictiveTrim(tickAvailMb, allProcs, ref coldEvicted, ref mbSaved);
-
-        _foregroundPid = GetForegroundPid();
 
         // ── 3. Mode Tournoi (Ultra) — appliqué en priorité si gaming actif ────
         bool tournamentMode = File.Exists(TournamentFlagPath);
@@ -1265,23 +1282,13 @@ internal sealed class MemoryOrchestrator : IDisposable
             return (true, "Mode forcé (dashboard)");
         }
 
-        // ── Résolution fenêtre au premier plan (un seul appel GetForegroundWindow) ──
-        // Réutilisé pour le Niveau 1 (blacklist) ET le Niveau 3 (heuristique).
-        // _foregroundPid sera mis à jour dans Tick() après DetectGaming — ici on lit
-        // juste le HWND et le nom du process pour les décisions gaming.
-        IntPtr fgHwnd = GetForegroundWindow();
-        int    fgPid  = -1;
-        string fgName = string.Empty;
-        if (fgHwnd != IntPtr.Zero)
-        {
-            GetWindowThreadProcessId(fgHwnd, out uint uid);
-            fgPid = (int)uid;
-            // Chercher le nom dans le snapshot déjà en mémoire — évite un Process.GetProcessById
-            foreach (var p in procs)
-            {
-                try { if (p.Id == fgPid) { fgName = p.ProcessName; break; } } catch { }
-            }
-        }
+        // ── Résolution fenêtre au premier plan via foreground.json (pont Phase4→Phase3) ──
+        // Phase3 (Session 0) ne peut pas appeler GetForegroundWindow() directement.
+        // Phase4 (session interactive) écrit foreground.json toutes les 500 ms.
+        var (fgPid, fgName, fgFullscreen, fgWinW, fgWinH, fgScrW, fgScrH) = ReadForegroundInfo();
+        // Mettre à jour _foregroundPid ici (une seule lecture par tick) — utilisé
+        // par ShouldEvict() pour ne jamais évincer le process au premier plan.
+        _foregroundPid = fgPid;
 
         // ── Niveau 1 : blacklist launchers — O(1), coût quasi nul ────────────────
         // Si le launcher est au premier plan → jamais Gaming, heuristique réinitialisée.
@@ -1345,7 +1352,7 @@ internal sealed class MemoryOrchestrator : IDisposable
         }
 
         // ── Niveau 3 : heuristique — plein écran + GPU Engine 3D + hystérèse ─────
-        bool heuristic = CheckHeuristic(fgHwnd, fgPid, fgName, logThisTick, diagThisTick);
+        bool heuristic = CheckHeuristic(fgPid, fgName, fgFullscreen, fgWinW, fgWinH, fgScrW, fgScrH, logThisTick, diagThisTick);
         if (heuristic)
             return (true, $"{fgName} (heuristique)");
 
@@ -1365,20 +1372,19 @@ internal sealed class MemoryOrchestrator : IDisposable
 
     // ── Heuristique Niveau 3 : plein écran + GPU Engine 3D + hystérèse ────────
 
-    private bool CheckHeuristic(IntPtr fgHwnd, int fgPid, string fgName,
+    private bool CheckHeuristic(int fgPid, string fgName,
+                                bool isFullscreen, int winW, int winH, int scrW, int scrH,
                                 bool logThisTick, bool diagThisTick)
     {
-        if (fgHwnd == IntPtr.Zero || fgPid <= 0 || string.IsNullOrEmpty(fgName))
+        if (fgPid <= 0 || string.IsNullOrEmpty(fgName))
         {
-            // Pas de fenêtre active valide → traiter comme absence de signaux
+            // Phase4 fermé ou fichier foreground.json absent/périmé — pas de données de premier plan
             if (diagThisTick)
-                _events.WriteMarker($"DIAG-HEURISTIC fg=(none) pid={fgPid} — pas de fenêtre active valide");
+                _events.WriteMarker($"DIAG-HEURISTIC fg=(none) pid={fgPid} — foreground.json absent/périmé (Phase4 fermé ?)");
             ApplyHeuristicSignalLoss();
             return _heuristicActive;
         }
 
-        // [DIAG-TEMP] Surcharge avec out params pour exposer les dimensions brutes dans le marker.
-        bool  isFullscreen = IsWindowFullscreen(fgHwnd, out int winW, out int winH, out int scrW, out int scrH);
         RefreshHeuristicGpuIfNeeded(fgPid);
         float gpu3D        = SampleHeuristicGpu3D(out int gpuErrors);
         bool  hasGpu3D     = gpu3D >= HeuristicGpu3DThresholdPct;
@@ -1462,24 +1468,6 @@ internal sealed class MemoryOrchestrator : IDisposable
         _heuristicLostSince   = DateTime.MinValue;
         _heuristicActive      = false;
     }
-
-    // [DIAG-TEMP] Surcharge avec out params pour exposer les dimensions brutes dans DIAG-HEURISTIC.
-    private bool IsWindowFullscreen(IntPtr hwnd, out int winW, out int winH, out int scrW, out int scrH)
-    {
-        winW = winH = scrW = scrH = 0;
-        if (!GetWindowRect(hwnd, out RECT rect)) return false;
-        scrW = GetSystemMetrics(SM_CXSCREEN);
-        scrH = GetSystemMetrics(SM_CYSCREEN);
-        winW = rect.Right  - rect.Left;
-        winH = rect.Bottom - rect.Top;
-        return rect.Left   <= ScreenEdgeTolerancePx
-            && rect.Top    <= ScreenEdgeTolerancePx
-            && rect.Right  >= scrW - ScreenEdgeTolerancePx
-            && rect.Bottom >= scrH - ScreenEdgeTolerancePx;
-    }
-
-    private bool IsWindowFullscreen(IntPtr hwnd) =>
-        IsWindowFullscreen(hwnd, out _, out _, out _, out _);
 
     // Rafraîchit les compteurs GPU Engine 3D seulement si le PID au premier plan a changé.
     // Coût : GetInstanceNames + création PerformanceCounter — fait une seule fois par PID.

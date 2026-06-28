@@ -17,8 +17,9 @@ public partial class App : Application
     public static LogWatcherService LogWatcher     { get; private set; } = null!;
     public static MainViewModel     MainVm         { get; private set; } = null!;
 
-    private NotifyIconService? _tray;
-    private MainWindow?        _mainWindow;
+    private NotifyIconService?        _tray;
+    private MainWindow?               _mainWindow;
+    private ForegroundWatcherService? _foregroundWatcher;
 
     private static readonly string SharedDir =
         Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.CommonApplicationData), "RAM-AI");
@@ -86,8 +87,9 @@ public partial class App : Application
         }
 
         // ── Licence validée : initialisation des services et du tray ──────────
-        LogWatcher = new LogWatcherService(LogPath);
-        MainVm     = new MainViewModel(LogWatcher, LicenseService);
+        LogWatcher          = new LogWatcherService(LogPath);
+        _foregroundWatcher  = new ForegroundWatcherService(SharedDir);
+        MainVm              = new MainViewModel(LogWatcher, LicenseService);
 
         _tray = new NotifyIconService();
         _tray.OpenRequested         += ShowDashboard;
@@ -186,6 +188,7 @@ public partial class App : Application
     {
         MainVm?.SaveStats();
         _tray?.Dispose();
+        _foregroundWatcher?.Dispose();
         LogWatcher.Dispose();
         Shutdown();
     }

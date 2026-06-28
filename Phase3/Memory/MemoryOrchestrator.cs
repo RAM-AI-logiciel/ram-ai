@@ -80,6 +80,22 @@ internal sealed class MemoryOrchestrator : IDisposable
     // À ajuster après tests si trop de faux positifs ou trop peu d'anticipation.
     private const float GpuPressureOffsetFraction    = 0.15f;
 
+    // ── Heuristique gaming Niveau 3 — hystérèse et seuils ────────────────────
+    // Entrée : signaux (plein écran + GPU 3D) continus pendant HeuristicEnterSeconds.
+    // 12 s choisi pour éviter les faux positifs sur alt-tab/chargement tout en restant
+    // réactif (≈ 10 ticks à 1200 ms, le palier Gaming). Ajustable après retours testeurs.
+    private const int   HeuristicEnterSeconds      = 12;
+    // Sortie : grâce de 5 s après perte de signal (alt-tab bref, écran de chargement).
+    // Symétrie avec l'hystérèse HighRam (entrée ≠ sortie) — évite le flapping.
+    private const int   HeuristicExitSeconds       = 5;
+    // Seuil GPU Engine 3D minimum (sum des instances 3D du PID, en %). Empirique.
+    // 20% élimine l'activité 3D de fond (curseur, DWM) tout en restant sous le charge
+    // d'un jeu vrai (typiquement 50-100%). À ajuster si faux positifs signalés.
+    private const float HeuristicGpu3DThresholdPct = 20f;
+    // Tolérance bord d'écran pour les fenêtres quasi-plein-écran sans bordure.
+    // ± 8 px couvre les barres de défilement et les titres cachés sans faux positifs.
+    private const int   ScreenEdgeTolerancePx      = 8;
+
     // ── Intervalles et limites mode Éco ──────────────────────────────────────
     private const int   EcoIntervalMs        = 3_000;
     private const int   EcoMaxProcsPerCycle  =     8;  // max processus par cycle en mode éco
@@ -158,7 +174,9 @@ internal sealed class MemoryOrchestrator : IDisposable
         new(StringComparer.OrdinalIgnoreCase)
         {
             // FPS / Battle Royale
-            "cs2", "csgo", "valorant", "fortnite",
+            "cs2", "csgo",
+            "valorant", "VALORANT-Win64-Shipping",  // exe jeu Riot — le launcher est dans LauncherBlacklist
+            "fortnite",
             "r5apex", "apex", "apex_legends",
             "cod", "modernwarfare", "mw2", "mw3",
             "battlefield", "bf2042", "bf1", "bfv",
@@ -173,17 +191,30 @@ internal sealed class MemoryOrchestrator : IDisposable
             "dota2", "leagueoflegends", "lol", "overwatch", "overwatch2",
             // MMO / Divers
             "destiny2", "warframe", "rainbowsix", "r6",
-            // Lanceurs et overlays — sans .exe (format Process.ProcessName)
-            "steam",            "steam.exe",        // steam.exe → ProcessName="steam"
-            "steamwebhelper",   "steamwebhelper.exe",
-            "gameoverlayui",    "gameoverlayui.exe",
-            "epicgameslauncher","epicgameslauncher.exe",
-            "fortnitelauncher",
-            "origin",           "origin.exe",
-            "eadesktop",        "eaapp",
-            "uplay",            "ubisoftconnect",
-            "battlenet",        "gogalaxy",
-            "riotclientservices","riotclient",
+            // NOTE : les launchers (Steam, Epic, Riot, EA…) sont dans LauncherBlacklist — jamais ici.
+        };
+
+    // ── Niveau 1 : launchers blacklistés — jamais classés Gaming, lookup O(1) ──
+    // Process.ProcessName ne contient jamais l'extension .exe sur Windows.
+    private static readonly HashSet<string> LauncherBlacklist =
+        new(StringComparer.OrdinalIgnoreCase)
+        {
+            // Steam
+            "steam", "steamwebhelper", "gameoverlayui",
+            // Epic Games
+            "epicgameslauncher", "fortnitelauncher",
+            // Origin / EA App
+            "origin", "eadesktop", "eaapp", "eabackgroundservice",
+            // Ubisoft Connect
+            "ubisoftconnect", "uplay",
+            // Battle.net (Blizzard)
+            "battlenet",
+            // GOG Galaxy
+            "gogalaxy",
+            // Riot (launcher + lobby League — VALORANT-Win64-Shipping est le JEU, non blacklisté)
+            "riotclientservices", "riotclient", "leagueclient",
+            // Xbox App / Microsoft Gaming Services
+            "xboxapp", "gamingservices", "gamingservicesnet",
         };
 
     // ── Processus système exclus en mode normal (inclus en mode Turbo) ────────
@@ -232,6 +263,14 @@ internal sealed class MemoryOrchestrator : IDisposable
     // ── État gaming ───────────────────────────────────────────────────────────
     private bool   _gamingModeActive;
     private string _currentGame = string.Empty;
+
+    // ── Heuristique gaming Niveau 3 ────────────────────────────────────────────
+    private DateTime _heuristicSignalSince  = DateTime.MinValue; // premier tick avec signaux continus
+    private DateTime _heuristicLostSince    = DateTime.MinValue; // premier tick sans signal après activation
+    private bool     _heuristicActive;                           // true = Gaming détecté heuristiquement
+    private int      _heuristicFgPid        = -1;                // PID pour lequel les compteurs GPU sont cachés
+    private readonly List<PerformanceCounter> _gpuEngine3DCounters = new();
+    private bool     _gpuEngineAvailable    = true;              // false si catégorie GPU Engine absente (VM, vieux drivers)
 
     // ── Mode Éco (batterie) ───────────────────────────────────────────────────
     private bool _ecoMode;
@@ -451,7 +490,14 @@ internal sealed class MemoryOrchestrator : IDisposable
 
     // ── Foreground window protection ─────────────────────────────────────────────
     [DllImport("user32.dll")] private static extern IntPtr GetForegroundWindow();
-    [DllImport("user32.dll")] private static extern uint GetWindowThreadProcessId(IntPtr hWnd, out uint lpdwProcessId);
+    [DllImport("user32.dll")] private static extern uint  GetWindowThreadProcessId(IntPtr hWnd, out uint lpdwProcessId);
+    [DllImport("user32.dll")] private static extern bool  GetWindowRect(IntPtr hWnd, out RECT lpRect);
+    [DllImport("user32.dll")] private static extern int   GetSystemMetrics(int nIndex);
+
+    [StructLayout(LayoutKind.Sequential)]
+    private struct RECT { public int Left, Top, Right, Bottom; }
+    private const int SM_CXSCREEN = 0; // largeur écran principal en px
+    private const int SM_CYSCREEN = 1; // hauteur écran principal en px
 
     private static int GetForegroundPid()
     {
@@ -1183,12 +1229,16 @@ internal sealed class MemoryOrchestrator : IDisposable
         }
     }
 
-    // ── Détection gaming ──────────────────────────────────────────────────────
-
+    // ── Détection gaming — 3 niveaux ─────────────────────────────────────────
+    //
+    //   Niveau 1 : blacklist launchers   → O(1), retour immédiat si launcher au premier plan
+    //   Niveau 2 : whitelist par nom     → KnownGameProcesses + fallback >1 Go
+    //   Niveau 3 : heuristique           → plein écran + GPU Engine 3D + hystérèse 12 s
+    //
     // Rendu non-static pour accéder à _log et _tickCount pour les diagnostics.
     private (bool IsGaming, string GameName) DetectGaming(Process[] procs)
     {
-        bool logThisTick = (++_tickCount % 10 == 1); // logguer 1 tick sur 10 (~8s)
+        bool logThisTick = (++_tickCount % 10 == 1); // logguer 1 tick sur 10 (~8-30 s)
 
         string flagContent = ReadFlagContent();
 
@@ -1203,7 +1253,38 @@ internal sealed class MemoryOrchestrator : IDisposable
             return (true, "Mode forcé (dashboard)");
         }
 
-        // Scan des processus en cours
+        // ── Résolution fenêtre au premier plan (un seul appel GetForegroundWindow) ──
+        // Réutilisé pour le Niveau 1 (blacklist) ET le Niveau 3 (heuristique).
+        // _foregroundPid sera mis à jour dans Tick() après DetectGaming — ici on lit
+        // juste le HWND et le nom du process pour les décisions gaming.
+        IntPtr fgHwnd = GetForegroundWindow();
+        int    fgPid  = -1;
+        string fgName = string.Empty;
+        if (fgHwnd != IntPtr.Zero)
+        {
+            GetWindowThreadProcessId(fgHwnd, out uint uid);
+            fgPid = (int)uid;
+            // Chercher le nom dans le snapshot déjà en mémoire — évite un Process.GetProcessById
+            foreach (var p in procs)
+            {
+                try { if (p.Id == fgPid) { fgName = p.ProcessName; break; } } catch { }
+            }
+        }
+
+        // ── Niveau 1 : blacklist launchers — O(1), coût quasi nul ────────────────
+        // Si le launcher est au premier plan → jamais Gaming, heuristique réinitialisée.
+        if (!string.IsNullOrEmpty(fgName) && LauncherBlacklist.Contains(fgName))
+        {
+            ResetHeuristic();
+            if (logThisTick)
+            {
+                _log.LogInformation("[GAMING-L1] Launcher '{N}' au premier plan → Gaming bloqué (blacklist)", fgName);
+                _events.WriteMarker($"GAMING-DETECT level=blacklist fg={fgName}");
+            }
+            return (false, string.Empty);
+        }
+
+        // ── Niveau 2a : liste blanche par nom (KnownGameProcesses) ───────────────
         if (logThisTick)
         {
             _log.LogInformation("Scan gaming: {N} processus en cours, recherche dans liste...", procs.Length);
@@ -1217,7 +1298,7 @@ internal sealed class MemoryOrchestrator : IDisposable
                 string name = p.ProcessName;
                 if (KnownGameProcesses.Contains(name))
                 {
-                    _log.LogInformation("MATCH GAMING : {G} (pid={P})", name, p.Id);
+                    _log.LogInformation("[GAMING-L2] MATCH whitelist : {G} (pid={P})", name, p.Id);
                     Console.WriteLine($"[RAM-AI] MATCH GAMING : {name}  (pid={p.Id})");
                     return (true, name);
                 }
@@ -1225,15 +1306,10 @@ internal sealed class MemoryOrchestrator : IDisposable
             catch { /* processus disparu ou accès refusé */ }
         }
 
-        // Aucun jeu connu par son nom.
-        //
-        // Fallback >1 Go : seulement pour DÉCLENCHER le mode gaming (pas pour le maintenir).
+        // ── Niveau 2b : fallback >1 Go (non blacklisté, seulement pour DÉCLENCHER) ─
         // CRITIQUE : si _gamingModeActive est déjà vrai (ex : un jeu vient d'être fermé),
         // ce bloc est ignoré pour permettre la désactivation du mode gaming.
-        // Sans cette condition, un processus lourd quelconque (Chrome, VS Code…) empêcherait
-        // la désactivation car il maintiendrait la détection "auto" en vie indéfiniment.
-        // En mode Tournoi, on ne veut pas que la détection auto >1Go
-        // interfère — le mode gaming est déjà actif et contrôlé manuellement.
+        // LauncherBlacklist protège ici aussi : Riot Client, Steam, etc. > 1 Go ignorés.
         if (!_gamingModeActive && !_tournamentModeActive && flagContent == "auto")
         {
             foreach (var p in procs)
@@ -1243,10 +1319,11 @@ internal sealed class MemoryOrchestrator : IDisposable
                     string name = p.ProcessName;
                     if (p.WorkingSet64 > 1L * 1024 * 1024 * 1024
                         && !SystemProcesses.Contains(name)
+                        && !LauncherBlacklist.Contains(name)
                         && !name.Equals("RamAI.Phase3", StringComparison.OrdinalIgnoreCase)
                         && !name.Equals("RamAI.Phase4", StringComparison.OrdinalIgnoreCase))
                     {
-                        _log.LogInformation("MATCH GAMING (>1Go RAM) : {G} (pid={P})", name, p.Id);
+                        _log.LogInformation("[GAMING-L2] MATCH >1Go : {G} (pid={P})", name, p.Id);
                         Console.WriteLine($"[RAM-AI] MATCH GAMING (>1Go RAM) : {name} (pid={p.Id})");
                         return (true, $"{name} (>1Go RAM)");
                     }
@@ -1254,6 +1331,11 @@ internal sealed class MemoryOrchestrator : IDisposable
                 catch { }
             }
         }
+
+        // ── Niveau 3 : heuristique — plein écran + GPU Engine 3D + hystérèse ─────
+        bool heuristic = CheckHeuristic(fgHwnd, fgPid, fgName, logThisTick);
+        if (heuristic)
+            return (true, $"{fgName} (heuristique)");
 
         // Aucun jeu détecté → si le mode était actif, ApplyGamingMode() va le désactiver
         if (_gamingModeActive)
@@ -1267,6 +1349,148 @@ internal sealed class MemoryOrchestrator : IDisposable
         }
 
         return (false, string.Empty);
+    }
+
+    // ── Heuristique Niveau 3 : plein écran + GPU Engine 3D + hystérèse ────────
+
+    private bool CheckHeuristic(IntPtr fgHwnd, int fgPid, string fgName, bool logThisTick)
+    {
+        if (fgHwnd == IntPtr.Zero || fgPid <= 0 || string.IsNullOrEmpty(fgName))
+        {
+            // Pas de fenêtre active valide → traiter comme absence de signaux
+            ApplyHeuristicSignalLoss();
+            return _heuristicActive;
+        }
+
+        bool  isFullscreen = IsWindowFullscreen(fgHwnd);
+        RefreshHeuristicGpuIfNeeded(fgPid);
+        float gpu3D        = SampleHeuristicGpu3D();
+        bool  hasGpu3D     = gpu3D >= HeuristicGpu3DThresholdPct;
+        bool  signals      = isFullscreen && hasGpu3D;
+
+        if (logThisTick)
+            _log.LogInformation(
+                "[GAMING-L3] Heuristique fg={N} fullscreen={F} gpu3D={G:F1}% signals={S} active={A}",
+                fgName, isFullscreen, gpu3D, signals, _heuristicActive);
+
+        var now = DateTime.UtcNow;
+
+        if (signals)
+        {
+            _heuristicLostSince = DateTime.MinValue;
+            if (_heuristicSignalSince == DateTime.MinValue)
+                _heuristicSignalSince = now;
+
+            if (!_heuristicActive &&
+                (now - _heuristicSignalSince).TotalSeconds >= HeuristicEnterSeconds)
+            {
+                _heuristicActive = true;
+                _log.LogInformation(
+                    "[GAMING-L3] Gaming heuristique ON — {N} (plein écran + GPU 3D {G:F1}% continu ≥{S}s)",
+                    fgName, gpu3D, HeuristicEnterSeconds);
+                Console.WriteLine(
+                    $"[RAM-AI] MATCH GAMING (heuristique) : {fgName} — plein écran + GPU 3D {gpu3D:F1}%");
+                _events.WriteMarker(
+                    $"GAMING-DETECT level=heuristic proc={fgName} gpu3D={gpu3D:F1}% → Gaming ON");
+            }
+        }
+        else
+        {
+            ApplyHeuristicSignalLoss();
+        }
+
+        return _heuristicActive;
+    }
+
+    private void ApplyHeuristicSignalLoss()
+    {
+        _heuristicSignalSince = DateTime.MinValue;
+        if (!_heuristicActive) return;
+
+        var now = DateTime.UtcNow;
+        if (_heuristicLostSince == DateTime.MinValue)
+            _heuristicLostSince = now;
+
+        if ((now - _heuristicLostSince).TotalSeconds >= HeuristicExitSeconds)
+        {
+            _heuristicActive    = false;
+            _heuristicLostSince = DateTime.MinValue;
+            _log.LogInformation(
+                "[GAMING-L3] Gaming heuristique OFF — signaux absents depuis ≥{S}s", HeuristicExitSeconds);
+            _events.WriteMarker(
+                $"GAMING-DETECT level=heuristic → Gaming OFF (signaux perdus {HeuristicExitSeconds}s)");
+        }
+    }
+
+    private void ResetHeuristic()
+    {
+        _heuristicSignalSince = DateTime.MinValue;
+        _heuristicLostSince   = DateTime.MinValue;
+        _heuristicActive      = false;
+    }
+
+    private bool IsWindowFullscreen(IntPtr hwnd)
+    {
+        if (!GetWindowRect(hwnd, out RECT rect)) return false;
+        int sw = GetSystemMetrics(SM_CXSCREEN);
+        int sh = GetSystemMetrics(SM_CYSCREEN);
+        return rect.Left   <= ScreenEdgeTolerancePx
+            && rect.Top    <= ScreenEdgeTolerancePx
+            && rect.Right  >= sw - ScreenEdgeTolerancePx
+            && rect.Bottom >= sh - ScreenEdgeTolerancePx;
+    }
+
+    // Rafraîchit les compteurs GPU Engine 3D seulement si le PID au premier plan a changé.
+    // Coût : GetInstanceNames + création PerformanceCounter — fait une seule fois par PID.
+    // En jeu, le PID au premier plan reste constant pendant des minutes → overhead quasi nul.
+    private void RefreshHeuristicGpuIfNeeded(int pid)
+    {
+        if (!_gpuEngineAvailable || pid == _heuristicFgPid) return;
+        _heuristicFgPid = pid;
+
+        foreach (var c in _gpuEngine3DCounters) try { c.Dispose(); } catch { }
+        _gpuEngine3DCounters.Clear();
+
+        try
+        {
+            if (!PerformanceCounterCategory.Exists("GPU Engine"))
+            {
+                _gpuEngineAvailable = false;
+                _log.LogDebug("[GAMING-L3] Catégorie 'GPU Engine' absente — heuristique GPU désactivée");
+                return;
+            }
+            var    cat    = new PerformanceCounterCategory("GPU Engine");
+            string pidTag = $"pid_{pid}_";
+            foreach (var inst in cat.GetInstanceNames())
+            {
+                if (inst.Contains(pidTag,       StringComparison.OrdinalIgnoreCase) &&
+                    inst.Contains("engtype_3D", StringComparison.OrdinalIgnoreCase))
+                {
+                    try
+                    {
+                        var pc = new PerformanceCounter("GPU Engine", "Utilization Percentage", inst, readOnly: true);
+                        pc.NextValue(); // warm-up — premier appel toujours 0 sur les compteurs de taux
+                        _gpuEngine3DCounters.Add(pc);
+                    }
+                    catch { }
+                }
+            }
+            _log.LogDebug("[GAMING-L3] GPU Engine 3D : {N} compteur(s) pour PID {P}", _gpuEngine3DCounters.Count, pid);
+        }
+        catch (Exception ex)
+        {
+            _log.LogDebug("[GAMING-L3] GPU Engine indisponible : {M}", ex.Message);
+            _gpuEngineAvailable = false;
+        }
+    }
+
+    private float SampleHeuristicGpu3D()
+    {
+        if (_gpuEngine3DCounters.Count == 0) return 0f;
+        float total = 0f;
+        foreach (var c in _gpuEngine3DCounters)
+            try { total += c.NextValue(); } catch { }
+        return total;
     }
 
     private static string ReadFlagContent()
@@ -1836,6 +2060,7 @@ internal sealed class MemoryOrchestrator : IDisposable
         _standbyCoreCounter?.Dispose();
         _engine?.Dispose();   // null si mode sans ML
         _gpuMonitor.Dispose();
+        foreach (var c in _gpuEngine3DCounters) try { c.Dispose(); } catch { }
         _cache.Dispose();
     }
 }

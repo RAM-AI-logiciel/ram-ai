@@ -82,6 +82,7 @@
   <SkipType name="NativeMemory"             />
   <SkipType name="SystemMemory"             />
   <SkipType name="ForegroundWatcherService" />
+  <SkipType name="ForegroundSnapshot"       />
 
   <!--
     Exclusions : points d entree service Windows

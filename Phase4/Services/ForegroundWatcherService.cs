@@ -16,6 +16,21 @@ namespace RamAI.Phase4.Services;
 /// Ce type est dans la liste SkipType d'Obfuscar (obfuscar.xml) pour préserver
 /// les noms des méthodes P/Invoke (DllImport sans EntryPoint explicite).
 /// </summary>
+// DTO concret — remplace le type anonyme pour éviter que Obfuscar renomme
+// les paramètres du constructeur positionnel, ce qui brise JsonSerializer.Serialize.
+// Doit être dans SkipType dans obfuscar.xml.
+internal sealed class ForegroundSnapshot
+{
+    public int    pid         { get; set; }
+    public string name        { get; set; } = string.Empty;
+    public bool   isFullscreen { get; set; }
+    public int    winW        { get; set; }
+    public int    winH        { get; set; }
+    public int    scrW        { get; set; }
+    public int    scrH        { get; set; }
+    public string timestamp   { get; set; } = string.Empty;
+}
+
 internal sealed class ForegroundWatcherService : IDisposable
 {
     // EntryPoint explicite sur chaque P/Invoke : Obfuscar peut renommer la méthode
@@ -95,16 +110,16 @@ internal sealed class ForegroundWatcherService : IDisposable
                 }
             }
 
-            var json = JsonSerializer.Serialize(new
+            var json = JsonSerializer.Serialize(new ForegroundSnapshot
             {
-                pid,
-                name,
+                pid          = pid,
+                name         = name,
                 isFullscreen = isFs,
-                winW,
-                winH,
-                scrW,
-                scrH,
-                timestamp = DateTime.UtcNow.ToString("O"),
+                winW         = winW,
+                winH         = winH,
+                scrW         = scrW,
+                scrH         = scrH,
+                timestamp    = DateTime.UtcNow.ToString("O"),
             });
 
             // Écriture atomique : écrire dans un temp puis renommer pour éviter

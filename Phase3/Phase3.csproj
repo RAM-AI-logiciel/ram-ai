@@ -9,7 +9,7 @@
     <AssemblyName>RamAI.Phase3</AssemblyName>
     <Platforms>x64</Platforms>
     <RuntimeIdentifier>win-x64</RuntimeIdentifier>
-    <SelfContained>false</SelfContained>
+    <SelfContained>true</SelfContained>
     <WindowsService>true</WindowsService>
   </PropertyGroup>
 

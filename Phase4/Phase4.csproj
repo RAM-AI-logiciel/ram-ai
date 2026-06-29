@@ -10,6 +10,8 @@
     <RootNamespace>RamAI.Phase4</RootNamespace>
     <AssemblyName>RamAI.Phase4</AssemblyName>
     <Platforms>x64</Platforms>
+    <RuntimeIdentifier>win-x64</RuntimeIdentifier>
+    <SelfContained>true</SelfContained>
     <Optimize>true</Optimize>
     <!-- Supprimer les avertissements de compatibilité des dépendances transitives de LiveCharts2 -->
     <NoWarn>NU1701;NU1603</NoWarn>

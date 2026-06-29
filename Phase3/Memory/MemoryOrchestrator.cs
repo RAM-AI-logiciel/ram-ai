@@ -793,8 +793,10 @@ internal sealed class MemoryOrchestrator : IDisposable
                 _log.LogInformation("[Ultra] Profil jeu '{G}' : maxProcs={M}", _currentGame, maxProcs);
 
             // ── Vérification seuil RAM pour le mode Tournoi ──────────────────
-            bool skipTournamentEviction = false;
-            long tournamentCapMb        = long.MaxValue; // cap de libération par cycle
+            bool   skipTournamentEviction = false;
+            long   tournamentCapMb        = long.MaxValue; // cap de libération par cycle
+            int    rawOtherCount          = otherProcs.Count; // capturé avant tout Clear() pour le log PERF-TICK
+            string skipReason             = "none";
 
             if (_tournamentModeActive)
             {
@@ -810,6 +812,7 @@ internal sealed class MemoryOrchestrator : IDisposable
                     foreach (var dp in otherProcs) try { dp.Dispose(); } catch { }
                     otherProcs.Clear();
                     skipTournamentEviction = true;
+                    skipReason = "suspend-2s";
                 }
                 else
                 {
@@ -825,6 +828,7 @@ internal sealed class MemoryOrchestrator : IDisposable
                         foreach (var dp in otherProcs) try { dp.Dispose(); } catch { }
                         otherProcs.Clear();
                         skipTournamentEviction = true;
+                        skipReason = "stutter-ws";
                     }
                 }
 
@@ -849,6 +853,7 @@ internal sealed class MemoryOrchestrator : IDisposable
                     }
                     otherProcs.Clear();
                     skipTournamentEviction = true;
+                    skipReason = "turbo-urgence";
                 }
                 else if (availPct >= TournamentRamThresholdPct)
                 {
@@ -858,6 +863,7 @@ internal sealed class MemoryOrchestrator : IDisposable
                     foreach (var dp in otherProcs) try { dp.Dispose(); } catch { }
                     otherProcs.Clear();
                     skipTournamentEviction = true;
+                    skipReason = $"ram-ok({availPct:P0})";
                 }
                 else
                 {
@@ -938,7 +944,7 @@ internal sealed class MemoryOrchestrator : IDisposable
                     $"PERF-TICK mode={perfMode} enum={perfEnumMs}ms predict={perfPredictMs}ms" +
                     $" evict={perfEvictMs}ms other={perfOtherMs}ms total={swGaming.ElapsedMilliseconds}ms" +
                     $" | seen={perfSeen} evicted={perfEvicted} skippedCooldown={_tickSkippedCooldown}" +
-                    $" otherProcs={otherProcs.Count + limited.Count}");
+                    $" rawProcs={rawOtherCount} skip={skipReason}");
             }
         }
         else

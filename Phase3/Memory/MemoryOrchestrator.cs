@@ -142,7 +142,9 @@ internal sealed class MemoryOrchestrator : IDisposable
 
     // ── État Ultra ────────────────────────────────────────────────────────────
     private bool     _tournamentModeActive;
-    private DateTime _tournamentSuspendUntil = DateTime.MinValue; // suspension 2s anti-stutter
+    private DateTime _tournamentSuspendUntil  = DateTime.MinValue; // suspension 2s anti-stutter
+    private DateTime _stutterWsFirstTrigger   = DateTime.MinValue; // horloge anti-boucle infinie stutter-ws
+    private const int TournamentMaxStutterBlockMs = 10_000;        // bypass forcé après 10s de blocage consécutif
     private long     _vramMb;   // VRAM totale de l'adaptateur (WMI, mise à jour périodique)
 
     // ── Optimisation prédictive — historique RAM disponible ──────────────────
@@ -807,18 +809,42 @@ internal sealed class MemoryOrchestrator : IDisposable
                 // ── Suspension anti-stutter 2s : jeu WS > 80% RAM dispo ─────────
                 if (DateTime.UtcNow < _tournamentSuspendUntil)
                 {
-                    _log.LogDebug("[TOURNOI] Cycle suspendu (anti-stutter 2s actif)");
-                    Console.WriteLine($"[RAM-AI] 🏆 Tournoi: cycle suspendu (anti-stutter 2s)");
-                    foreach (var dp in otherProcs) try { dp.Dispose(); } catch { }
-                    otherProcs.Clear();
-                    skipTournamentEviction = true;
-                    skipReason = "suspend-2s";
+                    // Vérifier si la protection anti-stutter bloque depuis trop longtemps :
+                    // si la boucle stutter-ws → suspend-2s → stutter-ws tourne sans fin
+                    // (rien n'est évincé donc la condition ne change jamais), forcer un bypass
+                    // après TournamentMaxStutterBlockMs pour qu'au moins un cycle d'éviction passe.
+                    bool timedOut = _stutterWsFirstTrigger != DateTime.MinValue
+                        && (DateTime.UtcNow - _stutterWsFirstTrigger).TotalMilliseconds > TournamentMaxStutterBlockMs;
+
+                    if (timedOut)
+                    {
+                        _tournamentSuspendUntil = DateTime.MinValue;
+                        _stutterWsFirstTrigger  = DateTime.MinValue;
+                        _log.LogWarning("[TOURNOI] Anti-stutter contourné après {M}s de blocage — forçage éviction",
+                            TournamentMaxStutterBlockMs / 1000);
+                        Console.WriteLine($"[RAM-AI] 🏆 Tournoi: bypass anti-stutter (>{TournamentMaxStutterBlockMs/1000}s) → éviction forcée");
+                        _events.WriteMarker($"TOURNAMENT STUTTER-BYPASS — blocage >{TournamentMaxStutterBlockMs/1000}s, éviction forcée ce cycle");
+                        // skipTournamentEviction reste false → ce cycle évince normalement
+                    }
+                    else
+                    {
+                        _log.LogDebug("[TOURNOI] Cycle suspendu (anti-stutter 2s actif)");
+                        Console.WriteLine($"[RAM-AI] 🏆 Tournoi: cycle suspendu (anti-stutter 2s)");
+                        foreach (var dp in otherProcs) try { dp.Dispose(); } catch { }
+                        otherProcs.Clear();
+                        skipTournamentEviction = true;
+                        skipReason = "suspend-2s";
+                    }
                 }
                 else
                 {
                     long gameWsMb = GetGameWorkingSetMb(_currentGame);
                     if (availMb > 0L && gameWsMb > (long)(availMb * TournamentGameRamPct))
                     {
+                        // Mémoriser le premier déclenchement pour détecter une boucle infinie
+                        if (_stutterWsFirstTrigger == DateTime.MinValue)
+                            _stutterWsFirstTrigger = DateTime.UtcNow;
+
                         _tournamentSuspendUntil = DateTime.UtcNow.AddMilliseconds(TournamentSuspendMs);
                         _log.LogInformation(
                             "[TOURNOI] Jeu WS={W}Mo > 80% RAM dispo ({A}Mo) → suspension {S}ms",
@@ -829,6 +855,11 @@ internal sealed class MemoryOrchestrator : IDisposable
                         otherProcs.Clear();
                         skipTournamentEviction = true;
                         skipReason = "stutter-ws";
+                    }
+                    else
+                    {
+                        // Condition disparue (ou jamais présente ce cycle) → réinitialiser le compteur
+                        _stutterWsFirstTrigger = DateTime.MinValue;
                     }
                 }
 
@@ -919,6 +950,7 @@ internal sealed class MemoryOrchestrator : IDisposable
                             if (_tournamentModeActive)
                             {
                                 tournamentMbThisCycle += freed;
+                                _stutterWsFirstTrigger = DateTime.MinValue; // éviction réelle → timer anti-boucle réinitialisé
                                 Thread.Sleep(100); // anti-stutter : délai 100ms après libération
                             }
                         }

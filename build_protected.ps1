@@ -35,8 +35,8 @@ $Phase4Proj    = "$Root\Phase4\Phase4.csproj"
 
 # Phase3 publie avec -r win-x64 (WindowsService requis)
 $Phase3Publish = "$Root\Phase3\bin\Release\net10.0-windows\win-x64\publish"
-# Phase4 publie avec -r win-x64 (self-contained comme Phase3)
-$Phase4Publish = "$Root\Phase4\bin\Release\net10.0-windows\win-x64\publish"
+# Phase4 WPF publie sans RID explicite (framework-dependent)
+$Phase4Publish = "$Root\Phase4\bin\Release\net10.0-windows\publish"
 
 $SetupIss      = "$Root\Phase4\setup.iss"
 $InstallerOut  = "$Root\installer"
@@ -107,21 +107,19 @@ function Copy-PublishDir([string]$src, [string]$dst) {
 
 Write-Step 1 "Publication des assemblies (.NET 10 Release)"
 
-Write-Host "  dotnet publish Phase3 (win-x64, self-contained)..."
+Write-Host "  dotnet publish Phase3 (win-x64)..."
 Invoke-Cmd -exe "dotnet" -arguments @(
     "publish", $Phase3Proj,
     "-c", "Release",
     "-r", "win-x64",
-    "--self-contained", "true",
+    "--self-contained", "false",
     "--nologo"
 )
 
-Write-Host "  dotnet publish Phase4 (win-x64, self-contained)..."
+Write-Host "  dotnet publish Phase4..."
 Invoke-Cmd -exe "dotnet" -arguments @(
     "publish", $Phase4Proj,
     "-c", "Release",
-    "-r", "win-x64",
-    "--self-contained", "true",
     "--nologo"
 )
 

@@ -1,10 +1,12 @@
 ; ─────────────────────────────────────────────────────────────────────────────
-;  RAM-AI — Inno Setup 6+
+;  RAM-AI — Inno Setup 6.1+
 ;  Usage : iscc setup.iss
 ;  Sortie : installer\RAM-AI-Setup-1.0.0.exe
 ;
-;  Build self-contained : .NET 10 Runtime embarqué dans l'installeur.
-;  Aucune dépendance externe — pas de téléchargement de runtime nécessaire.
+;  Build framework-dependent : l'installeur est léger (~10 Mo).
+;  Si .NET 10 Runtime x64 est absent, il est téléchargé automatiquement
+;  depuis les serveurs Microsoft (fichier signé, ~57 Mo).
+;  Section [Code] : téléchargement via CreateDownloadPage (Inno Setup 6.1+).
 ; ─────────────────────────────────────────────────────────────────────────────
 
 #define AppName    "RAM-AI"
@@ -20,10 +22,13 @@
   #define ProtectedPhase3 "..\Phase3\bin\Release\net10.0-windows\win-x64\publish"
 #endif
 #ifndef ProtectedPhase4
-  ; Phase4 est publie SANS RID (-r win-x64) donc pas de sous-dossier win-x64
+  ; Phase4 publie sans RID → pas de sous-dossier win-x64 dans le chemin
   #define ProtectedPhase4 "..\Phase4\bin\Release\net10.0-windows\publish"
 #endif
 
+#define DotNetUrl    "https://aka.ms/dotnet/10.0/dotnet-runtime-win-x64.exe"
+#define DotNetFile   "dotnet-runtime-win-x64.exe"
+#define DotNetDlPage "https://dotnet.microsoft.com/download/dotnet/10.0"
 
 [Setup]
 AppId={{E4B3F2A1-9C7D-4E8F-B1A2-3C5D6E7F8A9B}
@@ -82,3 +87,120 @@ Root: HKCU; Subkey: "Software\Microsoft\Windows\CurrentVersion\Run"; ValueType: 
 [UninstallRun]
 Filename: "{app}\Phase3\{#ServiceExe}"; Parameters: "--uninstall"; Flags: runhidden waituntilterminated
 
+[Code]
+// ─────────────────────────────────────────────────────────────────────────────
+//  Téléchargement automatique de .NET 10 Runtime (Inno Setup 6.1+)
+//
+//  Flux :
+//    InitializeSetup()   → vérifie si .NET 10 est présent (registre)
+//    InitializeWizard()  → crée la page de progression du téléchargement
+//    NextButtonClick()   → lance le dl quand l'utilisateur valide wpReady
+//    CurStepChanged()    → installe le runtime silencieusement avant ssInstall
+//
+//  Si le téléchargement ou l'installation échoue, un message clair indique
+//  l'URL de téléchargement manuel pour que l'utilisateur puisse se débloquer.
+// ─────────────────────────────────────────────────────────────────────────────
+
+var
+  DotNetMissing: Boolean;
+  DownloadPage:  TDownloadWizardPage;
+
+// Vérifie si .NET 10 Runtime x64 est déjà installé (clé registre Windows)
+function IsDotNet10Installed(): Boolean;
+var
+  RegBase: String;
+  SubKeys: TArrayOfString;
+  I: Integer;
+begin
+  Result := False;
+  RegBase := 'SOFTWARE\dotnet\Setup\InstalledVersions\x64\sharedfx\Microsoft.NETCore.App';
+  if not RegGetSubkeyNames(HKLM, RegBase, SubKeys) then
+    Exit;
+  for I := 0 to GetArrayLength(SubKeys) - 1 do
+    if Copy(SubKeys[I], 1, 3) = '10.' then
+    begin
+      Result := True;
+      Exit;
+    end;
+end;
+
+procedure InitializeWizard();
+begin
+  DownloadPage := CreateDownloadPage(
+    'Téléchargement de .NET 10 Runtime',
+    'Installation du prérequis .NET 10 Runtime x64 (serveurs Microsoft)...',
+    nil);
+end;
+
+function NextButtonClick(CurPageID: Integer): Boolean;
+var
+  ManualMsg: String;
+begin
+  Result := True;
+
+  if (CurPageID <> wpReady) or not DotNetMissing then
+    Exit;
+
+  ManualMsg := '.NET 10 Runtime x64 est nécessaire pour faire fonctionner RAM-AI.' + #13#10 +
+               'Lien de téléchargement manuel :' + #13#10 +
+               '{#DotNetDlPage}';
+
+  DownloadPage.Clear;
+  DownloadPage.Add('{#DotNetUrl}', '{#DotNetFile}', '');
+
+  DownloadPage.Show;
+  try
+    try
+      DownloadPage.Download;
+    except
+      if DownloadPage.AbortedByUser then
+        MsgBox('Téléchargement annulé.' + #13#10 + #13#10 + ManualMsg,
+               mbError, MB_OK)
+      else
+        MsgBox('Échec du téléchargement de .NET 10 Runtime :' + #13#10 +
+               GetExceptionMessage() + #13#10 + #13#10 + ManualMsg,
+               mbError, MB_OK);
+      Result := False;
+    end;
+  finally
+    DownloadPage.Hide;
+  end;
+end;
+
+procedure CurStepChanged(CurStep: TSetupStep);
+var
+  TempExe:    String;
+  ResultCode: Integer;
+  ManualMsg:  String;
+begin
+  if (CurStep <> ssInstall) or not DotNetMissing then
+    Exit;
+
+  ManualMsg := 'Veuillez installer .NET 10 Runtime x64 manuellement depuis :' + #13#10 +
+               '{#DotNetDlPage}';
+
+  TempExe := ExpandConstant('{tmp}\{#DotNetFile}');
+  if not FileExists(TempExe) then
+  begin
+    MsgBox('Fichier .NET 10 Runtime introuvable.' + #13#10 + ManualMsg, mbError, MB_OK);
+    Exit;
+  end;
+
+  if not Exec(TempExe, '/quiet /norestart', '', SW_HIDE, ewWaitUntilTerminated, ResultCode) then
+  begin
+    MsgBox('Impossible de lancer l''installeur .NET 10 Runtime.' + #13#10 +
+           ManualMsg, mbError, MB_OK);
+    Exit;
+  end;
+
+  // 0 = succès, 3010 = succès avec redémarrage requis (Windows Update classique)
+  if (ResultCode <> 0) and (ResultCode <> 3010) then
+    MsgBox('L''installation de .NET 10 Runtime a retourné le code ' +
+           IntToStr(ResultCode) + '.' + #13#10 + ManualMsg, mbError, MB_OK);
+end;
+
+function InitializeSetup(): Boolean;
+begin
+  DotNetMissing := not IsDotNet10Installed();
+  Result := True;
+end;

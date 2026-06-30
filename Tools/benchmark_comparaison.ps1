@@ -227,7 +227,11 @@ function Measure-Phase {
             -Label $PhaseName -Suffix $sfx -Color $BarColor
 
         if ($i -lt ($TotalPoints - 1)) {
-            Start-Sleep -Seconds $IntervalSec
+            # Split en deux : retouche les blocs chauds au milieu pour maintenir
+            # leur working set et faire tourner la rotation de zone periodique.
+            Start-Sleep -Seconds 5
+            Update-RamLoad
+            Start-Sleep -Seconds 5
         }
     }
 
@@ -321,68 +325,149 @@ function Disable-TournoiMode {
     Write-Host "  Mode Tournoi desactive." -ForegroundColor DarkGray
 }
 
-# -- Charge RAM artificielle ---------------------------------------------------
+# -- Simulation de charge memoire realiste (hot/cold, rotation de zones) -------
+#
+# Principe : imite un jeu en monde ouvert avec plusieurs processus.
+#   HOT  (~35 %) : blocs retouches toutes les ~5s -> working set maintenu en RAM
+#                  (textures actives, geometrie courante, audio en cours)
+#   COLD (~65 %) : alloues puis jamais retouches -> candidats legitimes a l eviction
+#                  (assets de la zone precedente, allocations residuelles)
+#
+# Dynamique temporelle :
+#   - Toutes les ~30s  : rotation de zone (20 % hot <-> cold), simule un depl. de zone
+#   - Toutes les ~90s  : pic de chargement (burst sur 60 % des blocs), simule
+#                        le chargement d une nouvelle zone en monde ouvert
+#
+# Reproductibilite : rotation deterministe (indices 0..N, pas de random).
+# Isolation inter-phases : Stop-RamLoad + Start-RamLoad avant chaque phase
+#   pour repartir d un etat neutre identique (corrige le biais d accumulation).
+# ─────────────────────────────────────────────────────────────────────────────
 
-$script:ramLoadObjects = New-Object System.Collections.ArrayList
+$script:simHot         = New-Object System.Collections.ArrayList
+$script:simCold        = New-Object System.Collections.ArrayList
+$script:simUpdateCount = 0
+$script:simChunkMb     = 25
+$script:simMinFreeMb   = 700
 
 function Start-RamLoad {
-    $LoadChunkMb    = 25     # taille de chaque bloc (granularite fine = stop plus precis)
-    $MinFreeAfterMb = 700    # RAM libre minimale a garantir (marge de securite anti-gel)
+    $script:simHot.Clear()
+    $script:simCold.Clear()
+    $script:simUpdateCount = 0
 
-    # Cible : allouer au plus 75% de la RAM totale.
-    # Reproductible quelle que soit la machine (16 Go, 32 Go, etc.)
-    $cs          = Get-CimInstance -ClassName Win32_OperatingSystem
-    $totalRamMb  = [int]($cs.TotalVisibleMemorySize / 1024)
-    $MaxLoadMb   = [int]($totalRamMb * 0.75)
-    $freeNowMb   = [int]($cs.FreePhysicalMemory  / 1024)
+    $cs         = Get-CimInstance -ClassName Win32_OperatingSystem
+    $totalRamMb = [int]($cs.TotalVisibleMemorySize / 1024)
+    $freeNowMb  = [int]($cs.FreePhysicalMemory     / 1024)
+    $maxLoadMb  = [int]($totalRamMb * 0.70)   # cible 70 % (garde marge pour la dynamique)
 
-    Write-Host "  Chargement RAM en cours..." -ForegroundColor Yellow
-    Write-Host "  (RAM totale : $totalRamMb Mo  |  Cible : $MaxLoadMb Mo = 75%  |  Garde-fou : $MinFreeAfterMb Mo libres)" -ForegroundColor DarkGray
+    $targetMb = $freeNowMb - $script:simMinFreeMb
+    if ($targetMb -gt $maxLoadMb)           { $targetMb = $maxLoadMb }
+    if ($targetMb -lt $script:simChunkMb)   { $targetMb = $script:simChunkMb }
+
+    $nChunks = [int]($targetMb / $script:simChunkMb)
+    $nHot    = [int]($nChunks * 0.35)
+    if ($nHot -lt 1) { $nHot = 1 }
+
+    Write-Host "  Simulation memoire hot/cold..." -ForegroundColor Yellow
+    Write-Host "  (Total : $totalRamMb Mo | Cible : $targetMb Mo | Hot : $nHot blocs | Cold : $($nChunks - $nHot) blocs)" -ForegroundColor DarkGray
     Write-Host ""
 
-    $script:ramLoadObjects.Clear()
+    $pageStride = 4096        # stride initial : force la presence physique de chaque page
+    $hotStride  = 4096 * 16   # stride hot : 64 Ko (re-acces realiste, pas page par page)
+    $allocated  = 0
 
-    $targetMb  = $freeNowMb - $MinFreeAfterMb
-    if ($targetMb -gt $MaxLoadMb)   { $targetMb = $MaxLoadMb }
-    if ($targetMb -lt $LoadChunkMb) { $targetMb = $LoadChunkMb }
-
-    $chunks    = [int]($targetMb / $LoadChunkMb)
-    $allocated = 0
-    $freeNow   = $freeNowMb
-
-    for ($i = 0; $i -lt $chunks; $i++) {
-        # Vérification RAM libre toutes les 2 itérations (= 50 Mo) pour stopper tôt
+    for ($i = 0; $i -lt $nChunks; $i++) {
+        # Garde-fou memoire toutes les 2 allocations
         if ($i % 2 -eq 0) {
-            $csNow   = Get-CimInstance -ClassName Win32_OperatingSystem
-            $freeNow = [int]($csNow.FreePhysicalMemory / 1024)
+            $csNow = Get-CimInstance -ClassName Win32_OperatingSystem
+            if ([int]($csNow.FreePhysicalMemory / 1024) -lt $script:simMinFreeMb) { break }
         }
-        if ($freeNow -lt $MinFreeAfterMb) { break }
 
-        $pct    = [math]::Round(($i / $chunks) * 100)
+        $pct    = [math]::Round(($i / $nChunks) * 100)
         $filled = [math]::Round($pct / 4)
         $bar    = "[" + ("=" * $filled) + (" " * (25 - $filled)) + "]"
-        Write-Host ("`r  Allocation  $bar  $pct%   Libre : $freeNow Mo  ") -NoNewline -ForegroundColor Yellow
+        $label  = if ($i -lt $nHot) { "HOT " } else { "COLD" }
+        Write-Host ("`r  [$label] $bar  $pct%  ") -NoNewline -ForegroundColor Yellow
 
         try {
-            $arr      = New-Object byte[] ($LoadChunkMb * 1024 * 1024)
-            $pageStep = 4096
-            $arrLen   = $arr.Length
+            $arr = New-Object byte[] ($script:simChunkMb * 1024 * 1024)
+            $len = $arr.Length
+            # Alloue avec stride fin pour forcer la presence physique de toutes les pages
             $j = 0
-            while ($j -lt $arrLen) { $arr[$j] = 1; $j += $pageStep }
-            $null = $script:ramLoadObjects.Add($arr)
-            $allocated += $LoadChunkMb
+            while ($j -lt $len) { $arr[$j] = [byte]($i % 256); $j += $pageStride }
+
+            if ($i -lt $nHot) {
+                $null = $script:simHot.Add($arr)
+            } else {
+                $null = $script:simCold.Add($arr)
+            }
+            $allocated += $script:simChunkMb
         } catch { break }
     }
 
     Write-Host ""
     $csAfter   = Get-CimInstance -ClassName Win32_OperatingSystem
     $freeAfter = [int]($csAfter.FreePhysicalMemory / 1024)
-    Write-Host "  Charge appliquee : $allocated Mo alloues -- RAM libre restante : $freeAfter Mo" -ForegroundColor Green
+    Write-Host "  Charge : $allocated Mo ($($script:simHot.Count) hot + $($script:simCold.Count) cold) -- RAM libre : $freeAfter Mo" -ForegroundColor Green
     Write-Host ""
 }
 
+function Update-RamLoad {
+    # Appele toutes les ~5s (milieu du sleep inter-echantillon dans Measure-Phase).
+    if ($script:simHot.Count -eq 0 -and $script:simCold.Count -eq 0) { return }
+    $script:simUpdateCount++
+
+    $hotStride   = 4096 * 16  # 64 Ko : simule un acces regulier non-sequentiel
+
+    # 1. Retouche des blocs chauds (maintient leur working set en RAM physique)
+    foreach ($blk in $script:simHot) {
+        $j = 0; $len = $blk.Length
+        while ($j -lt $len) { $blk[$j] = [byte]($blk[$j] + 1); $j += $hotStride }
+    }
+
+    # 2. Rotation de zone (toutes les 3 mises a jour = ~30s)
+    #    20 % des hot deviennent cold (abandonnes), 20 % des cold deviennent hot (charges)
+    if ($script:simUpdateCount % 3 -eq 0 -and
+        $script:simHot.Count -gt 1 -and $script:simCold.Count -gt 0) {
+
+        $nRotate = [math]::Max(1, [int]([math]::Min($script:simHot.Count, $script:simCold.Count) * 0.20))
+
+        # ArrayList pour capturer les references -- IMPORTANT : ne pas utiliser @() +=
+        # car PowerShell deplie les byte[] en sequences d'octets individuels lors de +=
+        $toFreeze   = New-Object System.Collections.ArrayList
+        for ($k = 0; $k -lt $nRotate -and $k -lt $script:simHot.Count;  $k++) { $null = $toFreeze.Add($script:simHot[$k]) }
+        $toActivate = New-Object System.Collections.ArrayList
+        for ($k = 0; $k -lt $nRotate -and $k -lt $script:simCold.Count; $k++) { $null = $toActivate.Add($script:simCold[$k]) }
+
+        foreach ($blk in $toFreeze)   { $null = $script:simHot.Remove($blk);  $null = $script:simCold.Add($blk) }
+        foreach ($blk in $toActivate) {
+            $null = $script:simCold.Remove($blk); $null = $script:simHot.Add($blk)
+            # Retouche immediate du bloc nouvellement chaud (simule le chargement en RAM)
+            $j = 0; $len = $blk.Length
+            while ($j -lt $len) { $blk[$j] = [byte]($blk[$j] + 2); $j += $hotStride }
+        }
+    }
+
+    # 3. Pic de chargement (toutes les 9 mises a jour = ~90s)
+    #    Retouche intensive de 60 % de tous les blocs, stride plus fin (16 Ko)
+    #    Simule le chargement massif d une nouvelle zone (loading screen)
+    if ($script:simUpdateCount % 9 -eq 0) {
+        $burstStride = 4096 * 4
+        # Construit la liste via ArrayList pour eviter le deplacement des byte[] par PowerShell
+        $allBlocks = New-Object System.Collections.ArrayList
+        foreach ($b in $script:simHot)  { $null = $allBlocks.Add($b) }
+        foreach ($b in $script:simCold) { $null = $allBlocks.Add($b) }
+        $nBurst = [int]($allBlocks.Count * 0.60)
+        for ($b = 0; $b -lt $nBurst; $b++) {
+            $blk = $allBlocks[$b]; $j = 0; $len = $blk.Length
+            while ($j -lt $len) { $blk[$j] = [byte]($blk[$j] + 3); $j += $burstStride }
+        }
+    }
+}
+
 function Stop-RamLoad {
-    $script:ramLoadObjects.Clear()
+    $script:simHot.Clear()
+    $script:simCold.Clear()
+    $script:simUpdateCount = 0
     [System.GC]::Collect()
     [System.GC]::WaitForPendingFinalizers()
     [System.GC]::Collect()
@@ -508,6 +593,12 @@ if ($svcStarted) {
     Write-Host "  AVERTISSEMENT : service pas confirme actif (timeout 30s) -- on continue." -ForegroundColor Yellow
 }
 
+# Reinitialise la charge memoire pour que Phase 2 parte d un etat neutre identique
+# a Phase 1 (corrige le biais d accumulation inter-phases).
+Write-Host "  Reinitialisation charge memoire (etat neutre Phase 2)..." -ForegroundColor DarkGray
+Stop-RamLoad
+Start-RamLoad
+
 Invoke-Countdown -Seconds 10 -Label "Stabilisation RAM-AI Phase 2 (mode Auto)"
 
 # =============================================================================
@@ -567,6 +658,11 @@ if ($hasGaming) {
     if ($hasTournoi) { $pN = 3 } else { $pN = $nbPhases }
     Write-Phase "PHASE $pN / $nbPhases  --  MODE GAMING" "Cyan"
 
+    # Reinitialise la charge memoire (etat neutre, identique au depart de Phase 1)
+    Write-Host "  Reinitialisation charge memoire (etat neutre Phase 3)..." -ForegroundColor DarkGray
+    Stop-RamLoad
+    Start-RamLoad
+
     Enable-GamingMode
 
     $p3Correction = Get-RamAiCorrectionGb
@@ -617,6 +713,11 @@ $p4GainAbs = 0.0; $p4GainPct = 0.0; $p4GainSign = "+"
 
 if ($hasTournoi) {
     Write-Phase "PHASE $nbPhases / $nbPhases  --  MODE TOURNOI  (Ultra)" "Magenta"
+
+    # Reinitialise la charge memoire (etat neutre, identique au depart de Phase 1)
+    Write-Host "  Reinitialisation charge memoire (etat neutre Phase 4)..." -ForegroundColor DarkGray
+    Stop-RamLoad
+    Start-RamLoad
 
     Enable-TournoiMode
 

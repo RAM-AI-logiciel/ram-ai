@@ -170,6 +170,30 @@ function Write-ProgressBar {
     Write-Host ("`r  $Label  $bar  $pct%   $Suffix  ") -NoNewline -ForegroundColor $Color
 }
 
+function Wait-ServiceState {
+    param([string]$Name, [string]$TargetStatus, [int]$TimeoutSec = 30)
+    $sw = [System.Diagnostics.Stopwatch]::StartNew()
+    while ($sw.Elapsed.TotalSeconds -lt $TimeoutSec) {
+        try {
+            $svc = Get-Service -Name $Name -ErrorAction Stop
+            if ($svc.Status -eq $TargetStatus) { Write-Host ""; return $true }
+        } catch {}
+        Write-Host "." -NoNewline -ForegroundColor DarkGray
+        Start-Sleep -Milliseconds 700
+    }
+    Write-Host ""
+    return $false
+}
+
+function Invoke-Countdown {
+    param([int]$Seconds, [string]$Label)
+    for ($i = $Seconds; $i -gt 0; $i--) {
+        Write-Host ("`r  $Label  ($i s)  ") -NoNewline -ForegroundColor DarkGray
+        Start-Sleep -Seconds 1
+    }
+    Write-Host ("`r  $Label  OK                  ") -ForegroundColor DarkGray
+}
+
 function Measure-Phase {
     param([string]$PhaseName, [string]$BarColor)
 
@@ -401,11 +425,10 @@ if ($menuChoice -eq "1") {
 
 Write-Host ""
 Write-Host "  [!]  AVANT DE LANCER CE BENCHMARK :" -ForegroundColor Yellow
-Write-Host "    *  Fermez les jeux en cours" -ForegroundColor White
 Write-Host "    *  Laissez Chrome ouvert avec quelques onglets" -ForegroundColor White
-Write-Host "    *  Mode Automatique sera active automatiquement" -ForegroundColor White
-Write-Host "    *  Pour le Mode Gaming : lancez un jeu AVANT de lancer le script" -ForegroundColor White
-Write-Host "    *  Ne pas interrompre le benchmark en cours d'execution" -ForegroundColor White
+Write-Host "    *  Pour Gaming / Tournoi : lancez votre jeu maintenant et commencez a jouer" -ForegroundColor White
+Write-Host "    *  Les transitions entre phases sont AUTOMATIQUES -- continuez juste a jouer" -ForegroundColor Green
+Write-Host "    *  Ctrl+C pour arreter proprement a tout moment" -ForegroundColor White
 Write-Host ""
 
 $nbPhases = 2
@@ -433,25 +456,25 @@ Write-Host ""
 
 Write-Phase "PHASE 1 / $nbPhases  --  SANS RAM-AI  (Reference)" "Red"
 
-Write-Host "  ACTION REQUISE :" -ForegroundColor Yellow
-Write-Host "  1. Fermez le dashboard RAM-AI (clic droit icone systray -> Quitter)" -ForegroundColor White
-Write-Host "  2. Attendez que le service Phase 3 soit arrete" -ForegroundColor White
-Write-Host ""
-Write-Host "  Appuyez sur ENTREE quand RAM-AI est ferme..." -ForegroundColor Yellow
-$null = Read-Host
-
 try {
+
+# Nettoyage préventif des flags avant toute chose
+Disable-GamingMode  2>$null
+Disable-TournoiMode 2>$null
+
+Write-Host "  Arret du service RamAI-Phase3..." -NoNewline -ForegroundColor Yellow
+Start-Process -FilePath "net.exe" -ArgumentList "stop RamAI-Phase3" -Wait -NoNewWindow -ErrorAction SilentlyContinue
+$svcStopped = Wait-ServiceState -Name "RamAI-Phase3" -TargetStatus "Stopped" -TimeoutSec 30
+if ($svcStopped) {
+    Write-Host "  Service RamAI-Phase3 arrete." -ForegroundColor Green
+} else {
+    Write-Host "  AVERTISSEMENT : service pas confirme arrete (timeout 30s) -- on continue." -ForegroundColor Yellow
+}
+Write-Host ""
 
 Start-RamLoad
 
-Write-Host "  Arret automatique du service RamAI-Phase3..." -ForegroundColor Yellow
-Start-Process -FilePath "net.exe" -ArgumentList "stop RamAI-Phase3" -Wait -NoNewWindow -ErrorAction SilentlyContinue
-Start-Sleep -Seconds 10
-Write-Host "  Service arrete." -ForegroundColor Green
-Write-Host ""
-
-Write-Host "  Debut mesure dans 3 secondes..." -ForegroundColor DarkGray
-Start-Sleep -Seconds 3
+Invoke-Countdown -Seconds 5 -Label "Stabilisation avant mesure Phase 1"
 
 $p1Start = [DateTime]::UtcNow
 $p1Data  = Measure-Phase -PhaseName "SANS RAM-AI  " -BarColor "Red"
@@ -471,28 +494,21 @@ $p1Actions = Get-PhaseActions -PhaseStart $p1Start -PhaseEnd $p1End
 Write-Host ""
 Write-Host "  Phase 1 OK : RAM moy=$p1AvgRam Go  Swap moy=$p1AvgSwap p/s" -ForegroundColor Green
 
-Write-Host "  Redemarrage automatique du service RamAI-Phase3..." -ForegroundColor Yellow
-Start-Process -FilePath "net.exe" -ArgumentList "start RamAI-Phase3" -Wait -NoNewWindow -ErrorAction SilentlyContinue
-Start-Sleep -Seconds 2
-Write-Host "  Service redemarre." -ForegroundColor Green
+Write-Phase "TRANSITION  --  Redemarrage RAM-AI en mode Automatique" "Yellow"
 
-# =============================================================================
-# PAUSE : Lancement RAM-AI
-# =============================================================================
-
-Write-Phase "PAUSE  --  Lancez RAM-AI en Mode Automatique" "Yellow"
-
-Write-Host "  ACTION REQUISE :" -ForegroundColor Yellow
-Write-Host "  1. Lancez le dashboard RAM-AI" -ForegroundColor White
-Write-Host "  2. Attendez que le service Phase 3 soit actif (point vert)" -ForegroundColor White
-Write-Host "  3. Verifiez que le mode est Automatique (pas Gaming, pas Tournoi)" -ForegroundColor White
-Write-Host ""
-Write-Host "  Appuyez sur ENTREE quand RAM-AI est actif en mode Automatique..." -ForegroundColor Yellow
-$null = Read-Host
-
-# Nettoyer les flags au cas ou
-Disable-GamingMode 2>$null
+Disable-GamingMode  2>$null
 Disable-TournoiMode 2>$null
+
+Write-Host "  Demarrage du service RamAI-Phase3..." -NoNewline -ForegroundColor Yellow
+Start-Process -FilePath "net.exe" -ArgumentList "start RamAI-Phase3" -Wait -NoNewWindow -ErrorAction SilentlyContinue
+$svcStarted = Wait-ServiceState -Name "RamAI-Phase3" -TargetStatus "Running" -TimeoutSec 30
+if ($svcStarted) {
+    Write-Host "  Service RamAI-Phase3 actif." -ForegroundColor Green
+} else {
+    Write-Host "  AVERTISSEMENT : service pas confirme actif (timeout 30s) -- on continue." -ForegroundColor Yellow
+}
+
+Invoke-Countdown -Seconds 10 -Label "Stabilisation RAM-AI Phase 2 (mode Auto)"
 
 # =============================================================================
 # PHASE 2 : MODE AUTOMATIQUE
@@ -1464,6 +1480,22 @@ Write-Host "  Ouverture du graphique dans le navigateur..." -ForegroundColor Dar
 Start-Process $OutputFile
 
 } finally {
+    # Liberer les flags de mode au cas ou le script s'interromprait (Ctrl+C, erreur)
+    $flagDir = "C:\ProgramData\RAM-AI"
+    $gFlag = Join-Path $flagDir "gaming_mode.force"
+    $tFlag = Join-Path $flagDir "tournament_mode.force"
+    if (Test-Path $gFlag) { try { Remove-Item $gFlag -Force } catch {} }
+    if (Test-Path $tFlag) { try { Remove-Item $tFlag -Force } catch {} }
+
+    # Relancer le service si arrete (ex. Ctrl+C pendant Phase 1)
+    try {
+        $svc = Get-Service -Name "RamAI-Phase3" -ErrorAction Stop
+        if ($svc.Status -ne "Running") {
+            Write-Host "  Redemarrage du service RamAI-Phase3 (nettoyage)..." -ForegroundColor DarkGray
+            Start-Process -FilePath "net.exe" -ArgumentList "start RamAI-Phase3" -Wait -NoNewWindow -ErrorAction SilentlyContinue
+        }
+    } catch {}
+
     # Liberer la charge RAM dans tous les cas (meme en cas d'erreur)
     Write-Host ""
     Write-Host "  Liberation de la charge RAM..." -ForegroundColor DarkGray

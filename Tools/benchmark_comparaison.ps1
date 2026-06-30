@@ -755,8 +755,29 @@ $p1SwapPalier = Get-SwapPalier $p1AvgSwap
 $p2SwapPalier = Get-SwapPalier $p2AvgSwap
 
 if ($p1SwapPalier -eq $p2SwapPalier) {
-    $verdictSwapText  = "Swap reste $p1SwapPalier dans les deux phases (ref: $p1AvgSwap p/s mediane, RAM-AI: $p2AvgSwap p/s mediane) -- aucun impact mesurable."
-    $verdictSwapColor = Get-SwapPalierColor $p2SwapPalier
+    # Meme palier qualitatif : comparer les valeurs absolues pour detecter une amelioration
+    # dans le palier (ex. Eleve 899 -> Eleve 109 = -88%, pas "aucun impact").
+    $swapTolPct = 10.0  # < 10% de variation = stable
+    if ($p1AvgSwap -gt 0) {
+        $swapChgPct = [math]::Round(($p2AvgSwap - $p1AvgSwap) / $p1AvgSwap * 100.0, 1)
+    } else {
+        $swapChgPct = 0.0
+    }
+    $swapChgSign = if ($swapChgPct -le 0) { "" } else { "+" }
+    if ($swapChgPct -le -$swapTolPct) {
+        # Amelioration significative dans le meme palier
+        $verdictSwapText  = "Swap reduit de $p1AvgSwap a $p2AvgSwap p/s mediane ($swapChgSign$swapChgPct%) -- amelioration significative. " +
+                            "La categorie reste '$p1SwapPalier' (seuil >100 p/s), mais la pression disque est nettement diminuee."
+        $verdictSwapColor = "#4CAF50"
+    } elseif ($swapChgPct -ge $swapTolPct) {
+        # Degradation dans le meme palier
+        $verdictSwapText  = "Swap augmente de $p1AvgSwap a $p2AvgSwap p/s mediane ($swapChgSign$swapChgPct%) dans le palier '$p1SwapPalier' -- a surveiller."
+        $verdictSwapColor = "#F5A623"
+    } else {
+        # Vraiment stable (<10% de variation)
+        $verdictSwapText  = "Swap stable dans le palier '$p1SwapPalier' ($p1AvgSwap -> $p2AvgSwap p/s mediane, $swapChgSign$swapChgPct%) -- aucun impact mesurable."
+        $verdictSwapColor = Get-SwapPalierColor $p2SwapPalier
+    }
 } elseif ($p2SwapPalier -eq "Negligeable") {
     $verdictSwapText  = "Swap passe de $p1SwapPalier a Negligeable avec RAM-AI actif ($p1AvgSwap -> $p2AvgSwap p/s) -- amelioration."
     $verdictSwapColor = "#4CAF50"

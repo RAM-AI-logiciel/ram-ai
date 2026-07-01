@@ -823,8 +823,11 @@ internal sealed class MemoryOrchestrator : IDisposable
                          : (profile?.MaxProcs ?? _maxProcsPerCycle);
             int sleepMs  = _tournamentModeActive ? 0 : _batchSleepMs;
 
+            if (!_tournamentModeActive && profile is not null)
+                _intervalMs = profile.IntervalMs; // ex: cs2=600ms, valorant=700ms (fallback défaut profil=1200ms)
+
             if (profile is not null && !_tournamentModeActive)
-                _log.LogInformation("[Ultra] Profil jeu '{G}' : maxProcs={M}", _currentGame, maxProcs);
+                _log.LogInformation("[Ultra] Profil jeu '{G}' : maxProcs={M} intervalMs={I}", _currentGame, maxProcs, _intervalMs);
 
             // ── Vérification seuil RAM pour le mode Tournoi ──────────────────
             bool   skipTournamentEviction = false;

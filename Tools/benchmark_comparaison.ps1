@@ -421,7 +421,7 @@ function Update-RamLoad {
     # 1. Retouche des blocs chauds (maintient leur working set en RAM physique)
     foreach ($blk in $script:simHot) {
         $j = 0; $len = $blk.Length
-        while ($j -lt $len) { $blk[$j] = [byte]($blk[$j] + 1); $j += $hotStride }
+        while ($j -lt $len) { $blk[$j] = [byte](($blk[$j] + 1) % 256); $j += $hotStride }
     }
 
     # 2. Rotation de zone (toutes les 3 mises a jour = ~30s)
@@ -443,7 +443,7 @@ function Update-RamLoad {
             $null = $script:simCold.Remove($blk); $null = $script:simHot.Add($blk)
             # Retouche immediate du bloc nouvellement chaud (simule le chargement en RAM)
             $j = 0; $len = $blk.Length
-            while ($j -lt $len) { $blk[$j] = [byte]($blk[$j] + 2); $j += $hotStride }
+            while ($j -lt $len) { $blk[$j] = [byte](($blk[$j] + 2) % 256); $j += $hotStride }
         }
     }
 
@@ -459,7 +459,7 @@ function Update-RamLoad {
         $nBurst = [int]($allBlocks.Count * 0.60)
         for ($b = 0; $b -lt $nBurst; $b++) {
             $blk = $allBlocks[$b]; $j = 0; $len = $blk.Length
-            while ($j -lt $len) { $blk[$j] = [byte]($blk[$j] + 3); $j += $burstStride }
+            while ($j -lt $len) { $blk[$j] = [byte](($blk[$j] + 3) % 256); $j += $burstStride }
         }
     }
 }

@@ -306,7 +306,9 @@ internal sealed class MemoryOrchestrator : IDisposable
     private readonly PerformanceCounter? _cpuCounter;
 
     // ── Protection processus ──────────────────────────────────────────────────
-    private int _foregroundPid = -1;
+    private int   _foregroundPid        = -1;
+    private long  _fgWsMb               = 0L;
+    private float _fgPageFaultDeltaKB   = 0f;
     private readonly ConcurrentDictionary<int, (long WsMb, long TickMs)> _wsTracker = new();
 
     // ── Cooldown par PID : évite les réévictions en boucle ───────────────────
@@ -1308,6 +1310,9 @@ internal sealed class MemoryOrchestrator : IDisposable
             SwapPagesPerSec        = SwapPagesPerSec,
             AntiSwapIntervention   = AntiSwapActive,
             IntervalMs             = _intervalMs,
+            FgPid                  = _foregroundPid,
+            FgWsMb                 = _fgWsMb,
+            FgPageFaultDeltaKB     = _fgPageFaultDeltaKB,
         });
 
         _log.LogDebug(
@@ -1363,6 +1368,32 @@ internal sealed class MemoryOrchestrator : IDisposable
         // Mettre à jour _foregroundPid ici (une seule lecture par tick) — utilisé
         // par ShouldEvict() pour ne jamais évincer le process au premier plan.
         _foregroundPid = fgPid;
+
+        // ── Foreground WS + page-fault delta (tous modes) ──────────────────────
+        _fgWsMb             = 0L;
+        _fgPageFaultDeltaKB = 0f;
+        if (fgPid > 0)
+        {
+            IntPtr hFg = NativeMemory.OpenProcess(NativeMemory.PROCESS_QUERY_INFORMATION, false, fgPid);
+            if (hFg != IntPtr.Zero)
+            {
+                try
+                {
+                    var fgMem = default(NativeMemory.PROCESS_MEMORY_COUNTERS_EX);
+                    fgMem.cb  = (uint)Marshal.SizeOf<NativeMemory.PROCESS_MEMORY_COUNTERS_EX>();
+                    if (NativeMemory.GetProcessMemoryInfo(hFg, out fgMem, fgMem.cb))
+                    {
+                        _fgWsMb = (long)fgMem.WorkingSetSize / (1024L * 1024L);
+                        _prevFaults.TryGetValue(fgPid, out uint fgPrev);
+                        uint fgCur = fgMem.PageFaultCount;
+                        _prevFaults[fgPid] = fgCur;
+                        uint fgDelta = fgCur >= fgPrev ? fgCur - fgPrev : 0u;
+                        _fgPageFaultDeltaKB = fgDelta * 4f;
+                    }
+                }
+                finally { NativeMemory.CloseHandle(hFg); }
+            }
+        }
 
         // ── Niveau 1 : blacklist launchers — O(1), coût quasi nul ────────────────
         // Si le launcher est au premier plan → jamais Gaming, heuristique réinitialisée.

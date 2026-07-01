@@ -22,4 +22,7 @@ public sealed class EventEntry
     [JsonPropertyName("swapPagesPerSec")]       public float    SwapPagesPerSec      { get; init; }
     [JsonPropertyName("antiSwapIntervention")]  public bool     AntiSwapIntervention { get; init; }
     [JsonPropertyName("intervalMs")]            public int      IntervalMs           { get; init; }
+    [JsonPropertyName("fgPid")]                 public int      FgPid                { get; init; }
+    [JsonPropertyName("fgWsMb")]                public long     FgWsMb               { get; init; }
+    [JsonPropertyName("fgPageFaultDeltaKB")]    public float    FgPageFaultDeltaKB   { get; init; }
 }

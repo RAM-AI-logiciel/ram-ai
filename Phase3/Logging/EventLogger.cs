@@ -169,4 +169,10 @@ internal sealed class EventEntry
     public bool     AntiSwapIntervention { get; init; }
     [System.Text.Json.Serialization.JsonPropertyName("intervalMs")]
     public int      IntervalMs           { get; init; }
+    [System.Text.Json.Serialization.JsonPropertyName("fgPid")]
+    public int      FgPid                { get; init; }
+    [System.Text.Json.Serialization.JsonPropertyName("fgWsMb")]
+    public long     FgWsMb               { get; init; }
+    [System.Text.Json.Serialization.JsonPropertyName("fgPageFaultDeltaKB")]
+    public float    FgPageFaultDeltaKB   { get; init; }
 }

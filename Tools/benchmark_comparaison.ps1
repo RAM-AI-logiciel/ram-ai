@@ -593,6 +593,25 @@ if ($svcStarted) {
     Write-Host "  AVERTISSEMENT : service pas confirme actif (timeout 30s) -- on continue." -ForegroundColor Yellow
 }
 
+# Le service vient de redemarrer avec un nouveau PID — le compteur cree au demarrage
+# du script pointait sur l'ancien PID (maintenant mort) et retourne 0 silencieusement.
+# On le recrée ici pour relier au PID actuel.
+Write-Host "  Reinitialisation compteur CPU RAM-AI (nouveau PID)..." -ForegroundColor DarkGray
+if ($script:cpuRamAiCounter) { try { $script:cpuRamAiCounter.Dispose() } catch {} }
+$script:cpuRamAiCounter   = $null
+$script:cpuRamAiAvailable = $false
+Start-Sleep -Milliseconds 600
+try {
+    $script:cpuRamAiCounter = New-Object System.Diagnostics.PerformanceCounter("Process", "% Processor Time", "RamAI.Phase3")
+    $script:cpuRamAiCounter.NextValue() | Out-Null
+    Start-Sleep -Milliseconds 500
+    $script:cpuRamAiCounter.NextValue() | Out-Null
+    $script:cpuRamAiAvailable = $true
+    Write-Host "  Compteur CPU RAM-AI relie au nouveau PID." -ForegroundColor DarkGray
+} catch {
+    Write-Warning "  Compteur CPU RAM-AI inaccessible apres redemarrage du service."
+}
+
 # Reinitialise la charge memoire pour que Phase 2 parte d un etat neutre identique
 # a Phase 1 (corrige le biais d accumulation inter-phases).
 Write-Host "  Reinitialisation charge memoire (etat neutre Phase 2)..." -ForegroundColor DarkGray

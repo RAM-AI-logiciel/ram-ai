@@ -160,6 +160,16 @@ internal sealed class MemoryOrchestrator : IDisposable
     private int         _availMbRingIdx;                   // index courant dans le ring
     private int         _preSwapCooldownRemaining;         // ticks restants de cooldown
 
+    // ── Emergency bypass : court-circuit one-shot du cooldown per-PID ────────
+    // Déclenché par une chute RAM > EmergencyBypassRamDropMb sur un seul tick,
+    // uniquement en mode Tournoi ou AntiSwap actif.
+    // Durée exacte : EmergencyBypassTicks × intervalMs (~4×500ms = 2s).
+    // Réarmement inhibé EmergencyBypassRearmDelayMs (30s) après fin du bypass
+    // pour éviter de reproduire le pattern CPU 21,77% (commits 904ced8/b03f1d5).
+    private const long EmergencyBypassRamDropMb    = 1500L;  // chute > 1500 Mo/tick = signal
+    private const int  EmergencyBypassTicks         = 4;      // durée = 4 ticks (~2s à 500ms)
+    private const long EmergencyBypassRearmDelayMs  = 30_000L; // fenêtre d'inhibition post-bypass
+
     // ── Ring buffer trim prédictif ────────────────────────────────────────────
     private readonly long[] _predictRing         = new long[PredictiveTrimRingSize];
     private int              _predictRingIdx;
@@ -307,6 +317,14 @@ internal sealed class MemoryOrchestrator : IDisposable
     // Compteur de skips par tick (reset au début de Tick, lu dans [PERF-TICK]).
     // Interlocked pour thread-safety dans Parallel.ForEach.
     private int _tickSkippedCooldown;
+
+    // ── État du bypass d'urgence ──────────────────────────────────────────────
+    // volatile : _emergencyBypassTicksRemaining est lu depuis le Parallel.ForEach
+    // (EvictProcess) et écrit depuis le tick principal — volatile garantit la visibilité.
+    private volatile int _emergencyBypassTicksRemaining; // 0 = bypass inactif
+    private int          _emergencyBypassEvictedCount;   // évictions pendant la fenêtre (Interlocked)
+    private long         _emergencyBypassStartMs;        // TickCount64 à l'armement (log durée)
+    private long         _emergencyBypassLastEndMs;      // TickCount64 à la fin du dernier bypass (réarmement)
 
     /// <summary>
     /// Recalcule l'intervalle et les limites par palier de charge.
@@ -691,6 +709,20 @@ internal sealed class MemoryOrchestrator : IDisposable
         else if (_preSwapCooldownRemaining > 0)
             _preSwapCooldownRemaining--;
         CheckPreSwapDrop(tickAvailMb);
+
+        // ── Décompte du bypass d'urgence ; log expiration quand il atteint 0 ──
+        if (_emergencyBypassTicksRemaining > 0)
+        {
+            _emergencyBypassTicksRemaining--;
+            if (_emergencyBypassTicksRemaining == 0)
+            {
+                long durationMs = Environment.TickCount64 - _emergencyBypassStartMs;
+                _emergencyBypassLastEndMs = Environment.TickCount64;
+                _events.WriteMarker(
+                    $"[EMERGENCY-BYPASS-EXPIRED] duration={durationMs}ms evictedDuringBypass={_emergencyBypassEvictedCount}");
+            }
+        }
+
         CheckPredictiveTrim(tickAvailMb, allProcs, ref coldEvicted, ref mbSaved);
 
         // ── 3. Mode Tournoi (Ultra) — appliqué en priorité si gaming actif ────
@@ -1006,9 +1038,9 @@ internal sealed class MemoryOrchestrator : IDisposable
             var  swFilter    = Stopwatch.StartNew();
             var  toEvict     = new List<Process>(procsToProcess.Length);
 
-            if (turboMode)
+            if (turboMode || _emergencyBypassTicksRemaining > 0)
             {
-                // Turbo : aucun filtre cooldown — évincer tout sans exception
+                // Turbo ou emergency bypass : aucun filtre cooldown — évincer tout sans exception
                 toEvict.AddRange(procsToProcess);
             }
             else
@@ -1610,6 +1642,31 @@ internal sealed class MemoryOrchestrator : IDisposable
 
     private void CheckPreSwapDrop(long currentAvailMb)
     {
+        // ── Détection urgence single-tick (Tournoi / AntiSwap seulement) ─────
+        // Une chute > EmergencyBypassRamDropMb en un seul tick (500ms) est le signal
+        // avant-coureur du pic de swap (observé 01/07 : 1568 Mo en un tick, swap explosé
+        // 12s plus tard à 283 811 p/s alors que 103/122 candidats étaient en cooldown).
+        // Conditions de réarmement : bypass inactif + délai 30s post-dernier-bypass.
+        if ((_tournamentModeActive || AntiSwapActive)
+            && _emergencyBypassTicksRemaining == 0
+            && _availMbRingIdx >= 2
+            && (Environment.TickCount64 - _emergencyBypassLastEndMs) > EmergencyBypassRearmDelayMs)
+        {
+            int ringLen = _availMbRing.Length;
+            long prev   = _availMbRing[(_availMbRingIdx - 2) % ringLen]; // tick i-1
+            long curr   = _availMbRing[(_availMbRingIdx - 1) % ringLen]; // tick i (courant)
+            long drop = prev - curr;                              // positif = chute
+
+            if (drop > EmergencyBypassRamDropMb)
+            {
+                _emergencyBypassTicksRemaining = EmergencyBypassTicks;
+                _emergencyBypassEvictedCount   = 0;
+                _emergencyBypassStartMs        = Environment.TickCount64;
+                _events.WriteMarker(
+                    $"[EMERGENCY-BYPASS] trigger=RamDrop delta={drop}Mo bypassTicks={EmergencyBypassTicks}");
+            }
+        }
+
         // Pas assez de ticks pour calculer 3 deltas consécutifs
         if (_availMbRingIdx < PreSwapConsecTicks + 1) return;
         // Cooldown actif : inhiber pendant K ticks après HighRam/AntiSwap
@@ -1967,7 +2024,8 @@ internal sealed class MemoryOrchestrator : IDisposable
         long startTimeTicks = 0L;
         try { startTimeTicks = proc.StartTime.Ticks; } catch { /* accès refusé sur certains procs système */ }
 
-        if (_evictionCooldown.TryGetValue(proc.Id, out var cd))
+        if (_emergencyBypassTicksRemaining == 0   // bypass inactif → vérifier le cooldown normal
+            && _evictionCooldown.TryGetValue(proc.Id, out var cd))
         {
             bool samePid = startTimeTicks == 0L || cd.StartTimeTicks == 0L || cd.StartTimeTicks == startTimeTicks;
             if (samePid && (nowMs - cd.LastEvictedMs) < EvictionCooldownSeconds * 1_000)
@@ -2038,6 +2096,10 @@ internal sealed class MemoryOrchestrator : IDisposable
 
             // Enregistrer l'éviction pour le cooldown (empêche une rééviction immédiate)
             _evictionCooldown[proc.Id] = (Environment.TickCount64, startTimeTicks);
+
+            // Comptabiliser pour le log [EMERGENCY-BYPASS-EXPIRED]
+            if (_emergencyBypassTicksRemaining > 0)
+                Interlocked.Increment(ref _emergencyBypassEvictedCount);
 
             return deltaMb;
         }

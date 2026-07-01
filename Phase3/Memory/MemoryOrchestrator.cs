@@ -1265,11 +1265,12 @@ internal sealed class MemoryOrchestrator : IDisposable
                     $" : {slowList}");
             }
 
-            // Log PERF-TICK → events.log via WriteMarker, uniquement AntiSwap (pas Turbo ni Repos)
-            if (AntiSwapActive)
+            // Log PERF-TICK → events.log via WriteMarker, uniquement AntiSwap ou Tournoi (pas Turbo ni Repos)
+            if (AntiSwapActive || _tournamentModeActive)
             {
+                string perfNormalMode = _tournamentModeActive ? "Tournoi" : "AntiSwap";
                 _events.WriteMarker(
-                    $"PERF-TICK mode=AntiSwap enum={perfEnumMs}ms filter={perfFilterMs}ms" +
+                    $"PERF-TICK mode={perfNormalMode} enum={perfEnumMs}ms filter={perfFilterMs}ms" +
                     $" predictPhase={perfNormalPredictMs}ms evict={perfNormalEvictMs}ms evictLoop={swParallel.ElapsedMilliseconds}ms" +
                     $" | seen={perfNormalSeen} toEvict={toEvictCount} evicted={perfNormalEvicted}" +
                     $" skippedCooldown={_tickSkippedCooldown} wsFiltered={perfWsFiltered} total={procsToProcess.Length}procs");

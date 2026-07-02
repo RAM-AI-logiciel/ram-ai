@@ -1449,7 +1449,7 @@ internal sealed class MemoryOrchestrator : IDisposable
                     {
                         _log.LogInformation("[GAMING-L2] MATCH >1Go : {G} (pid={P})", name, p.Id);
                         Console.WriteLine($"[RAM-AI] MATCH GAMING (>1Go RAM) : {name} (pid={p.Id})");
-                        return (true, $"{name} (>1Go RAM)");
+                        return (true, name);
                     }
                 }
                 catch { }
@@ -1459,7 +1459,7 @@ internal sealed class MemoryOrchestrator : IDisposable
         // ── Niveau 3 : heuristique — plein écran + GPU Engine 3D + hystérèse ─────
         bool heuristic = CheckHeuristic(fgPid, fgName, fgFullscreen, fgWinW, fgWinH, fgScrW, fgScrH, logThisTick, diagThisTick);
         if (heuristic)
-            return (true, $"{fgName} (heuristique)");
+            return (true, fgName);
 
         // Aucun jeu détecté → si le mode était actif, ApplyGamingMode() va le désactiver
         if (_gamingModeActive)
@@ -2158,8 +2158,7 @@ internal sealed class MemoryOrchestrator : IDisposable
     private static long GetGameWorkingSetMb(string gameName)
     {
         if (string.IsNullOrEmpty(gameName)) return 0L;
-        // _currentGame peut contenir des suffixes comme " (>1Go RAM)" ou "(dashboard)"
-        // → n'utiliser que le premier token (le nom du processus réel)
+        // Cas "Mode forcé (dashboard)" : seul cas restant avec suffixe — prendre le premier token.
         string procName = gameName.Split(' ')[0];
         try
         {

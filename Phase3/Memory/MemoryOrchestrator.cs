@@ -1393,12 +1393,15 @@ internal sealed class MemoryOrchestrator : IDisposable
         // Mode forcé manuellement depuis le dashboard
         if (flagContent == "manual")
         {
+            var (manFgPid, manFgName, _, _, _, _, _) = ReadForegroundInfo();
+            _foregroundPid = manFgPid;
+            string manGameName = !string.IsNullOrWhiteSpace(manFgName) ? manFgName : "unknown";
             if (logThisTick)
             {
-                _log.LogInformation("Scan gaming: flag=manual, mode forcé actif");
-                Console.WriteLine("[RAM-AI] Scan gaming: flag=manual → MODE GAMING FORCÉ");
+                _log.LogInformation("Scan gaming: flag=manual, mode forcé actif, fg={Fg}", manGameName);
+                Console.WriteLine($"[RAM-AI] Scan gaming: flag=manual → MODE GAMING FORCÉ (fg={manGameName})");
             }
-            return (true, "Mode forcé (dashboard)");
+            return (true, manGameName);
         }
 
         // ── Résolution fenêtre au premier plan via foreground.json (pont Phase4→Phase3) ──
@@ -2198,7 +2201,6 @@ internal sealed class MemoryOrchestrator : IDisposable
     private static long GetGameWorkingSetMb(string gameName)
     {
         if (string.IsNullOrEmpty(gameName)) return 0L;
-        // Cas "Mode forcé (dashboard)" : seul cas restant avec suffixe — prendre le premier token.
         string procName = gameName.Split(' ')[0];
         try
         {

@@ -831,14 +831,30 @@ internal sealed class MemoryOrchestrator : IDisposable
             if (profile is not null && !_tournamentModeActive)
                 _log.LogInformation("[Ultra] Profil jeu '{G}' : maxProcs={M} intervalMs={I}", _currentGame, maxProcs, _intervalMs);
 
-            // ── Vérification seuil RAM pour le mode Tournoi ──────────────────
+            // ── Bascule Gaming-Tournoi : sous pression RAM, Gaming adopte la logique Tournoi ─
+            // Seuil : RAM dispo < 25% du total (TournamentRamThresholdPct) → Gaming bascule sur
+            // la même logique que Tournoi (anti-stutter WS, cap 15-25%, turbo-urgence <15%,
+            // TournamentProtectedProcesses). IntervalMs reste celui du profil jeu (1200ms défaut,
+            // e4bfb7e) — PAS 500ms comme en vrai Tournoi.
+            // Quand RAM confortable (≥ 25%), Gaming reste léger (plafond 20 procs, pas d'anti-stutter).
+            bool gamingUseTournamentLogic = !_tournamentModeActive
+                && _gamingModeActive
+                && tickTotalMb > 0
+                && tickAvailMb < (long)(tickTotalMb * TournamentRamThresholdPct); // < 25% total
+            bool runTournamentLogic = _tournamentModeActive || gamingUseTournamentLogic;
+
+            // ── Vérification seuil RAM pour le mode Tournoi / Gaming-Tournoi ─────────────────
             bool   skipTournamentEviction = false;
             long   tournamentCapMb        = long.MaxValue; // cap de libération par cycle
             int    rawOtherCount          = otherProcs.Count; // capturé avant tout Clear() pour le log PERF-TICK
             string skipReason             = "none";
 
-            if (_tournamentModeActive)
+            if (runTournamentLogic)
             {
+                // Tag de log pour distinguer vrai Tournoi vs Gaming-Tournoi dans les messages
+                string modeTag    = _tournamentModeActive ? "TOURNOI" : "GAMING-T";
+                string modePrefix = _tournamentModeActive ? "🏆 Tournoi" : "🎮 Gaming-T";
+
                 long totalMb   = NativeMemory.GetTotalPhysicalMb();
                 long availMb   = NativeMemory.GetAvailablePhysicalMb();
                 float availPct = totalMb > 0 ? (float)availMb / totalMb : 0f;
@@ -857,16 +873,16 @@ internal sealed class MemoryOrchestrator : IDisposable
                     {
                         _tournamentSuspendUntil = DateTime.MinValue;
                         _stutterWsFirstTrigger  = DateTime.MinValue;
-                        _log.LogWarning("[TOURNOI] Anti-stutter contourné après {M}s de blocage — forçage éviction",
-                            TournamentMaxStutterBlockMs / 1000);
-                        Console.WriteLine($"[RAM-AI] 🏆 Tournoi: bypass anti-stutter (>{TournamentMaxStutterBlockMs/1000}s) → éviction forcée");
-                        _events.WriteMarker($"TOURNAMENT STUTTER-BYPASS — blocage >{TournamentMaxStutterBlockMs/1000}s, éviction forcée ce cycle");
+                        _log.LogWarning("[{T}] Anti-stutter contourné après {M}s de blocage — forçage éviction",
+                            modeTag, TournamentMaxStutterBlockMs / 1000);
+                        Console.WriteLine($"[RAM-AI] {modePrefix}: bypass anti-stutter (>{TournamentMaxStutterBlockMs/1000}s) → éviction forcée");
+                        _events.WriteMarker($"{modeTag} STUTTER-BYPASS — blocage >{TournamentMaxStutterBlockMs/1000}s, éviction forcée ce cycle");
                         // skipTournamentEviction reste false → ce cycle évince normalement
                     }
                     else
                     {
-                        _log.LogDebug("[TOURNOI] Cycle suspendu (anti-stutter 2s actif)");
-                        Console.WriteLine($"[RAM-AI] 🏆 Tournoi: cycle suspendu (anti-stutter 2s)");
+                        _log.LogDebug("[{T}] Cycle suspendu (anti-stutter 2s actif)", modeTag);
+                        Console.WriteLine($"[RAM-AI] {modePrefix}: cycle suspendu (anti-stutter 2s)");
                         foreach (var dp in otherProcs) try { dp.Dispose(); } catch { }
                         otherProcs.Clear();
                         skipTournamentEviction = true;
@@ -884,10 +900,10 @@ internal sealed class MemoryOrchestrator : IDisposable
 
                         _tournamentSuspendUntil = DateTime.UtcNow.AddMilliseconds(TournamentSuspendMs);
                         _log.LogInformation(
-                            "[TOURNOI] Jeu WS={W}Mo > 80% RAM dispo ({A}Mo) → suspension {S}ms",
-                            gameWsMb, availMb, TournamentSuspendMs);
+                            "[{T}] Jeu WS={W}Mo > 80% RAM dispo ({A}Mo) → suspension {S}ms",
+                            modeTag, gameWsMb, availMb, TournamentSuspendMs);
                         Console.WriteLine(
-                            $"[RAM-AI] 🏆 Tournoi: jeu {gameWsMb}Mo > 80% RAM dispo ({availMb}Mo) → suspension 2s");
+                            $"[RAM-AI] {modePrefix}: jeu {gameWsMb}Mo > 80% RAM dispo ({availMb}Mo) → suspension 2s");
                         foreach (var dp in otherProcs) try { dp.Dispose(); } catch { }
                         otherProcs.Clear();
                         skipTournamentEviction = true;
@@ -903,9 +919,9 @@ internal sealed class MemoryOrchestrator : IDisposable
                 if (!skipTournamentEviction && availPct < TournamentEmergencyPct)
                 {
                     // Urgence < 15% : Turbo immédiat sur tous les processus non-protégés
-                    _log.LogWarning("[TOURNOI] 🚨 URGENCE RAM {P:P0} < {E:P0} — Turbo d'urgence", availPct, TournamentEmergencyPct);
-                    Console.WriteLine($"[RAM-AI] 🚨 TOURNOI URGENCE : RAM {availPct:P0} < 15% → Turbo d'urgence !");
-                    _events.WriteMarker($"TOURNAMENT EMERGENCY TURBO — avail={availMb}Mo ({availPct:P0})");
+                    _log.LogWarning("[{T}] 🚨 URGENCE RAM {P:P0} < {E:P0} — Turbo d'urgence", modeTag, availPct, TournamentEmergencyPct);
+                    Console.WriteLine($"[RAM-AI] 🚨 {modePrefix} URGENCE : RAM {availPct:P0} < 15% → Turbo d'urgence !");
+                    _events.WriteMarker($"{modeTag} EMERGENCY TURBO — avail={availMb}Mo ({availPct:P0})");
                     foreach (var ep in otherProcs)
                     {
                         try
@@ -926,8 +942,8 @@ internal sealed class MemoryOrchestrator : IDisposable
                 else if (availPct >= TournamentRamThresholdPct)
                 {
                     // RAM suffisante (≥ 25%) : pas besoin d'agir → zéro stutter
-                    _log.LogDebug("[TOURNOI] RAM dispo {P:P0} ≥ {T:P0} — cycle sauté", availPct, TournamentRamThresholdPct);
-                    Console.WriteLine($"[RAM-AI] 🏆 Tournoi: RAM {availPct:P0} OK — cycle sauté (anti-stutter)");
+                    _log.LogDebug("[{T}] RAM dispo {P:P0} ≥ {Th:P0} — cycle sauté", modeTag, availPct, TournamentRamThresholdPct);
+                    Console.WriteLine($"[RAM-AI] {modePrefix}: RAM {availPct:P0} OK — cycle sauté (anti-stutter)");
                     foreach (var dp in otherProcs) try { dp.Dispose(); } catch { }
                     otherProcs.Clear();
                     skipTournamentEviction = true;
@@ -940,8 +956,8 @@ internal sealed class MemoryOrchestrator : IDisposable
                     tournamentCapMb    = Math.Min(
                         Math.Max(0L, (long)(reclaimableMb * TournamentMaxReleasePct)),
                         TournamentMaxReleaseMb);
-                    _log.LogInformation("[TOURNOI] RAM {P:P0} — cap libération = {C}Mo ce cycle (max {M}Mo)", availPct, tournamentCapMb, TournamentMaxReleaseMb);
-                    Console.WriteLine($"[RAM-AI] 🏆 Tournoi: RAM {availPct:P0}, libération plafonnée à {tournamentCapMb}Mo (max {TournamentMaxReleaseMb}Mo)");
+                    _log.LogInformation("[{T}] RAM {P:P0} — cap libération = {C}Mo ce cycle (max {M}Mo)", modeTag, availPct, tournamentCapMb, TournamentMaxReleaseMb);
+                    Console.WriteLine($"[RAM-AI] {modePrefix}: RAM {availPct:P0}, libération plafonnée à {tournamentCapMb}Mo (max {TournamentMaxReleaseMb}Mo)");
                 }
             }
 
@@ -956,8 +972,8 @@ internal sealed class MemoryOrchestrator : IDisposable
 
             for (int i = 0; i < limited.Count; i += batchSize)
             {
-                // Mode Tournoi : arrêter si le cap de libération est atteint
-                if (_tournamentModeActive && tournamentMbThisCycle >= tournamentCapMb) break;
+                // Mode Tournoi / Gaming-Tournoi : arrêter si le cap de libération est atteint
+                if (runTournamentLogic && tournamentMbThisCycle >= tournamentCapMb) break;
 
                 int end = Math.Min(i + batchSize, limited.Count);
                 for (int j = i; j < end; j++)
@@ -965,8 +981,8 @@ internal sealed class MemoryOrchestrator : IDisposable
                     using var proc = limited[j];
                     try
                     {
-                        // Mode Tournoi : ne jamais toucher les processus protégés
-                        if (_tournamentModeActive && TournamentProtectedProcesses.Contains(proc.ProcessName))
+                        // Mode Tournoi / Gaming-Tournoi : ne jamais toucher les processus protégés (anti-cheat, Steam, Discord)
+                        if (runTournamentLogic && TournamentProtectedProcesses.Contains(proc.ProcessName))
                             continue;
 
                         perfSeen++;
@@ -984,7 +1000,7 @@ internal sealed class MemoryOrchestrator : IDisposable
                             perfEvicted++;
                             Interlocked.Increment(ref coldEvicted);
                             Interlocked.Add(ref mbSaved, freed);
-                            if (_tournamentModeActive)
+                            if (runTournamentLogic)
                             {
                                 tournamentMbThisCycle += freed;
                                 _stutterWsFirstTrigger = DateTime.MinValue; // éviction réelle → timer anti-boucle réinitialisé
@@ -1004,10 +1020,12 @@ internal sealed class MemoryOrchestrator : IDisposable
             _log.LogInformation("[Gaming] Cycle optimisation — jeu exclu, {N} processus traités en {T}ms",
                 gamingProcessed, swGaming.ElapsedMilliseconds);
 
-            // Log PERF-TICK → events.log via WriteMarker, uniquement Tournoi ou AntiSwap
-            if (_tournamentModeActive || AntiSwapActive)
+            // Log PERF-TICK → events.log via WriteMarker, uniquement Tournoi, Gaming-Tournoi ou AntiSwap
+            if (_tournamentModeActive || gamingUseTournamentLogic || AntiSwapActive)
             {
-                string perfMode   = _tournamentModeActive ? "Tournoi" : "AntiSwap-Gaming";
+                string perfMode   = _tournamentModeActive    ? "Tournoi"
+                                  : gamingUseTournamentLogic ? "Gaming-Tournoi"
+                                  :                            "AntiSwap-Gaming";
                 long   perfOtherMs = swGaming.ElapsedMilliseconds - perfEnumMs - perfPredictMs - perfEvictMs;
                 _events.WriteMarker(
                     $"PERF-TICK mode={perfMode} enum={perfEnumMs}ms predict={perfPredictMs}ms" +

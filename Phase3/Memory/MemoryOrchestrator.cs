@@ -58,6 +58,24 @@ internal sealed class MemoryOrchestrator : IDisposable
     private const float TournamentGameRamPct      = 0.80f; // suspension si jeu WS > 80% de la RAM dispo
     private const int   TournamentSuspendMs       = 2_000; // durée de suspension anti-stutter en ms
 
+    // ── Gaming-Tournoi : seuils distincts de Tournoi pur ─────────────────────
+    // Seuil d'activation : RAM < 38% → Gaming bascule sur logique Tournoi-like.
+    // Calibré pour éviter la collision stutter-ws sur 16 Go avec un jeu WS~4-5 Go :
+    //   availMb_min = 16384 × 0.38 = 6226 Mo → seuil stutter-ws = 6226 × 0.95 = 5915 Mo
+    //   WS max observé SWO = 4900 Mo < 5915 Mo → collision impossible.
+    // Sur 32 Go : collision déjà absente à 25%, 38% donne encore plus de marge.
+    // Sur  8 Go + jeu 4 Go : collision irrésoluble (jeu > 50% RAM) — Gaming-Tournoi
+    //   s'active mais le chemin normal MaxProcs reste le filet de sécurité effectif.
+    private const float GamingTournamentThresholdPct = 0.38f;
+    // Seuil WS jeu pour Gaming-Tournoi (vs 0.80 pour Tournoi pur).
+    // 0.95 : suspend l'éviction seulement si le jeu consomme >95% de la RAM dispo —
+    // condition nettement plus restrictive, réservée aux pics extrêmes de chargement.
+    private const float GamingTournamentGameRamPct = 0.95f;
+    // Timeout de blocage anti-stutter Gaming-Tournoi (vs 10 000ms pour Tournoi pur).
+    // 4 800ms ≈ 4 ticks à 1 200ms : réduit la durée de chaque boucle stutter-ws
+    // de 10s à ~5s, tout en restant perceptible comme "pause courte" par le joueur.
+    private const int GamingStutterBlockMs = 4_800;
+
     // ── Optimisation prédictive (Ultra) ───────────────────────────────────────
     private const int  PredictiveHistorySize          = 10;
     private const int  PredictiveMinSamples           =  5;
@@ -832,15 +850,17 @@ internal sealed class MemoryOrchestrator : IDisposable
                 _log.LogInformation("[Ultra] Profil jeu '{G}' : maxProcs={M} intervalMs={I}", _currentGame, maxProcs, _intervalMs);
 
             // ── Bascule Gaming-Tournoi : sous pression RAM, Gaming adopte la logique Tournoi ─
-            // Seuil : RAM dispo < 25% du total (TournamentRamThresholdPct) → Gaming bascule sur
+            // Seuil : RAM dispo < 38% du total (GamingTournamentThresholdPct) → Gaming bascule sur
             // la même logique que Tournoi (anti-stutter WS, cap 15-25%, turbo-urgence <15%,
             // TournamentProtectedProcesses). IntervalMs reste celui du profil jeu (1200ms défaut,
             // e4bfb7e) — PAS 500ms comme en vrai Tournoi.
-            // Quand RAM confortable (≥ 25%), Gaming reste léger (plafond 20 procs, pas d'anti-stutter).
+            // Quand RAM confortable (≥ 38%), Gaming reste léger (plafond 20 procs, pas d'anti-stutter).
+            // Seuil 38% (vs 25% pour Tournoi) évite la collision stutter-ws sur 16 Go + jeu 4-5 Go :
+            // availMb × GamingTournamentGameRamPct (0.95) > gameWsMax (4900 Mo) dans tous les cas.
             bool gamingUseTournamentLogic = !_tournamentModeActive
                 && _gamingModeActive
                 && tickTotalMb > 0
-                && tickAvailMb < (long)(tickTotalMb * TournamentRamThresholdPct); // < 25% total
+                && tickAvailMb < (long)(tickTotalMb * GamingTournamentThresholdPct); // < 38% total
             bool runTournamentLogic = _tournamentModeActive || gamingUseTournamentLogic;
 
             // ── Vérification seuil RAM pour le mode Tournoi / Gaming-Tournoi ─────────────────
@@ -866,17 +886,18 @@ internal sealed class MemoryOrchestrator : IDisposable
                     // si la boucle stutter-ws → suspend-2s → stutter-ws tourne sans fin
                     // (rien n'est évincé donc la condition ne change jamais), forcer un bypass
                     // après TournamentMaxStutterBlockMs pour qu'au moins un cycle d'éviction passe.
+                    int stutterBlockMs = _tournamentModeActive ? TournamentMaxStutterBlockMs : GamingStutterBlockMs;
                     bool timedOut = _stutterWsFirstTrigger != DateTime.MinValue
-                        && (DateTime.UtcNow - _stutterWsFirstTrigger).TotalMilliseconds > TournamentMaxStutterBlockMs;
+                        && (DateTime.UtcNow - _stutterWsFirstTrigger).TotalMilliseconds > stutterBlockMs;
 
                     if (timedOut)
                     {
                         _tournamentSuspendUntil = DateTime.MinValue;
                         _stutterWsFirstTrigger  = DateTime.MinValue;
-                        _log.LogWarning("[{T}] Anti-stutter contourné après {M}s de blocage — forçage éviction",
-                            modeTag, TournamentMaxStutterBlockMs / 1000);
-                        Console.WriteLine($"[RAM-AI] {modePrefix}: bypass anti-stutter (>{TournamentMaxStutterBlockMs/1000}s) → éviction forcée");
-                        _events.WriteMarker($"{modeTag} STUTTER-BYPASS — blocage >{TournamentMaxStutterBlockMs/1000}s, éviction forcée ce cycle");
+                        _log.LogWarning("[{T}] Anti-stutter contourné après {M}ms de blocage — forçage éviction",
+                            modeTag, stutterBlockMs);
+                        Console.WriteLine($"[RAM-AI] {modePrefix}: bypass anti-stutter (>{stutterBlockMs}ms) → éviction forcée");
+                        _events.WriteMarker($"{modeTag} STUTTER-BYPASS — blocage >{stutterBlockMs}ms, éviction forcée ce cycle");
                         // skipTournamentEviction reste false → ce cycle évince normalement
                     }
                     else
@@ -892,7 +913,8 @@ internal sealed class MemoryOrchestrator : IDisposable
                 else
                 {
                     long gameWsMb = GetGameWorkingSetMb(_currentGame);
-                    if (availMb > 0L && gameWsMb > (long)(availMb * TournamentGameRamPct))
+                    float stutterWsPct = _tournamentModeActive ? TournamentGameRamPct : GamingTournamentGameRamPct;
+                    if (availMb > 0L && gameWsMb > (long)(availMb * stutterWsPct))
                     {
                         // Mémoriser le premier déclenchement pour détecter une boucle infinie
                         if (_stutterWsFirstTrigger == DateTime.MinValue)

@@ -1,0 +1,363 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Changelog — RAM-AI</title>
+  <meta name="description" content="Changelog RAM-AI — Historique des améliorations et corrections apportées à RAM-AI, l'optimiseur de mémoire vive intelligent pour Windows." />
+  <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700;800;900&display=swap" rel="stylesheet" />
+  <style>
+    /* ─── RESET & BASE ─────────────────────────────────────── */
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    :root {
+      --bg:        #0D1B2A;
+      --bg2:       #102236;
+      --bg3:       #0A1520;
+      --blue:      #3A7BD5;
+      --blue-lt:   #7BB3F0;
+      --gold:      #F5A623;
+      --gold-dk:   #d48c10;
+      --text:      #E8F0FE;
+      --muted:     #8BAEC8;
+      --border:    rgba(58,123,213,.25);
+      --card-bg:   rgba(15,35,58,.7);
+      --radius:    14px;
+      --radius-lg: 22px;
+    }
+    html { scroll-behavior: smooth; }
+    body {
+      font-family: 'Outfit', sans-serif;
+      background: var(--bg);
+      color: var(--text);
+      line-height: 1.6;
+      overflow-x: hidden;
+    }
+    a { color: inherit; text-decoration: none; }
+    /* ─── UTILITY ──────────────────────────────────────────── */
+    .container { max-width: 1100px; margin: 0 auto; padding: 0 24px; }
+    .section   { padding: 90px 0; }
+    .center { text-align: center; }
+    .tag {
+      display: inline-block;
+      font-size: .72rem; font-weight: 700; letter-spacing: .1em;
+      text-transform: uppercase;
+      background: rgba(58,123,213,.15);
+      color: var(--blue-lt);
+      border: 1px solid var(--border);
+      border-radius: 50px;
+      padding: 4px 14px;
+      margin-bottom: 18px;
+    }
+    h2.section-title {
+      font-size: clamp(1.8rem, 3.5vw, 2.6rem);
+      font-weight: 800;
+      line-height: 1.2;
+      margin-bottom: 14px;
+    }
+    p.section-sub {
+      color: var(--muted);
+      font-size: 1.05rem;
+      max-width: 560px;
+      margin: 0 auto 52px;
+    }
+    /* ─── LANGUAGE SWITCHER ─────────────────────────────────── */
+    #lang-bar {
+      position: fixed; top: 0; left: 0; right: 0; z-index: 999;
+      display: flex; align-items: center; justify-content: space-between;
+      padding: 10px 28px;
+      background: rgba(13,27,42,.85);
+      backdrop-filter: blur(12px);
+      border-bottom: 1px solid var(--border);
+    }
+    .nav-doc-link {
+      font-size: .85rem; font-weight: 600;
+      color: var(--muted);
+      transition: color .2s;
+    }
+    .nav-doc-link:hover { color: var(--blue-lt); }
+    .lang-switcher {
+      display: flex; gap: 4px;
+      background: rgba(255,255,255,.06);
+      border: 1px solid var(--border);
+      border-radius: 50px;
+      padding: 3px;
+    }
+    .lang-btn {
+      font-family: 'Outfit', sans-serif;
+      font-size: .82rem; font-weight: 600;
+      background: none; border: none; cursor: pointer;
+      color: var(--muted);
+      padding: 4px 14px;
+      border-radius: 50px;
+      transition: all .2s;
+    }
+    .lang-btn.active {
+      background: var(--blue);
+      color: #fff;
+    }
+    /* ─── CHANGELOG HERO ────────────────────────────────────── */
+    #changelog-hero {
+      padding: 150px 24px 60px;
+      text-align: center;
+      position: relative;
+      overflow: hidden;
+    }
+    #changelog-hero::before {
+      content: '';
+      position: absolute; inset: 0;
+      background: radial-gradient(ellipse 70% 55% at 50% 0%, rgba(58,123,213,.22) 0%, transparent 70%);
+      pointer-events: none;
+    }
+    #changelog-hero .hero-inner { position: relative; z-index: 1; max-width: 700px; margin: 0 auto; }
+    .changelog-title {
+      font-size: clamp(2rem, 5vw, 3.2rem);
+      font-weight: 900;
+      letter-spacing: -.02em;
+      margin-bottom: 14px;
+    }
+    /* ─── CHANGELOG LIST ────────────────────────────────────── */
+    .changelog-list {
+      max-width: 760px;
+      margin: 0 auto;
+      display: flex;
+      flex-direction: column;
+      gap: 28px;
+    }
+    .changelog-entry {
+      background: var(--card-bg);
+      border: 1px solid var(--border);
+      border-radius: var(--radius-lg);
+      padding: 32px 36px;
+      position: relative;
+      overflow: hidden;
+      transition: transform .25s, border-color .25s, box-shadow .25s;
+    }
+    .changelog-entry::before {
+      content: '';
+      position: absolute; top: 0; left: 0; right: 0;
+      height: 3px;
+      background: linear-gradient(90deg, var(--blue), var(--blue-lt));
+    }
+    .changelog-entry:hover {
+      transform: translateY(-4px);
+      border-color: var(--blue);
+      box-shadow: 0 16px 48px rgba(58,123,213,.18);
+    }
+    .changelog-date {
+      display: inline-block;
+      font-size: .72rem; font-weight: 700; letter-spacing: .1em;
+      text-transform: uppercase;
+      background: rgba(245,166,35,.1);
+      color: var(--gold);
+      border: 1px solid rgba(245,166,35,.3);
+      border-radius: 50px;
+      padding: 4px 14px;
+      margin-bottom: 16px;
+    }
+    .changelog-entry-title {
+      font-size: 1.35rem;
+      font-weight: 700;
+      margin-bottom: 18px;
+      color: var(--text);
+    }
+    .changelog-changes {
+      list-style: none;
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+    }
+    .changelog-changes li {
+      display: flex;
+      align-items: flex-start;
+      gap: 12px;
+      color: var(--muted);
+      font-size: .98rem;
+      line-height: 1.55;
+    }
+    .changelog-changes li::before {
+      content: '✓';
+      flex-shrink: 0;
+      color: var(--blue-lt);
+      font-weight: 700;
+      margin-top: 1px;
+    }
+    .changelog-back {
+      display: block;
+      text-align: center;
+      margin: 56px auto 0;
+      font-size: .95rem;
+      font-weight: 600;
+      color: var(--blue-lt);
+      transition: color .2s;
+    }
+    .changelog-back:hover { color: var(--gold); }
+    /* ─── FOOTER ────────────────────────────────────────────── */
+    footer {
+      background: var(--bg3);
+      border-top: 1px solid var(--border);
+      padding: 48px 0;
+      text-align: center;
+      margin-top: 40px;
+    }
+    .footer-logo { font-size: 1.4rem; font-weight: 800; margin-bottom: 8px; }
+    .footer-logo span { color: var(--blue-lt); }
+    .footer-sub { color: var(--muted); font-size: .9rem; margin-bottom: 24px; }
+    .footer-links {
+      display: flex; flex-wrap: wrap; gap: 20px;
+      justify-content: center;
+      font-size: .88rem; color: var(--muted);
+      margin-bottom: 28px;
+    }
+    .footer-links a:hover { color: var(--blue-lt); }
+    .footer-copy { font-size: .8rem; color: rgba(139,174,200,.45); }
+    /* ─── HIDE/SHOW LANGUAGE ────────────────────────────────── */
+    [data-fr] .en,  [data-fr] .es,  [data-fr] .de,
+    [data-en] .fr,  [data-en] .es,  [data-en] .de,
+    [data-es] .fr,  [data-es] .en,  [data-es] .de,
+    [data-de] .fr,  [data-de] .en,  [data-de] .es { display: none !important; }
+    /* ─── RESPONSIVE ────────────────────────────────────────── */
+    @media (max-width: 640px) {
+      .changelog-entry { padding: 26px 22px; }
+    }
+  </style>
+</head>
+<body data-fr>
+<!-- LANGUAGE BAR -->
+<div id="lang-bar">
+  <a href="index.html" class="nav-doc-link">
+    <span class="fr">⬅ Accueil</span>
+    <span class="en">⬅ Home</span>
+    <span class="es">⬅ Inicio</span>
+    <span class="de">⬅ Startseite</span>
+  </a>
+  <div class="lang-switcher">
+    <button class="lang-btn active" id="btn-fr" onclick="setLang('fr')">🇫🇷 FR</button>
+    <button class="lang-btn" id="btn-en" onclick="setLang('en')">🇬🇧 EN</button>
+    <button class="lang-btn" id="btn-es" onclick="setLang('es')">🇪🇸 ES</button>
+    <button class="lang-btn" id="btn-de" onclick="setLang('de')">🇩🇪 DE</button>
+  </div>
+</div>
+
+<!-- CHANGELOG HERO -->
+<section id="changelog-hero">
+  <div class="hero-inner">
+    <div class="tag">RAM-AI</div>
+    <h1 class="changelog-title">Changelog</h1>
+    <p class="section-sub">
+      <span class="fr">Toutes les améliorations et corrections apportées à RAM-AI, classées par date, de la plus récente à la plus ancienne.</span>
+      <span class="en">All improvements and fixes made to RAM-AI, sorted by date, most recent first.</span>
+      <span class="es">Todas las mejoras y correcciones realizadas en RAM-AI, ordenadas por fecha, de la más reciente a la más antigua.</span>
+      <span class="de">Alle Verbesserungen und Korrekturen von RAM-AI, sortiert nach Datum, neueste zuerst.</span>
+    </p>
+  </div>
+</section>
+
+<!-- CHANGELOG LIST -->
+<section class="section" style="padding-top:0;">
+  <div class="container">
+    <div class="changelog-list">
+
+      <!-- 03 juillet 2026 -->
+      <article class="changelog-entry">
+        <div class="changelog-date">
+          <span class="fr">03 juillet 2026</span>
+          <span class="en">July 3, 2026</span>
+          <span class="es">3 de julio de 2026</span>
+          <span class="de">3. Juli 2026</span>
+        </div>
+        <h2 class="changelog-entry-title">
+          <span class="fr">Mode Gaming amélioré &amp; stabilité renforcée</span>
+          <span class="en">Improved Gaming Mode &amp; enhanced stability</span>
+          <span class="es">Modo Gaming mejorado y mayor estabilidad</span>
+          <span class="de">Verbessertes Gaming-Modus &amp; erhöhte Stabilität</span>
+        </h2>
+        <ul class="changelog-changes">
+          <li>
+            <span class="fr">Amélioration majeure du mode Gaming : meilleure gestion de la mémoire pendant le jeu, pour une expérience plus fluide.</span>
+            <span class="en">Major improvement to Gaming Mode: better memory management while playing, for a smoother experience.</span>
+            <span class="es">Mejora importante del modo Gaming: mejor gestión de la memoria durante el juego, para una experiencia más fluida.</span>
+            <span class="de">Deutliche Verbesserung des Gaming-Modus: bessere Speicherverwaltung während des Spielens für ein flüssigeres Erlebnis.</span>
+          </li>
+          <li>
+            <span class="fr">Correction d'un bug pouvant affecter les réinstallations répétées de RAM-AI.</span>
+            <span class="en">Fixed a bug that could affect repeated reinstalls of RAM-AI.</span>
+            <span class="es">Corrección de un error que podía afectar a las reinstalaciones repetidas de RAM-AI.</span>
+            <span class="de">Behebung eines Fehlers, der wiederholte Neuinstallationen von RAM-AI beeinträchtigen konnte.</span>
+          </li>
+          <li>
+            <span class="fr">RAM-AI démarre désormais silencieusement avec Windows (icône dans la barre des tâches, sans fenêtre).</span>
+            <span class="en">RAM-AI now starts silently with Windows (taskbar icon only, no window).</span>
+            <span class="es">RAM-AI ahora se inicia silenciosamente con Windows (solo icono en la barra de tareas, sin ventana).</span>
+            <span class="de">RAM-AI startet jetzt lautlos mit Windows (nur Symbol in der Taskleiste, kein Fenster).</span>
+          </li>
+          <li>
+            <span class="fr">L'installation de l'outil de benchmark est désormais optionnelle.</span>
+            <span class="en">The benchmark tool installation is now optional.</span>
+            <span class="es">La instalación de la herramienta de benchmark ahora es opcional.</span>
+            <span class="de">Die Installation des Benchmark-Tools ist jetzt optional.</span>
+          </li>
+          <li>
+            <span class="fr">Amélioration de la détection de la pression mémoire GPU/VRAM.</span>
+            <span class="en">Improved GPU/VRAM memory pressure detection.</span>
+            <span class="es">Mejora en la detección de la presión de memoria GPU/VRAM.</span>
+            <span class="de">Verbesserte Erkennung des GPU/VRAM-Speicherdrucks.</span>
+          </li>
+        </ul>
+      </article>
+
+    </div>
+
+    <a href="index.html" class="changelog-back">
+      <span class="fr">⬅ Retour à l'accueil</span>
+      <span class="en">⬅ Back to home</span>
+      <span class="es">⬅ Volver al inicio</span>
+      <span class="de">⬅ Zurück zur Startseite</span>
+    </a>
+  </div>
+</section>
+
+<!-- FOOTER -->
+<footer>
+  <div class="container">
+    <div class="footer-logo">RAM-<span>AI</span></div>
+    <div class="footer-sub fr">Smart Memory Optimizer — Achat unique, mises à jour incluses.</div>
+    <div class="footer-sub en">Smart Memory Optimizer — One-time purchase, updates included.</div>
+    <div class="footer-sub es">Smart Memory Optimizer — Compra única, actualizaciones incluidas.</div>
+    <div class="footer-sub de">Smart Memory Optimizer — Einmaliger Kauf, Updates inklusive.</div>
+    <div class="footer-links">
+      <a href="index.html" class="fr">Accueil</a>
+      <a href="index.html" class="en">Home</a>
+      <a href="index.html" class="es">Inicio</a>
+      <a href="index.html" class="de">Startseite</a>
+      <a href="mailto:contact@ram-ai.fr" class="fr">Contact</a>
+      <a href="mailto:contact@ram-ai.fr" class="en">Contact</a>
+      <a href="mailto:contact@ram-ai.fr" class="es">Contacto</a>
+      <a href="mailto:contact@ram-ai.fr" class="de">Kontakt</a>
+    </div>
+    <div class="footer-copy">© 2026 RAM-AI. <span class="fr">Tous droits réservés.</span><span class="en">All rights reserved.</span><span class="es">Todos los derechos reservados.</span><span class="de">Alle Rechte vorbehalten.</span></div>
+  </div>
+</footer>
+
+<!-- SCRIPT LANGUE -->
+<script>
+  function setLang(lang) {
+    const body = document.body;
+    body.removeAttribute('data-fr');
+    body.removeAttribute('data-en');
+    body.removeAttribute('data-es');
+    body.removeAttribute('data-de');
+    body.setAttribute('data-' + lang, '');
+    document.documentElement.lang = lang;
+    document.getElementById('btn-fr').classList.toggle('active', lang === 'fr');
+    document.getElementById('btn-en').classList.toggle('active', lang === 'en');
+    document.getElementById('btn-es').classList.toggle('active', lang === 'es');
+    document.getElementById('btn-de').classList.toggle('active', lang === 'de');
+    localStorage.setItem('ramai-lang', lang);
+  }
+  (function() {
+    const saved = localStorage.getItem('ramai-lang');
+    if (saved && saved !== 'fr') setLang(saved);
+  })();
+</script>
+</body>
+</html>

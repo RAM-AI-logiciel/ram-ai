@@ -497,6 +497,12 @@
     .smartscreen-help[open] summary::before { content: "▾ "; }
     .smartscreen-help p { margin: 8px 0 0; line-height: 1.5; }
     .smartscreen-help strong { color: var(--text); }
+    .smartscreen-help.gpu-tuto { max-width: 760px; margin-top: 18px; font-size: .9rem; }
+    .smartscreen-help.gpu-tuto h4 { margin: 14px 0 0; font-size: .95rem; color: var(--text); }
+    .smartscreen-help.gpu-tuto ul { margin: 6px 0 0; padding-left: 20px; line-height: 1.5; }
+    .smartscreen-help.gpu-tuto li { margin-top: 4px; }
+    .gpu-tuto-link { text-align: center; margin: 14px 0 0; font-size: .95rem; }
+    .gpu-tuto-link a { color: var(--gold); text-decoration: underline; }
 
     /* ─── DOCS SECTION ──────────────────────────────────────── */
     #docs { background: var(--bg2); }
@@ -833,6 +839,12 @@
         <span class="es">RAM-AI ahora también se ocupa de tu tarjeta gráfica NVIDIA.</span>
         <span class="de">RAM-AI kümmert sich jetzt auch um deine NVIDIA-Grafikkarte.</span>
       </p>
+      <p class="gpu-tuto-link">
+        <a href="#gpu-premiers-pas" class="fr">📘 GPU Boost : premiers pas →</a>
+        <a href="#gpu-premiers-pas" class="en">📘 GPU Boost: getting started →</a>
+        <a href="#gpu-premiers-pas" class="es">📘 GPU Boost: primeros pasos →</a>
+        <a href="#gpu-premiers-pas" class="de">📘 GPU Boost: erste Schritte →</a>
+      </p>
     </div>
     <div class="modes-grid">
       <div class="mode-card">
@@ -891,6 +903,84 @@
       <span class="es">Solo tarjetas NVIDIA. Portátiles: solo supervisión. La ganancia depende de la refrigeración de tu tarjeta. Ejemplo medido: +3 % de imágenes por segundo de media en una RTX 2060 con refrigeración limitada.</span>
       <span class="de">Nur NVIDIA-Karten. Laptops: nur Überwachung. Der Gewinn hängt von der Kühlung deiner Karte ab. Gemessenes Beispiel: +3 % Bilder pro Sekunde im Durchschnitt auf einer RTX 2060 mit begrenzter Kühlung.</span>
     </p>
+    <div id="gpu-premiers-pas">
+    <details class="smartscreen-help gpu-tuto fr">
+      <summary>GPU Boost : premiers pas (5 minutes de lecture, environ 30 minutes de réglage automatique)</summary>
+      <h4>1. Ouvrez l'onglet GPU</h4>
+      <p>Dans le tableau de bord RAM-AI, cliquez sur l'onglet <strong>🎮 GPU</strong>. RAM-AI affiche votre carte, sa température et ce qui la bride. À ce stade, rien n'est modifié.</p>
+      <h4>2. Vérifiez le refroidissement (recommandé)</h4>
+      <p>Cliquez sur <strong>🛡 Test de stabilité (5 min)</strong>. Aucun réglage n'est modifié. Si RAM-AI indique que votre carte est « déjà à sa limite thermique au réglage d'origine », l'Auto-Tune restera prudent, sans hausse de la limite de puissance. Un dépoussiérage du radiateur et une meilleure ventilation du boîtier peuvent débloquer davantage.</p>
+      <h4>3. Lancez l'Auto-Tune (Ultra et essai gratuit)</h4>
+      <ul>
+      <li>Fermez les jeux, les logiciels 3D et les outils d'overclock (MSI Afterburner…) : tant qu'un de ces outils est ouvert, GPU Boost se met en pause.</li>
+      <li>Cliquez sur <strong>⚡ Lancer l'Auto-Tune</strong>, lisez l'avertissement, puis <strong>OK</strong>.</li>
+      <li>Laissez le tableau de bord ouvert et le PC au repos : comptez environ 30 minutes, parfois plus. Si vous fermez le tableau de bord, la carte revient au réglage d'origine ; vous pourrez ensuite reprendre l'Auto-Tune là où il s'est arrêté (<strong>Reprendre</strong>).</li>
+      <li>À la fin, RAM-AI affiche le gain mesuré sur votre PC. S'il ne trouve aucun réglage stable, la carte reste simplement au réglage d'origine.</li>
+      </ul>
+      <h4>4. Jouez et créez normalement (Ultra et essai gratuit)</h4>
+      <p>Les profils automatiques s'activent tout seuls : réglage complet en jeu, un palier de moins dans vos logiciels de création (Blender, Photoshop, DaVinci Resolve…), réglage d'origine sur le bureau. Un logiciel n'est pas reconnu ? Ajoutez-le dans <strong>Mes applications</strong>.</p>
+      <h4>5. En cas de problème</h4>
+      <p>Jeu qui plante, image qui saute, écran noir : cliquez sur <strong>↺ Tout réinitialiser</strong>. Votre carte revient immédiatement à son réglage d'origine et les profils GPU de RAM-AI sont supprimés (vous pourrez relancer l'Auto-Tune). Si le PC plante pendant un réglage, RAM-AI le détecte au redémarrage et remet tout d'origine automatiquement.</p>
+      <p><em>Cartes NVIDIA uniquement. Sur PC portable, RAM-AI surveille la carte sans la régler.</em></p>
+    </details>
+    <details class="smartscreen-help gpu-tuto en">
+      <summary>GPU Boost: getting started (5-minute read, about 30 minutes of automatic tuning)</summary>
+      <h4>1. Open the GPU tab</h4>
+      <p>In the RAM-AI dashboard, click the <strong>🎮 GPU</strong> tab. RAM-AI shows your card, its temperature and what is holding it back. Nothing is changed at this point.</p>
+      <h4>2. Check the cooling (recommended)</h4>
+      <p>Click <strong>🛡 Stability test (5 min)</strong>. No setting is changed. If RAM-AI says your card is “already at its thermal limit at stock settings”, Auto-Tune will stay cautious, without raising the power limit. Cleaning the heatsink and improving the airflow in your case can unlock more.</p>
+      <h4>3. Start Auto-Tune (Ultra and free trial)</h4>
+      <ul>
+      <li>Close games, 3D software and overclocking tools (MSI Afterburner…): while one of these tools is open, GPU Boost pauses.</li>
+      <li>Click <strong>⚡ Start Auto-Tune</strong>, read the warning, then <strong>OK</strong>.</li>
+      <li>Keep the dashboard open and leave the PC idle: allow about 30 minutes, sometimes more. If you close the dashboard, the card goes back to default settings; you can then resume Auto-Tune where it stopped (<strong>Resume</strong>).</li>
+      <li>At the end, RAM-AI shows the gain measured on your PC. If no stable setting is found, the card simply stays at default settings.</li>
+      </ul>
+      <h4>4. Play and create as usual (Ultra and free trial)</h4>
+      <p>The automatic profiles switch on by themselves: full settings in games, one step lower in your creative software (Blender, Photoshop, DaVinci Resolve…), default settings on the desktop. Software not recognized? Add it in <strong>My applications</strong>.</p>
+      <h4>5. If something goes wrong</h4>
+      <p>Game crashes, stuttering image, black screen: click <strong>↺ Reset everything</strong>. Your card goes back to default settings immediately and RAM-AI's GPU profiles are deleted (you can run Auto-Tune again). If the PC crashes during tuning, RAM-AI detects it at restart and restores everything to default automatically.</p>
+      <p><em>NVIDIA cards only. On laptops, RAM-AI monitors the card without tuning it.</em></p>
+    </details>
+    <details class="smartscreen-help gpu-tuto es">
+      <summary>GPU Boost: primeros pasos (5 minutos de lectura, unos 30 minutos de ajuste automático)</summary>
+      <h4>1. Abre la pestaña GPU</h4>
+      <p>En el panel de RAM-AI, haz clic en la pestaña <strong>🎮 GPU</strong>. RAM-AI muestra tu tarjeta, su temperatura y lo que la limita. En este punto no se cambia nada.</p>
+      <h4>2. Comprueba la refrigeración (recomendado)</h4>
+      <p>Haz clic en <strong>🛡 Prueba de estabilidad (5 min)</strong>. No se cambia ningún ajuste. Si RAM-AI indica que tu tarjeta «ya está en su límite térmico con los ajustes de fábrica», el Auto-Tune será prudente, sin subir el límite de potencia. Limpiar el disipador y mejorar la ventilación de la caja puede desbloquear más.</p>
+      <h4>3. Inicia el Auto-Tune (Ultra y prueba gratuita)</h4>
+      <ul>
+      <li>Cierra los juegos, el software 3D y las herramientas de overclock (MSI Afterburner…): mientras una de ellas esté abierta, GPU Boost se pone en pausa.</li>
+      <li>Haz clic en <strong>⚡ Iniciar Auto-Tune</strong>, lee el aviso y luego <strong>OK</strong>.</li>
+      <li>Deja el panel abierto y el PC en reposo: cuenta unos 30 minutos, a veces más. Si cierras el panel, la tarjeta vuelve a los ajustes de fábrica; después podrás reanudar el Auto-Tune donde se detuvo (<strong>Reanudar</strong>).</li>
+      <li>Al final, RAM-AI muestra la ganancia medida en tu PC. Si no encuentra ningún ajuste estable, la tarjeta se queda simplemente con los ajustes de fábrica.</li>
+      </ul>
+      <h4>4. Juega y crea con normalidad (Ultra y prueba gratuita)</h4>
+      <p>Los perfiles automáticos se activan solos: ajuste completo en juegos, un paso menos en tu software de creación (Blender, Photoshop, DaVinci Resolve…), ajustes de fábrica en el escritorio. ¿Un programa no se reconoce? Añádelo en <strong>Mis aplicaciones</strong>.</p>
+      <h4>5. Si hay un problema</h4>
+      <p>Juego que se cuelga, imagen que da saltos, pantalla negra: haz clic en <strong>↺ Restablecer todo</strong>. Tu tarjeta vuelve de inmediato a sus ajustes de fábrica y se borran los perfiles GPU de RAM-AI (podrás volver a lanzar el Auto-Tune). Si el PC se cuelga durante un ajuste, RAM-AI lo detecta al reiniciar y lo deja todo de fábrica automáticamente.</p>
+      <p><em>Solo tarjetas NVIDIA. En portátiles, RAM-AI supervisa la tarjeta sin ajustarla.</em></p>
+    </details>
+    <details class="smartscreen-help gpu-tuto de">
+      <summary>GPU Boost: erste Schritte (5 Minuten Lesezeit, etwa 30 Minuten automatische Abstimmung)</summary>
+      <h4>1. Öffne den Reiter GPU</h4>
+      <p>Klicke im RAM-AI-Dashboard auf den Reiter <strong>🎮 GPU</strong>. RAM-AI zeigt deine Karte, ihre Temperatur und was sie bremst. Dabei wird noch nichts verändert.</p>
+      <h4>2. Prüfe die Kühlung (empfohlen)</h4>
+      <p>Klicke auf <strong>🛡 Stabilitätstest (5 Min.)</strong>. Es wird keine Einstellung geändert. Meldet RAM-AI, dass deine Karte „bereits mit Werkseinstellungen ihr thermisches Limit“ erreicht, bleibt Auto-Tune vorsichtig, ohne Erhöhung des Power-Limits. Kühlkörper entstauben und den Luftstrom im Gehäuse verbessern kann mehr freischalten.</p>
+      <h4>3. Starte Auto-Tune (Ultra und kostenloser Test)</h4>
+      <ul>
+      <li>Schließe Spiele, 3D-Software und Übertaktungs-Tools (MSI Afterburner…): Solange eines dieser Tools geöffnet ist, pausiert GPU Boost.</li>
+      <li>Klicke auf <strong>⚡ Auto-Tune starten</strong>, lies den Hinweis und dann <strong>OK</strong>.</li>
+      <li>Lass das Dashboard offen und den PC ruhen: Rechne mit etwa 30 Minuten, manchmal mehr. Schließt du das Dashboard, kehrt die Karte zu den Werkseinstellungen zurück; danach kannst du Auto-Tune dort fortsetzen, wo es angehalten hat (<strong>Fortsetzen</strong>).</li>
+      <li>Am Ende zeigt RAM-AI den auf deinem PC gemessenen Gewinn. Findet es keine stabile Einstellung, bleibt die Karte einfach bei den Werkseinstellungen.</li>
+      </ul>
+      <h4>4. Spiele und gestalte ganz normal (Ultra und kostenloser Test)</h4>
+      <p>Die automatischen Profile schalten sich von selbst ein: volle Einstellung in Spielen, eine Stufe weniger in deiner Kreativ-Software (Blender, Photoshop, DaVinci Resolve…), Werkseinstellungen auf dem Desktop. Ein Programm wird nicht erkannt? Füge es unter <strong>Meine Anwendungen</strong> hinzu.</p>
+      <h4>5. Bei Problemen</h4>
+      <p>Spiel stürzt ab, Bild ruckelt, schwarzer Bildschirm: Klicke auf <strong>↺ Alles zurücksetzen</strong>. Deine Karte kehrt sofort zu den Werkseinstellungen zurück und die GPU-Profile von RAM-AI werden gelöscht (du kannst Auto-Tune erneut starten). Stürzt der PC während einer Abstimmung ab, erkennt RAM-AI das beim Neustart und stellt automatisch alles auf Werkseinstellungen zurück.</p>
+      <p><em>Nur NVIDIA-Karten. Auf Laptops überwacht RAM-AI die Karte, ohne sie einzustellen.</em></p>
+    </details>
+    </div>
   </div>
 </section>
 <!-- COMPARATIF -->
@@ -1082,6 +1172,16 @@
     const saved = localStorage.getItem('ramai-lang');
     if (saved && saved !== 'fr') setLang(saved);
   })();
+  // #gpu-premiers-pas (lien du bloc GPU Boost ou du tableau de bord) : déplie le tuto
+  // Au chargement (lien externe) : défilement immédiat ; au clic sur le site, le navigateur défile lui-même.
+  function openGpuTuto(scroll) {
+    if (location.hash !== '#gpu-premiers-pas') return;
+    document.querySelectorAll('#gpu-premiers-pas details').forEach(function (d) { d.open = true; });
+    var t = document.getElementById('gpu-premiers-pas');
+    if (t && scroll) t.scrollIntoView({ behavior: 'instant', block: 'start' });
+  }
+  window.addEventListener('hashchange', function () { openGpuTuto(false); });
+  openGpuTuto(true);
 </script>
 <!-- MODALS: Politique de confidentialité / CGV -->
 <style>
